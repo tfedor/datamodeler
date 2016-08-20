@@ -13,24 +13,24 @@
     <script type="application/javascript" src="src/EditableText.js"></script>
     <script type="application/javascript" src="src/Attribute.js"></script>
     <script type="application/javascript" src="src/Relation.js"></script>
-    <script type="application/javascript" src="src/Transform.js"></script>
 </head>
 <body>
 
+    <a href="javascript:void(0)" onClick="canvas.clear()">clear</a>
+    <a href="javascript:void(0)" onClick="canvas.clear();canvas.draw()">draw</a>
     <svg id="canvas" style="width:100%;height:1000px;border:1px solid red;margin:50px;"></svg>
 
     <script>
-
         var canvas = new Canvas('#canvas');
+        canvas.draw();
 
-        var entity = new Entity(canvas);
-        entity.draw();
-
+/*
         var entity2 = new Entity(canvas, "Entity 2", {x: 150, y: 10});
         entity2.draw();
 
         var text = new EditableText(canvas, "Text", new Transform(100, 100, null));
         text.draw();
+        */
 
     </script>
 

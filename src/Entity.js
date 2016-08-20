@@ -1,60 +1,57 @@
 
 var Entity = (function(){
 
-    function Entity(canvas, x, y, parent) {
-        this.canvas = canvas;
-        this.transform = new Transform(x, y, parent);
-        this.size = {width: 100, height: 100};
-
-        this._dom = {
-            'group': null,
-            'bg': null,
-            'name': null
+    function Entity(x, y) {
+        this._position = {
+            'x': x || 0,
+            'y': y || 0
         };
+        this._size = {
+            width: 100,
+            height: 100
+        };
+
+        this._name = new EditableText("50%", 0, "Entity", {
+            textAnchor: "middle",
+            dominantBaseline: "hanging"
+        });
+        this._attributes = [];
+
+        this._dom = null;
     }
 
     Entity.prototype.translateTo = function(x, y) {
-        this.transform.translateTo(x, y);
-        if (x) {
-            this._dom.bg.attr('x', x);
-        }
-        if (y) {
-            this._dom.bg.attr('y', y);
+        if (x) { this._position.x = x; }
+        if (y) { this._position.y = y; }
+
+        if (this._dom) {
+            this._dom.attr(this._position);
         }
     };
 
     Entity.prototype.resize = function(width, height) {
-        if (!this._dom.bg) { return; }
-        this.size.width = Math.max(0, width);
-        this.size.height = Math.max(0, height);
-        this._dom.bg.attr('width', this.size.width);
-        this._dom.bg.attr('height', this.size.height);
+        this._size.width = width;
+        this._size.height = height;
+
+        if (this._dom) {
+            this._dom.attr(this._size);
+        }
     };
 
-    Entity.prototype.draw = function() {
-        this._dom.group = this.canvas.paper.g();
-
-        console.log(this.transform.localPosition);
-
-        this._dom.bg = this.canvas.paper.rect(
-            this.transform.localPosition.x, this.transform.localPosition.y,
-            this.size.width, this.size.height,
-            10, 10
-        );
-        this._dom.bg.attr({
-            fill: "#A4E1FF",
-            stroke: "#5271FF",
-            strokeWidth: 2
+    Entity.prototype.draw = function(canvas) {
+        this._dom = canvas.paper.svg(this._position.x, this._position.y, this._size.width, this._size.height);
+        this._dom.attr({
+            style: "overflow:visible"
         });
-        this._dom.group.add(this._dom.bg);
 
+        // create background
+        this._dom.append(
+            canvas.paper.use(canvas._getSharedElement("EntityBg"))
+        );
 
+        this._dom.append(this._name.draw(canvas));
 
-
-
-        var text = new EditableText(this.canvas, 'My Entity', new Transform(0, 0, this.transform));
-        text.draw(this._dom.group);
-
+        return this._dom;
 
         /*var ref = this;
         element.click(function(e){ ref.onClick(e) });
@@ -67,10 +64,8 @@ var Entity = (function(){
     };
 
     Entity.prototype.undraw = function() {
-        this._dom.group.remove();
+        this._dom.remove();
     };
-
-
 
 
     Entity.prototype.onClick = function(e){

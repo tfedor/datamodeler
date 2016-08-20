@@ -1,22 +1,23 @@
 
 var EditableText = (function(){
 
-    function EditableText(canvas, text, transform) {
-        this._canvas = canvas;
-        this.text = text || "Editable Text";
-        this.transform = transform || new Transform(0, 0, null);
+    function EditableText(x, y, text, properties) {
+        this._position = {
+            x: x || 0,
+            y: y || 0
+        };
+
+        this._text = text || "Editable Text";
+        this._properties = properties || {};
 
         this._dom = null;
     }
 
-    EditableText.prototype.draw = function(group) {
-        var position = this.transform.getPosition();
-        this._dom = this._canvas.paper.text(position.x, position.y, this.text);
+    EditableText.prototype.draw = function(canvas) {
+        this._dom = canvas.paper.text(this._position.x, this._position.y, this._text)
+            .attr(this._properties);
 
-        if (group) {
-            group.add(this._dom);
-        }
-
+        return this._dom;
 
         /*
         var fobjectSVG = '<foreignObject><input type="text"></foreignObject>';
