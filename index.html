@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kreslítko</title>
+    <link rel="stylesheet" type="text/css" href="styles/reset.css">
+    <link rel="stylesheet" type="text/css" href="styles/styles.css">
+
+    <script type="application/javascript" src="libs/jquery-3.1.0.min.js"></script>
+    <script type="application/javascript" src="libs/snap.svg-min.js"></script>
+    <script type="application/javascript" src="src/Canvas.js"></script>
+    <script type="application/javascript" src="src/Entity.js"></script>
+    <script type="application/javascript" src="src/EditableText.js"></script>
+    <script type="application/javascript" src="src/Attribute.js"></script>
+    <script type="application/javascript" src="src/Relation.js"></script>
+    <script type="application/javascript" src="src/Transform.js"></script>
+</head>
+<body>
+
+    <svg id="canvas" style="width:100%;height:1000px;border:1px solid red;margin:50px;"></svg>
+
+    <script>
+
+        var canvas = new Canvas('#canvas');
+
+        var entity = new Entity(canvas);
+        entity.draw();
+
+        var entity2 = new Entity(canvas, "Entity 2", {x: 150, y: 10});
+        entity2.draw();
+
+        var text = new EditableText(canvas, "Text", new Transform(100, 100, null));
+        text.draw();
+
+    </script>
+
+</body>
+</html>
