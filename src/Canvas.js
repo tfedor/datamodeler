@@ -5,19 +5,9 @@ var Canvas = (function($) {
         this.Paper = Snap(path);
         this.Mouse = null;
 
-        this._drag = false; /* determines whether there was drag or just click */
-
         this._sharedElements = {};
 
         this._entities = [];
-
-        // set up callbacks
-        var that = this;
-        this.Paper.mousedown(function(e) { that.onMouseDown(e); });
-        this.Paper.mousemove(function(e) { that.onMouseMove(e); });
-        this.Paper.mouseup(function(e) { that.onMouseUp(e); });
-
-        this._createSharedElements();
     }
 
     Canvas.prototype._createSharedElements = function(){
@@ -41,6 +31,12 @@ var Canvas = (function($) {
         for (var key in this._entities) {
             this._entities[key].draw(this);
         }
+
+        // set up callbacks
+        var that = this;
+        this.Paper.mousedown(function(e) { that.Mouse.down(e, that); });
+        this.Paper.mousemove(function(e) { that.Mouse.move(e); });
+        this.Paper.mouseup(function(e) { that.Mouse.up(e); });
     };
 
     Canvas.prototype.clear = function() {
@@ -49,20 +45,13 @@ var Canvas = (function($) {
     };
 
     Canvas.prototype.onMouseDown = function(e) {
-        this.Mouse.down(e);
-        this._entities.unshift(
-            new Entity(this.Mouse.x, this.Mouse.y)
-        );
+        var entity = new Entity(this.Mouse.x, this.Mouse.y);
+        this._entities.unshift(entity);
+        entity.draw(this);
     };
 
     Canvas.prototype.onMouseMove = function(e) {
-        if (!this.Mouse.isDown()) { return; }
-
         var entity = this._entities[0];
-        if (!this.Mouse.isDragged()) {
-            entity.draw(canvas);
-        }
-        this.Mouse.move(e);
 
         if (this.Mouse.dx < 0) {
             entity.translateTo(this.Mouse.x);
@@ -75,14 +64,9 @@ var Canvas = (function($) {
     };
 
     Canvas.prototype.onMouseUp = function(e) {
-        if (this.Mouse.isDragged()) {
-            if (this._entities[0]._size.width <= 30 || this._entities[0]._size.height <= 10) {
-                this._entities.shift().undraw();
-            }
-        } else {
-            this._entities[0].draw(canvas);
+        if (!this.Mouse.isDragged()) {
+            this._entities[0].resize(100, 100);
         }
-        this.Mouse.up(e);
     };
 
     return Canvas;

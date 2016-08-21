@@ -6,9 +6,10 @@ var Entity = (function(){
             'x': x || 0,
             'y': y || 0
         };
+
         this._size = {
-            width: 100,
-            height: 100
+            width: 0,
+            height: 0
         };
 
         this._name = new EditableText("50%", 0, "Entity", {
@@ -58,28 +59,23 @@ var Entity = (function(){
 
         // set event callbacks
         var that = this;
-        this._dom.mouseup(function(e) {e.stopPropagation();});
-        this._dom.mousedown(function(e) {e.stopPropagation();});
-        this._dom.mousemove(function(e) {
-            //e.stopPropagation();
-        });
-
-        this._dom.click(function(e) {
-            e.stopPropagation();
-            that.onClick(e);
-        });
-
+        this._dom.mousedown(function(e) { canvas.Mouse.down(e, that); });
         return this._dom;
     };
 
-    Entity.prototype.undraw = function() {
-        this._dom.remove();
+    Entity.prototype.onMouseMove = function(e, mouse){
+        this._dom.attr({
+            x: this._position.x + mouse.dx,
+            y: this._position.y + mouse.dy
+        });
     };
 
-
-    Entity.prototype.onClick = function(e){
-        console.log("asd");
+    Entity.prototype.onMouseUp = function(e, mouse){
+        this.translateTo(this._position.x + mouse.dx, this._position.y + mouse.dy);
     };
+
+    Entity.prototype.onMouseEnter = function(e){};
+    Entity.prototype.onMouseLeave = function(e){};
 
     return Entity;
 })();

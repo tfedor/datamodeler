@@ -4,7 +4,7 @@ var Mouse = (function(){
     function Mouse(canvasNode) {
         this._node = canvasNode; // dom element coordinates are related to
 
-        this.target = null;
+        this._attachedObject = null;
         this._down = false;
         this._move = false;
 
@@ -32,19 +32,24 @@ var Mouse = (function(){
     Mouse.prototype._update = function(e) {
         var offset = this._node.getBoundingClientRect();
         var doc = document.documentElement;
-        this.x = e.clientX + (window.pageXOffset || doc.scrollLeft) - offset.left;
-        this.y = e.clientY + (window.pageYOffset || doc.scrollTop) - offset.top;
+        this.x = e.clientX - offset.left;
+        this.y = e.clientY - offset.top;
     };
 
-    Mouse.prototype.down = function(e) {
+    Mouse.prototype.down = function(e, object) {
         this._update(e);
-        this.target = e.target;
+        this._attachedObject = object;
 
         this._down = true;
         this.ox = this.x;
         this.oy = this.y;
         this.dx = 0;
         this.dy = 0;
+
+        if (this._attachedObject.onMouseDown) {
+            this._attachedObject.onMouseDown(e, this);
+        }
+        e.stopPropagation();
     };
 
     Mouse.prototype.move = function(e) {
@@ -54,17 +59,27 @@ var Mouse = (function(){
             this._move = true;
             this.dx = this.x - this.ox;
             this.dy = this.y - this.oy;
+
+            if (this._attachedObject.onMouseMove) {
+                this._attachedObject.onMouseMove(e, this);
+            }
         }
+        e.stopPropagation();
     };
 
     Mouse.prototype.up = function(e) {
         if (this._down) {
             this._update(e);
 
-            this.target = null;
+            if (this._attachedObject.onMouseUp) {
+                this._attachedObject.onMouseUp(e, this);
+            }
+
+            this._attachedObject = null;
             this._down = false;
             this._move = false;
         }
+        e.stopPropagation();
     };
 
     return Mouse;
