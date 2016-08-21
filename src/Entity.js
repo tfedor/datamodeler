@@ -16,6 +16,7 @@ var Entity = (function(){
             dominantBaseline: "hanging"
         });
         this._attributes = [];
+        this._attributes[0] = new Attribute(0, 40);
 
         this._dom = null;
     }
@@ -39,28 +40,36 @@ var Entity = (function(){
     };
 
     Entity.prototype.draw = function(canvas) {
-        this._dom = canvas.paper.svg(this._position.x, this._position.y, this._size.width, this._size.height);
+        this._dom = canvas.Paper.svg(this._position.x, this._position.y, this._size.width, this._size.height);
         this._dom.attr({
             style: "overflow:visible"
         });
 
         // create background
         this._dom.append(
-            canvas.paper.use(canvas._getSharedElement("EntityBg"))
+            canvas.Paper.use(canvas._getSharedElement("EntityBg"))
         );
 
         this._dom.append(this._name.draw(canvas));
 
+        for (key in this._attributes) {
+            this._dom.append(this._attributes[key].draw(canvas));
+        }
+
+        // set event callbacks
+        var that = this;
+        this._dom.mouseup(function(e) {e.stopPropagation();});
+        this._dom.mousedown(function(e) {e.stopPropagation();});
+        this._dom.mousemove(function(e) {
+            //e.stopPropagation();
+        });
+
+        this._dom.click(function(e) {
+            e.stopPropagation();
+            that.onClick(e);
+        });
+
         return this._dom;
-
-        /*var ref = this;
-        element.click(function(e){ ref.onClick(e) });
-
-        var text = this.canvas.paper.text(this.getPosition.x, this.getPosition.y, this.name);
-        this._group.add(text);
-        //alert(text.getBBox().width + " "+text.getBBox().height);
-
-        this._group.drag();*/
     };
 
     Entity.prototype.undraw = function() {
@@ -69,7 +78,7 @@ var Entity = (function(){
 
 
     Entity.prototype.onClick = function(e){
-        e.stopPropagation();
+        console.log("asd");
     };
 
     return Entity;

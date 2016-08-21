@@ -14,7 +14,7 @@ var EditableText = (function(){
     }
 
     EditableText.prototype.draw = function(canvas) {
-        this._dom = canvas.paper.text(this._position.x, this._position.y, this._text)
+        this._dom = canvas.Paper.text(this._position.x, this._position.y, this._text)
             .attr(this._properties);
 
         return this._dom;
