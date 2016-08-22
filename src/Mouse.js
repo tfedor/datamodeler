@@ -5,6 +5,8 @@ var Mouse = (function(){
         this._node = canvasNode; // dom element coordinates are related to
 
         this._attachedObject = null;
+        this.action = null;
+
         this._down = false;
         this._move = false;
 
@@ -36,9 +38,10 @@ var Mouse = (function(){
         this.y = e.clientY - offset.top;
     };
 
-    Mouse.prototype.down = function(e, object) {
+    Mouse.prototype.down = function(e, object, action) {
         this._update(e);
         this._attachedObject = object;
+        this.action = action || null;
 
         this._down = true;
         this.ox = this.x;

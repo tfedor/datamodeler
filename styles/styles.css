@@ -14,4 +14,15 @@ svg {
     -ms-user-select: none;       /* Internet Explorer/Edge */
     user-select: none;           /* Non-prefixed version, currently
                                   not supported by any browser */
+
+    pointer-events: all;
 }
+
+
+.rsz-tl { pointer-events: all; cursor:nw-resize; }
+.rsz-tr { pointer-events: all; cursor:ne-resize; }
+.rsz-bl { pointer-events: all; cursor:sw-resize; }
+.rsz-br { pointer-events: all; cursor:se-resize; }
+
+.rsz {display:none;}
+svg:hover > .rsz {display: block;}

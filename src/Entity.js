@@ -48,7 +48,7 @@ var Entity = (function(){
 
         // create background
         this._dom.append(
-            canvas.Paper.use(canvas._getSharedElement("EntityBg"))
+            canvas.Paper.use(canvas.getSharedElement("EntityBg"))
         );
 
         this._dom.append(this._name.draw(canvas));
@@ -59,23 +59,80 @@ var Entity = (function(){
 
         // set event callbacks
         var that = this;
-        this._dom.mousedown(function(e) { canvas.Mouse.down(e, that); });
+        this._dom.mousedown(function(e) { canvas.Mouse.down(e, that, "drag"); });
+
+
+        this._dom.append(
+            canvas.Paper.g(
+                canvas.Paper.use(canvas.getSharedElement('ControlRectangle')),
+                canvas.Paper.use(canvas.getSharedElement('ControlPoint')).attr({class: "rsz-tl", x: 0, y: 0}),
+                canvas.Paper.use(canvas.getSharedElement('ControlPoint')).attr({class: "rsz-bl", x: 0, y: "100%"}),
+                canvas.Paper.use(canvas.getSharedElement('ControlPoint')).attr({class: "rsz-tr", x: "100%", y: 0}),
+                canvas.Paper.use(canvas.getSharedElement('ControlPoint')).attr({class: "rsz-br", x: "100%", y: "100%"})
+            )
+            .attr({
+                class: "rsz",
+                pointerEvents: "none"
+            })
+            .mousedown(function(e){
+                canvas.Mouse.down(e, that, e.target.className.baseVal)
+            })
+        );
+
+        /*this._dom.append();
+        this._dom.append();
+        this._dom.append();
+        this._dom.append();
+        this._dom.append(){
+            canvas.Mouse.down(e, that, "rsz-br");
+        }));
+*/
         return this._dom;
     };
 
     Entity.prototype.onMouseMove = function(e, mouse){
-        this._dom.attr({
-            x: this._position.x + mouse.dx,
-            y: this._position.y + mouse.dy
-        });
+        if (mouse.action == "drag") {
+            this._dom.attr({
+                x: this._position.x + mouse.dx,
+                y: this._position.y + mouse.dy
+            });
+        } else if (mouse.action == "rsz-tl") {
+            this._dom.attr({
+                x: this._position.x + mouse.dx,
+                y: this._position.y + mouse.dy,
+                width: this._size.width - mouse.dx,
+                height: this._size.height - mouse.dy
+            });
+        } else if (mouse.action == "rsz-br") {
+            this._dom.attr({
+                width: this._size.width + mouse.dx,
+                height: this._size.height + mouse.dy
+            });
+        } else if (mouse.action == "rsz-bl") {
+            this._dom.attr({
+                x: this._position.x + mouse.dx,
+                width: this._size.width - mouse.dx,
+                height: this._size.height + mouse.dy
+            });
+        } else if (mouse.action == "rsz-tr") {
+            this._dom.attr({
+                y: this._position.y + mouse.dy,
+                width: this._size.width + mouse.dx,
+                height: this._size.height - mouse.dy
+            });
+        }
     };
 
     Entity.prototype.onMouseUp = function(e, mouse){
-        this.translateTo(this._position.x + mouse.dx, this._position.y + mouse.dy);
+        this.translateTo(
+            parseInt(this._dom.attr('x')),
+            parseInt(this._dom.attr('y'))
+        );
+        this.resize(
+            parseInt(this._dom.attr('width')),
+            parseInt(this._dom.attr('height'))
+        );
     };
-
-    Entity.prototype.onMouseEnter = function(e){};
-    Entity.prototype.onMouseLeave = function(e){};
 
     return Entity;
 })();

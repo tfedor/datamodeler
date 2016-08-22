@@ -16,12 +16,34 @@ var Canvas = (function($) {
                 .attr({
                     fill: "#A4E1FF",
                     stroke: "#5271FF",
-                    strokeWidth: 2
+                    strokeWidth: 3
+                })
+                .toDefs();
+
+        this._sharedElements.ControlRectangle =
+            this.Paper.rect(0, 0, "100%", "100%")
+                .attr({
+                    fill: "none",
+                    strokeWidth: 1,
+                    shapeRendering: "crispEdges",
+                    pointerEvents: "none",
+                    stroke: "black"
+                })
+                .toDefs();
+
+        this._sharedElements.ControlPoint =
+            this.Paper.rect(0, 0, 6, 6)
+                .attr({
+                    fill: "none",
+                    strokeWidth: 1,
+                    stroke: "black",
+                    shapeRendering: "crispEdges",
+                    transform: "translate(-3,-3)"
                 })
                 .toDefs();
     };
 
-    Canvas.prototype._getSharedElement = function(name) {
+    Canvas.prototype.getSharedElement = function(name) {
         return this._sharedElements[name];
     };
 
