@@ -14,7 +14,7 @@ var Attribute = (function(){
         this._type = {
             nullable: false
         };
-        this._name = new EditableText(20, 0, "Attribute", {dominantBaseline: "hanging"});
+        this._name = new EditableText(20, 0, "Attribute", {dominantBaseline: "text-before-edge"});
 
         this._dom = null;
         this._indexDom = null;
@@ -68,8 +68,8 @@ var Attribute = (function(){
     };
 
     Attribute.prototype.draw = function(canvas) {
-        this._indexDom = canvas.Paper.text(0, 0, "").attr({dominantBaseline: "hanging"});
-        this._typeDom = canvas.Paper.text(10, 0, "").attr({dominantBaseline: "hanging"});
+        this._indexDom = canvas.Paper.text(0, 0, "").attr({dominantBaseline: "text-before-edge"});
+        this._typeDom = canvas.Paper.text(10, 0, "").attr({dominantBaseline: "text-before-edge"});
 
         this._updateIndex();
         this._updateType();

@@ -6,8 +6,10 @@ var Canvas = (function($) {
         this.Mouse = null;
 
         this._sharedElements = {};
+        this.menu = {};
 
-        this._entities = [];
+        this._newEntity = null;
+        this._entities = {};
     }
 
     Canvas.prototype._createSharedElements = function(){
@@ -47,11 +49,29 @@ var Canvas = (function($) {
         return this._sharedElements[name];
     };
 
+    Canvas.prototype._createContextMenus = function(){
+        this.menu.Entity = new Menu('top');
+        this.menu.Entity
+            .addOption("New Attribute", "newAttribute")
+            .addOption("New Relation", "newRelation")
+            .addOption("Delete", "delete")
+            .draw(this);
+    };
+
+    Canvas.prototype.removeEntity =  function(id) {
+        if (this._entities.hasOwnProperty(id)) {
+            delete this._entities[id];
+        }
+    };
+
     Canvas.prototype.draw = function() {
         this.Mouse = new Mouse(this.Paper.node);
         this._createSharedElements();
+        this._createContextMenus();
         for (var key in this._entities) {
-            this._entities[key].draw(this);
+            if (this._entities.hasOwnProperty(key)) {
+                this._entities[key].draw(this);
+            }
         }
 
         // set up callbacks
@@ -67,28 +87,31 @@ var Canvas = (function($) {
     };
 
     Canvas.prototype.onMouseDown = function(e) {
-        var entity = new Entity(this.Mouse.x, this.Mouse.y);
-        this._entities.unshift(entity);
-        entity.draw(this);
+        this._newEntity = new Entity(this.Mouse.x, this.Mouse.y);
+        this._newEntity.draw(this);
     };
 
     Canvas.prototype.onMouseMove = function(e) {
-        var entity = this._entities[0];
+        if (!this._newEntity) { return; }
 
         if (this.Mouse.dx < 0) {
-            entity.translateTo(this.Mouse.x);
+            this._newEntity.translateTo(this.Mouse.x);
         }
         if (this.Mouse.dy < 0) {
-            entity.translateTo(null, this.Mouse.y);
+            this._newEntity.translateTo(null, this.Mouse.y);
         }
 
-        entity.resize(Math.abs(this.Mouse.dx), Math.abs(this.Mouse.dy));
+        this._newEntity.resize(Math.abs(this.Mouse.dx), Math.abs(this.Mouse.dy));
     };
 
     Canvas.prototype.onMouseUp = function(e) {
+        if (!this._newEntity) { return; }
         if (!this.Mouse.isDragged()) {
-            this._entities[0].resize(100, 100);
+            this._newEntity.resize(100, 100);
         }
+        var id = this._newEntity.getId();
+        this._entities[id] = this._newEntity;
+        this._newEntity = null;
     };
 
     return Canvas;

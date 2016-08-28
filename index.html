@@ -8,11 +8,13 @@
 
     <script type="application/javascript" src="libs/jquery-3.1.0.min.js"></script>
     <script type="application/javascript" src="libs/snap.svg-min.js"></script>
+    <script type="application/javascript" src="src/Random.js"></script>
     <script type="application/javascript" src="src/Mouse.js"></script>
     <script type="application/javascript" src="src/Canvas.js"></script>
     <script type="application/javascript" src="src/Entity.js"></script>
     <script type="application/javascript" src="src/EditableText.js"></script>
     <script type="application/javascript" src="src/Attribute.js"></script>
+    <script type="application/javascript" src="src/Menu.js"></script>
 </head>
 <body>
 
@@ -24,6 +26,23 @@
         var canvas = new Canvas('#canvas');
         canvas.draw();
 
+        /*
+        var menu = new Menu("top");
+        menu.draw(canvas);
+        menu.attachTo(canvas.Paper.circle(250, 100, 1).attr({fill: 'red'}), null);
+
+        menu = new Menu("right");
+        menu.draw(canvas);
+        menu.attachTo(canvas.Paper.circle(250, 200, 1).attr({fill: 'red'}), null);
+
+        menu = new Menu("bottom");
+        menu.draw(canvas);
+        menu.attachTo(canvas.Paper.circle(250, 300, 1).attr({fill: 'red'}), null);
+
+        menu = new Menu("left");
+        menu.draw(canvas);
+        menu.attachTo(canvas.Paper.circle(250, 400, 1).attr({fill: 'red'}), null);
+*/
 /*
         var entity2 = new Entity(canvas, "Entity 2", {x: 150, y: 10});
         entity2.draw();

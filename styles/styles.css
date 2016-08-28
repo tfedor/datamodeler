@@ -26,3 +26,11 @@ svg {
 
 .rsz {display:none;}
 svg:hover > .rsz {display: block;}
+
+.option { text-decoration: underline; }
+.option:hover { fill: red; cursor:pointer; }
+
+.anchor { visibility:hidden; }
+
+
+.hidden { display:none; }
