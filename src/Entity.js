@@ -61,6 +61,7 @@ var Entity = (function(){
             canvas.Paper.use(canvas.getSharedElement("EntityBg"))
         );
 
+
         this._dom.append(this._name.draw(canvas));
 
         for (var key in this._attributes) {

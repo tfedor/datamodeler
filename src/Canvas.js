@@ -1,8 +1,10 @@
 
 var Canvas = (function($) {
 
-    function Canvas(path) {
-        this.Paper = Snap(path);
+    function Canvas(container, svg) {
+        this._container = container;
+        this.Paper = Snap(svg);
+
         this.Mouse = null;
 
         this._sharedElements = {};
@@ -43,6 +45,12 @@ var Canvas = (function($) {
                     transform: "translate(-3,-3)"
                 })
                 .toDefs();
+
+        var input = document.createElement("input");
+        input.className = "editableSvgText";
+        input.type = "text";
+        this._container.appendChild(input);
+        this._sharedElements.EditableTextInput = input;
     };
 
     Canvas.prototype.getSharedElement = function(name) {
