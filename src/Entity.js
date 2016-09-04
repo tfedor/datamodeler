@@ -104,7 +104,7 @@ var Entity = (function(){
     Entity.prototype.attachMenu = function() {
         if (this._menuBlocked) { return; }
         this._menuAttached = true;
-        canvas.menu.Entity.attachTo(this._dom, this._size.width/2, this);
+        canvas.menu.Entity.attachTo(this._dom.node, this._size.width/2, this);
     };
 
     Entity.prototype.detachMenu = function() {

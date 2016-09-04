@@ -24,7 +24,7 @@ var Menu = (function(){
 
         this._anchorObject = anchorObject;
 
-        this._dom.appendTo(parentObject);
+        this._dom.insertBefore(parentObject.firstChild);
         this.reposition(offset);
         this._show();
     };
