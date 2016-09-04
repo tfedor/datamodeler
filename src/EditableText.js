@@ -35,6 +35,10 @@ var EditableText = (function(){
         return this._dom;
     };
 
+    EditableText.prototype.getWidth = function() {
+        return this._dom.node.getBBox().width;
+    };
+
     EditableText.prototype.onMouseUp = function(e, mouse) {
         var offsetLeft = 0;
         var offsetRight = 20;

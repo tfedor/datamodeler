@@ -18,7 +18,6 @@ var Entity = (function(){
             dominantBaseline: "text-before-edge"
         });
         this._attributes = [];
-        this._attributes[0] = new Attribute(0, 40);
 
         this._menuBlocked = false; // blocks menu attachment
         this._menuAttached = false;
@@ -60,7 +59,6 @@ var Entity = (function(){
         this._dom.append(
             canvas.Paper.use(canvas.getSharedElement("EntityBg"))
         );
-
 
         this._dom.append(this._name.draw(canvas));
 
@@ -115,7 +113,7 @@ var Entity = (function(){
 
     Entity.prototype.handleMenu = function(action) {
         if (action == "newAttribute") {
-            console.log("new attribute");
+            this.createAttribute();
         } else if (action == "newRelation") {
             console.log("new relation");
         } else if (action == "delete") {
@@ -128,6 +126,19 @@ var Entity = (function(){
             if (this._dom) {
                 this._dom.remove();
             }
+        }
+    };
+
+    Entity.prototype.createAttribute = function() {
+        var atr = new Attribute(this, this._attributes.length);
+        this._attributes.push(atr);
+        this._dom.append(atr.draw(this._canvas));
+    };
+
+    Entity.prototype.deleteAttribute = function(order) {
+        this._attributes.splice(order, 1);
+        for (var i=order; i<this._attributes.length; i++) {
+            this._attributes[i].reorder(i);
         }
     };
 

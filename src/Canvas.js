@@ -64,6 +64,18 @@ var Canvas = (function($) {
             .addOption("New Relation", "newRelation")
             .addOption("Delete", "delete")
             .draw(this);
+
+        this.menu.AttributeLeft = new Menu('left', '#10d8ea');
+        this.menu.AttributeLeft
+            .addOption("PK", "changePrimary")
+            .addOption("U", "changeUnique")
+            .addOption("R", "changeRequired")
+            .draw(this);
+
+        this.menu.AttributeRight = new Menu('right', '#ea2e10');
+        this.menu.AttributeRight
+            .addOption("Delete", "delete")
+            .draw(this);
     };
 
     Canvas.prototype.removeEntity =  function(id) {
@@ -115,7 +127,7 @@ var Canvas = (function($) {
     Canvas.prototype.onMouseUp = function(e) {
         if (!this._newEntity) { return; }
         if (!this.Mouse.isDragged()) {
-            this._newEntity.resize(100, 100);
+            this._newEntity.resize(150, 100);
         }
         var id = this._newEntity.getId();
         this._entities[id] = this._newEntity;

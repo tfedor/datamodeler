@@ -1,8 +1,9 @@
 
 var Menu = (function(){
 
-    function Menu(type) {
+    function Menu(type, color) {
         this._type = type; // top | right | bottom | left
+        this._color = color || "#bada55";
         this._options = [];
 
         // determines how is the position modified when attaching menu to object
@@ -12,6 +13,8 @@ var Menu = (function(){
 
         this._canvas = null;
         this._dom = null;
+        this._timer = null;
+        this._attachedTo = null;
     }
 
     Menu.prototype.addOption = function(name, action) {
@@ -21,6 +24,14 @@ var Menu = (function(){
 
     Menu.prototype.attachTo = function(parentObject, offset, anchorObject) {
         if (!this._dom) { return; }
+
+        if (this._timer) {
+            window.clearTimeout(this._timer);
+            this._timer = null;
+        }
+
+        if (this._attachedTo == parentObject) { return; }
+        this._attachedTo = parentObject;
 
         this._anchorObject = anchorObject;
 
@@ -32,14 +43,22 @@ var Menu = (function(){
     Menu.prototype.reposition = function(offset) {
         this._dom.attr({
             x: offset + this._posModifier.x,
-            y: this._posModifier.y
+            y: this._posModifier.y * (this._type == "left" || this._type == "right" ? 0.5 : 1)
         });
     };
 
     Menu.prototype.detach = function() {
         if (!this._dom || !this._canvas) { return; }
-        this._dom.appendTo(this._canvas.Paper);
-        this._hide();
+        var that = this;
+        if (this._timer) {
+            window.clearTimeout(this._timer);
+        }
+        this._timer = window.setTimeout(function(){
+            that._dom.appendTo(that._canvas.Paper);
+            that._hide();
+            that._timer = null;
+            that._attachedTo = null;
+        }, 200);
     };
 
     Menu.prototype._show = function() {
@@ -140,7 +159,7 @@ var Menu = (function(){
         canvas.Paper
             .path(path + "Z")
             .attr({
-                fill: "#bada55",
+                fill: this._color,
                 stroke: "black",
                 strokeWidth: 1,
                 shapeRendering: "crispEdges"
@@ -149,8 +168,8 @@ var Menu = (function(){
 
         // set size, create invisible background for mouse events
         this._dom.attr({
-            width: width,
-            height: height+tr
+            width: width   + (this._type == 'left' || this._type == 'right' ? tr : 0),
+            height: height + (this._type == 'left' || this._type == 'right' ? 0 : tr)
         });
 
         canvas.Paper.rect(0, 0, "100%", "100%")

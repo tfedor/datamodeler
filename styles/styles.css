@@ -25,7 +25,6 @@ svg {
     pointer-events: all;
 }
 
-
 .rsz-tl { pointer-events: all; cursor:nw-resize; }
 .rsz-tr { pointer-events: all; cursor:ne-resize; }
 .rsz-bl { pointer-events: all; cursor:sw-resize; }
@@ -34,8 +33,8 @@ svg {
 .rsz {display:none;}
 svg:hover > .rsz {display: block;}
 
-.option { text-decoration: underline; }
-.option:hover { fill: red; cursor:pointer; }
+.option { text-decoration: underline; cursor:pointer; }
+.option:hover { fill: red; }
 
 .anchor { visibility:hidden; }
 
