@@ -14,6 +14,7 @@
     <script type="application/javascript" src="src/Entity.js"></script>
     <script type="application/javascript" src="src/EditableText.js"></script>
     <script type="application/javascript" src="src/Attribute.js"></script>
+    <script type="application/javascript" src="src/Relation.js"></script>
     <script type="application/javascript" src="src/Menu.js"></script>
 </head>
 <body>
@@ -28,6 +29,21 @@
     <script>
         var canvas = new Canvas(document.getElementById('canvas'), '#canvas svg');
         canvas.draw();
+
+
+        var e = new Entity(200, 100);
+        e.resize(100, 150);
+        e.draw(canvas);
+
+        var r = new Relation(e);
+        r.draw(canvas);
+
+        var e = new Entity(800, 80);
+        e.resize(80, 60);
+        e.draw(canvas);
+
+        r.setDestination(e);
+
     </script>
 
 </body>

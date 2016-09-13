@@ -70,7 +70,7 @@ var Entity = (function(){
         var that = this;
 
         // drag
-        this._dom.mousedown(function(e) { canvas.Mouse.down(e, that, "drag"); });
+        this._dom.mousedown(function(e) { canvas.Mouse.down(e, that, {action: "drag"}); });
 
         // menu
         this._dom.node.addEventListener("mouseenter", function() { that.attachMenu(); });
@@ -90,7 +90,7 @@ var Entity = (function(){
                 pointerEvents: "none"
             })
             .mousedown(function(e){
-                canvas.Mouse.down(e, that, e.target.className.baseVal)
+                canvas.Mouse.down(e, that, {action: e.target.className.baseVal})
             })
         );
 
@@ -115,7 +115,7 @@ var Entity = (function(){
         if (action == "newAttribute") {
             this.createAttribute();
         } else if (action == "newRelation") {
-            console.log("new relation");
+            this.createRelation();
         } else if (action == "delete") {
             this._canvas.removeEntity(this._id);
 
@@ -142,6 +142,13 @@ var Entity = (function(){
         }
     };
 
+    Entity.prototype.createRelation = function() {
+        var relation = new Relation(this);
+        relation.draw(this._canvas);
+
+        this._canvas.Mouse.attachObject(relation, {action: "relation", data: relation});
+    };
+
     // handlers
 
     Entity.prototype.onMouseDown = function(e, mouse) {
@@ -152,30 +159,31 @@ var Entity = (function(){
     };
 
     Entity.prototype.onMouseMove = function(e, mouse){
-        if (mouse.action == "drag") {
+        var action = mouse.getParams().action;
+        if (action == "drag") {
             this._dom.attr({
                 x: this._position.x + mouse.dx,
                 y: this._position.y + mouse.dy
             });
-        } else if (mouse.action == "rsz-tl") {
+        } else if (action == "rsz-tl") {
             this._dom.attr({
                 x: this._position.x + mouse.dx,
                 y: this._position.y + mouse.dy,
                 width: this._size.width - mouse.dx,
                 height: this._size.height - mouse.dy
             });
-        } else if (mouse.action == "rsz-br") {
+        } else if (action == "rsz-br") {
             this._dom.attr({
                 width: this._size.width + mouse.dx,
                 height: this._size.height + mouse.dy
             });
-        } else if (mouse.action == "rsz-bl") {
+        } else if (action == "rsz-bl") {
             this._dom.attr({
                 x: this._position.x + mouse.dx,
                 width: this._size.width - mouse.dx,
                 height: this._size.height + mouse.dy
             });
-        } else if (mouse.action == "rsz-tr") {
+        } else if (action == "rsz-tr") {
             this._dom.attr({
                 y: this._position.y + mouse.dy,
                 width: this._size.width + mouse.dx,
@@ -185,6 +193,9 @@ var Entity = (function(){
     };
 
     Entity.prototype.onMouseUp = function(e, mouse){
+
+console.log("mouse up");
+
         this.translateTo(
             parseInt(this._dom.attr('x')),
             parseInt(this._dom.attr('y'))

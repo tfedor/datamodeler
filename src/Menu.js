@@ -205,7 +205,7 @@ var Menu = (function(){
 
     Menu.prototype.onMouseUp = function(e, mouse) {
         if (e.target.nodeName == "text" && this._anchorObject && this._anchorObject.handleMenu) {
-            this._anchorObject.handleMenu(mouse.action);
+            this._anchorObject.handleMenu(mouse.getParams());
         }
     };
 

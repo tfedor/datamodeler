@@ -51,10 +51,43 @@ var Canvas = (function($) {
         input.type = "text";
         this._container.appendChild(input);
         this._sharedElements.EditableTextInput = input;
+
+        // relation anchors
+        this._sharedElements.anchorBase = canvas.Paper.polyline(0.5,0.5, 10.5,0.5).attr({
+            fill: 'none',
+            stroke:'black',
+            strokeWidth: 1,
+            shapeRendering: 'auto'
+        }).toDefs();
+        this._sharedElements.anchorMulti = canvas.Paper.polyline(0.5,-7.5, 10.5,0.5, 0.5,8.5).attr({
+            fill: 'none',
+            stroke:'black',
+            strokeWidth: 1,
+            shapeRendering: 'auto'
+        }).toDefs();
+        this._sharedElements.anchorIdentifying = canvas.Paper.polyline(10.5,-7.5, 10.5,7.5).attr({
+            fill: 'none',
+            stroke:'black',
+            strokeWidth: 1,
+            shapeRendering: 'auto'
+        }).toDefs();
     };
 
     Canvas.prototype.getSharedElement = function(name) {
         return this._sharedElements[name];
+    };
+
+    Canvas.prototype.getRelationAnchor = function(multi, identifying) {
+        var g = this.Paper.g(
+            this.Paper.use(this.getSharedElement('anchorBase'))
+        );
+        if (multi) {
+            g.add(this.Paper.use(this.getSharedElement('anchorMulti')));
+        }
+        if (identifying) {
+            g.add(this.Paper.use(this.getSharedElement('anchorIdentifying')));
+        }
+        return g;
     };
 
     Canvas.prototype._createContextMenus = function(){
@@ -126,10 +159,12 @@ var Canvas = (function($) {
 
     Canvas.prototype.onMouseUp = function(e) {
         if (!this._newEntity) { return; }
-        if (!this.Mouse.isDragged()) {
-            this._newEntity.resize(150, 100);
-        }
         var id = this._newEntity.getId();
+        if (!this.Mouse.isDragged()) {
+            this.removeEntity(id);
+            this._newEntity = null;
+            return;
+        }
         this._entities[id] = this._newEntity;
         this._newEntity = null;
     };
