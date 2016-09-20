@@ -40,3 +40,6 @@ svg:hover > .rsz {display: block;}
 
 
 .hidden { display:none; }
+
+/*g.relation .cp { visibility: hidden; }
+g.relation.over .cp { visibility: visible; }*/

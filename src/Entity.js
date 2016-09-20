@@ -54,6 +54,17 @@ var Entity = (function(){
             this._dom.attr(this._size);
         }
     };
+    Entity.prototype.resizeBy = function(dx, dy) {
+        if (!dx) {dx = 0;}
+        if (!dy) {dy = 0;}
+
+        this._size.width += dx;
+        this._size.height += dy;
+
+        if (this._dom) {
+            this._dom.attr(this._size);
+        }
+    };
 
     Entity.prototype.draw = function(canvas) {
         this._canvas = canvas;
@@ -233,36 +244,33 @@ var Entity = (function(){
     };
 
     Entity.prototype.onMouseMove = function(e, mouse){
+        var key;
         var action = mouse.getParams().action;
         if (action == "drag") {
             this.translateBy(mouse.rx, mouse.ry);
 
-            for(var key in this._relations) {
+            for(key in this._relations) {
                 this._relations[key].translateAnchorBy(mouse.rx, mouse.ry);
             }
-        } else if (action == "rsz-tl") {
-            this.translateBy(mouse.rx, mouse.ry);
-            this._dom.attr({
-                width: this._size.width - mouse.dx,
-                height: this._size.height - mouse.dy
-            });
-        } else if (action == "rsz-br") {
-            this._dom.attr({
-                width: this._size.width + mouse.dx,
-                height: this._size.height + mouse.dy
-            });
-        } else if (action == "rsz-bl") {
-            this.translateBy(mouse.rx);
-            this._dom.attr({
-                width: this._size.width - mouse.dx,
-                height: this._size.height + mouse.dy
-            });
-        } else if (action == "rsz-tr") {
-            this.translateBy(null, mouse.ry);
-            this._dom.attr({
-                width: this._size.width + mouse.dx,
-                height: this._size.height - mouse.dy
-            });
+        } else {
+            if (action == "rsz-tl") {
+                this.translateBy(mouse.rx, mouse.ry);
+                this.resizeBy(-mouse.rx, -mouse.ry);
+            } else if (action == "rsz-br") {
+                this.resizeBy(mouse.rx, mouse.ry);
+            } else if (action == "rsz-bl") {
+                this.translateBy(mouse.rx);
+                this.resizeBy(-mouse.rx, mouse.ry);
+            } else if (action == "rsz-tr") {
+                this.translateBy(null, mouse.ry);
+                this.resizeBy(mouse.rx, -mouse.ry);
+            }
+
+            for(key in this._relations) {
+                if (this._relations.hasOwnProperty(key)) {
+                    this._relations[key].updateAnchorAfterResize();
+                }
+            }
         }
     };
 

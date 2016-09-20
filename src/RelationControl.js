@@ -40,6 +40,7 @@ var RelationControl = (function(){
     RelationControl.prototype.onMouseUp = function(e, mouse) {
         var clickedObject = mouse.getTarget();
         if (clickedObject instanceof Entity) {
+
             var source = new RelationLeg(this._canvas, this._source);
             source.identifying = 1;
 
@@ -49,9 +50,12 @@ var RelationControl = (function(){
 
             source.connectWith(target);
 
-            source.draw();
-            target.draw();
-            source.createMiddlePoint();
+            var g = this._canvas.Paper.g();
+            g.addClass("relation");
+
+            source.draw(g);
+            target.draw(g);
+            source.createMiddlePoint(g);
         }
         this._clear();
     };

@@ -42,7 +42,8 @@ var Canvas = (function($) {
                     strokeWidth: 1,
                     stroke: "black",
                     shapeRendering: "crispEdges",
-                    transform: "translate(-3,-3)"
+                    transform: "translate(-3,-3)",
+                    pointerEvents: "visible"
                 })
                 .toDefs();
 
@@ -53,7 +54,8 @@ var Canvas = (function($) {
                     strokeWidth: 1,
                     stroke: "black",
                     shapeRendering: "crispEdges",
-                    transform: "translate(-3,-3)"
+                    transform: "translate(-3,-3)",
+                    pointerEvents: "visible"
                 })
                 .toDefs();
 
@@ -124,6 +126,13 @@ var Canvas = (function($) {
         this.menu.AttributeRight = new Menu('right', '#ea2e10');
         this.menu.AttributeRight
             .addOption("Delete", "delete")
+            .draw(this);
+
+        this.menu.RelationLeg = new Menu('top', '#10d8ea');
+        this.menu.RelationLeg
+            .addOption("Cardinality", "cardinality")
+            .addOption("Identifying", "identifying")
+            .addOption("Optional", "optional")
             .draw(this);
     };
 

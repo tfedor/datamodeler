@@ -9,9 +9,10 @@ var RelationLeg = (function(){
         this.points = [];
         this.anchorWidth = 0;
         this.dom = {
+            relationContainer: null,
             anchor: null,
             leg: null,
-            middle: null
+            control: null
         };
 
         this._otherLeg = null;
@@ -128,13 +129,14 @@ var RelationLeg = (function(){
 
     // draw
 
-    RelationLeg.prototype.draw = function() {
-        this._createAnchor();
+    RelationLeg.prototype.draw = function(group) {
         this._createLine();
+        this._createAnchor();
 
         this._positionAnchor(this.points[0].x, this.points[0].y);
 
-
+        group.add(this.dom.leg, this.dom.control, this.dom.anchor);
+        this.dom.relationContainer = group;
     };
 
     RelationLeg.prototype.createMiddlePoint = function() {
@@ -142,7 +144,9 @@ var RelationLeg = (function(){
              .attr({
                  x: this.points[this.points.length - 1].x,
                  y: this.points[this.points.length - 1].y
-             });
+             })
+             .addClass("cp");
+        this.dom.relationContainer.add(cp);
 
          var that = this;
          cp.mousedown(function(e){
@@ -166,18 +170,22 @@ var RelationLeg = (function(){
         }
 
         this.dom.control = canvas.Paper.polyline().attr({
-            fill: 'none',
-            strokeWidth: 8,
-            strokeOpacity: 0
+            fill: "none",
+            strokeWidth: 12,
+            strokeOpacity: 0,
+            strokeLinecap: "round",
+            strokeLinejoin: "round"
         });
 
         // add events
         var that = this;
         this.dom.control.node.addEventListener("mouseenter", function(){
             that.dom.leg.attr({strokeWidth: 3});
+            //that.dom.relationContainer.addClass("over");
         });
         this.dom.control.node.addEventListener("mouseleave", function(){
             that.dom.leg.attr({strokeWidth: 1});
+            //that.dom.relationContainer.removeClass("over");
         });
         this.dom.control.mousedown(function(e) {
             that._canvas.Mouse.down(e, that, {action: 'newCP'});
@@ -193,6 +201,15 @@ var RelationLeg = (function(){
         this.dom.anchor.mousedown(function(e) {
             that._canvas.Mouse.down(e, that, {action: 'anchor'});
         });
+
+        /*
+        this.dom.anchor.node.addEventListener("mouseenter", function(e) {
+            that._canvas.menu.RelationLeg.attachTo(that.dom.relationContainer.node, 10, that);
+        });
+        this.dom.anchor.node.addEventListener("mouseleave", function(e) {
+            that._canvas.menu.RelationLeg.detach();
+        });
+        */
     };
 
     //
@@ -204,6 +221,7 @@ var RelationLeg = (function(){
     };
 
     RelationLeg.prototype._positionAnchor = function(x, y) {
+        var offset = 10; // TODO
         var rot = 0;
 
         var anchorX, anchorY;
@@ -211,7 +229,7 @@ var RelationLeg = (function(){
 
         var bbox = this.entity.boundingBox();
         if (bbox.left < x && x < bbox.right) {
-            anchorX = x;
+            anchorX = Math.min(Math.max(x, bbox.left+offset), bbox.right-offset);
             offsetX = 0;
 
             // top
@@ -229,7 +247,7 @@ var RelationLeg = (function(){
             }
         } else if (bbox.top < y && y < bbox.bottom) {
 
-            anchorY = y;
+            anchorY = Math.min(Math.max(y, bbox.top+offset), bbox.bottom-offset);
             offsetY = 0;
 
             // left
@@ -249,13 +267,28 @@ var RelationLeg = (function(){
         }
 
         this.dom.anchor.attr({
-            transform: "translate("+ anchorX +", "+ anchorY +") rotate("+rot+")"
+            transform: "translate("+ (Math.ceil(anchorX)) +", "+ (Math.ceil(anchorY)) +") rotate("+rot+")"
         });
 
-        this.points[0].x = anchorX + offsetX - 0.5;
-        this.points[0].y = anchorY + offsetY - 0.5;
+        this.points[0].x = anchorX + offsetX;
+        this.points[0].y = anchorY + offsetY;
 
         this._updateLine();
+    };
+
+    RelationLeg.prototype.updateAnchorAfterResize = function() {
+        var box = this.entity.boundingBox();
+        var offset = 10; // TODO
+
+        var x,y;
+        if (this.edge == "top" || this.edge == "bottom") {
+            y = box[this.edge];
+            x = Math.min(Math.max(this.points[0].x, box.left+offset), box.right-offset);
+        } else {
+            x = box[this.edge];
+            y = Math.min(Math.max(this.points[0].y, box.top+offset), box.bottom-offset);
+        }
+        this._positionAnchor(x, y);
     };
 
     RelationLeg.prototype.translateAnchorBy = function(rx, ry) {
@@ -286,7 +319,11 @@ var RelationLeg = (function(){
         if (!added) { return; }
 
         var that = this;
-        var cp = this._canvas.Paper.use(this._canvas.getSharedElement("ControlPoint")).attr(newPoint);
+        var cp = this._canvas.Paper.use(this._canvas.getSharedElement("ControlPoint"))
+            .attr(newPoint)
+            .addClass("cp");
+        this.dom.relationContainer.add(cp);
+
         cp.mousedown(function(e){
             that._canvas.Mouse.down(e, that, {action: 'cp', point: newPoint, dom: cp})
         });
