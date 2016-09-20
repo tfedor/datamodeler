@@ -18,6 +18,7 @@ var Entity = (function(){
             dominantBaseline: "text-before-edge"
         });
         this._attributes = [];
+        this._relations = [];
 
         this._menuBlocked = false; // blocks menu attachment
         this._menuAttached = false;
@@ -37,6 +38,12 @@ var Entity = (function(){
         if (this._dom) {
             this._dom.attr(this._position);
         }
+    };
+
+    Entity.prototype.translateBy = function(dx, dy) {
+        if (!dx) { dx = 0 }
+        if (!dy) { dy = 0; }
+        this.translateTo(this._position.x + dx, this._position.y + dy);
     };
 
     Entity.prototype.resize = function(width, height) {
@@ -97,6 +104,20 @@ var Entity = (function(){
         return this._dom;
     };
 
+    Entity.prototype.boundingBox = function() {
+        return {
+            top: this._position.y,
+            right: this._position.x + this._size.width,
+            bottom: this._position.y + this._size.height,
+            left: this._position.x
+        };
+    };
+
+    // relations
+    Entity.prototype.addRelation = function(relation) {
+        this._relations.push(relation);
+    };
+
     // menu
 
     Entity.prototype.attachMenu = function() {
@@ -143,32 +164,85 @@ var Entity = (function(){
     };
 
     Entity.prototype.createRelation = function() {
-        var relation = new Relation(this);
-        relation.draw(this._canvas);
+        var control = new RelationControl(canvas, this);
+        control.draw(this._position.x + this._size.width / 2, this._position.y + this._size.height / 2);
+        this._canvas.Mouse.attachObject(control);
+    };
 
-        this._canvas.Mouse.attachObject(relation, {action: "relation", data: relation});
+    Entity.prototype.getEdgePosition = function(edge) {
+        var offset = 10;
+        var binWidth = 15;
+        var edgeLength;
+        var edgeStart;
+
+        if (edge == "top" || edge == "bottom") {
+            edgeLength = this._size.width;
+            edgeStart = this._position.x + offset;
+        } else {
+            edgeLength = this._size.height;
+            edgeStart = this._position.y + offset;
+        }
+
+        var binCount = Math.round((edgeLength - 2*offset) / binWidth);
+        var bins = new Array(binCount);
+        bins.fill(0);
+
+        var anchorPos;
+        var bin;
+        for(var key in this._relations) {
+            var relation = this._relations[key];
+
+            var anchor = relation.getAnchorPosition();
+            if (anchor.edge != edge) { continue }
+            if (edge == "top" || edge == "bottom") {
+                anchorPos = anchor.x;
+            } else {
+                anchorPos = anchor.y;
+            }
+
+            bin = Math.floor((anchorPos - edgeStart) / binWidth);
+            bins[bin]++;
+        }
+
+        var centerBin = Math.round(binCount/2);
+        var minBin = 0;
+        for (var i=centerBin; i<centerBin + binCount; i++) {
+            bin = i % binCount;
+            if (bins[bin] == 0) {
+                minBin = bin;
+                break;
+            }
+            if (bins[bin] < bins[minBin]) {
+                minBin = bin;
+            }
+        }
+
+        return edgeStart + offset + minBin * binWidth;
     };
 
     // handlers
 
     Entity.prototype.onMouseDown = function(e, mouse) {
-        if (this._menuAttached) {
-            this._canvas.menu.Entity.detach();
+        var params = mouse.getParams();
+        if (params.action == 'newRelation') {
+            if (this._menuAttached) {
+                this._canvas.menu.Entity.detach();
+            }
+            this._menuBlocked = true;
         }
-        this._menuBlocked = true;
     };
 
     Entity.prototype.onMouseMove = function(e, mouse){
         var action = mouse.getParams().action;
         if (action == "drag") {
-            this._dom.attr({
-                x: this._position.x + mouse.dx,
-                y: this._position.y + mouse.dy
-            });
+            this.translateBy(mouse.rx, mouse.ry);
+
+            for(var key in this._relations) {
+                this._relations[key].translateAnchorBy(mouse.rx, mouse.ry);
+            }
         } else if (action == "rsz-tl") {
+            this.translateBy(mouse.rx, mouse.ry);
             this._dom.attr({
-                x: this._position.x + mouse.dx,
-                y: this._position.y + mouse.dy,
                 width: this._size.width - mouse.dx,
                 height: this._size.height - mouse.dy
             });
@@ -178,14 +252,14 @@ var Entity = (function(){
                 height: this._size.height + mouse.dy
             });
         } else if (action == "rsz-bl") {
+            this.translateBy(mouse.rx);
             this._dom.attr({
-                x: this._position.x + mouse.dx,
                 width: this._size.width - mouse.dx,
                 height: this._size.height + mouse.dy
             });
         } else if (action == "rsz-tr") {
+            this.translateBy(null, mouse.ry);
             this._dom.attr({
-                y: this._position.y + mouse.dy,
                 width: this._size.width + mouse.dx,
                 height: this._size.height - mouse.dy
             });
@@ -193,10 +267,7 @@ var Entity = (function(){
     };
 
     Entity.prototype.onMouseUp = function(e, mouse){
-
-console.log("mouse up");
-
-        this.translateTo(
+         this.translateTo(
             parseInt(this._dom.attr('x')),
             parseInt(this._dom.attr('y'))
         );
@@ -209,6 +280,7 @@ console.log("mouse up");
         if (this._menuAttached) {
             this.attachMenu();
         }
+        return true;
     };
 
     return Entity;

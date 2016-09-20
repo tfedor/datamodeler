@@ -4,7 +4,8 @@ var Mouse = (function(){
     function Mouse(canvasNode) {
         this._node = canvasNode; // dom element coordinates are related to
 
-        this._attachedObject = null; // object at which the event was fired
+        this._targetObject = null; // object at which the event was fired
+        this._attachedObject = null;
         this._params = null;
 
         this._down = false;
@@ -21,6 +22,10 @@ var Mouse = (function(){
         // offset from origin
         this.dx = 0;
         this.dy = 0;
+
+        // offset from last update
+        this.rx = 0;
+        this.ry = 0;
     }
 
     Mouse.prototype.isDragged = function() {
@@ -41,6 +46,10 @@ var Mouse = (function(){
         return this._params;
     };
 
+    Mouse.prototype.getTarget = function() {
+        return this._targetObject;
+    };
+
     Mouse.prototype._update = function(e) {
         var offset = this._node.getBoundingClientRect();
         this.x = e.clientX - offset.left;
@@ -48,8 +57,15 @@ var Mouse = (function(){
     };
 
     Mouse.prototype.down = function(e, object, params) {
+        this._targetObject = object;
+
+        e.stopPropagation();
+        if (e.button != 0 || this._attachedObject) { return; }
+
         this.attachObject(object, params);
-        if (!this._attachedObject) { return; }
+        if (!this._attachedObject) {
+            return;
+        }
         this._update(e);
 
         this._down = true;
@@ -57,15 +73,21 @@ var Mouse = (function(){
         this.oy = this.y;
         this.dx = 0;
         this.dy = 0;
+        this.rx = 0;
+        this.ry = 0;
 
         if (this._attachedObject.onMouseDown) {
             this._attachedObject.onMouseDown(e, this);
         }
-        e.stopPropagation();
     };
 
     Mouse.prototype.move = function(e) {
+        e.stopPropagation();
+        if (e.button != 0) { return; }
         if (!this._attachedObject) { return; }
+
+        var x = this.x;
+        var y = this.y;
 
         this._update(e);
 
@@ -73,29 +95,27 @@ var Mouse = (function(){
         this.dx = this.x - this.ox;
         this.dy = this.y - this.oy;
 
+        this.rx = this.x - x;
+        this.ry = this.y - y;
+
         if (this._attachedObject.onMouseMove) {
             this._attachedObject.onMouseMove(e, this);
         }
-        e.stopPropagation();
     };
 
     Mouse.prototype.up = function(e) {
-        if (!this._attachedObject) { return; }
-
-        if (this._down) {
-            this._update(e);
-
-            var obj = this._attachedObject;
-            this._attachedObject = null;
-
-            if (obj.onMouseUp) {
-                obj.onMouseUp(e, this);
-            }
-
-            this._down = false;
-            this._move = false;
-        }
         e.stopPropagation();
+        if (e.button != 0 || !this._attachedObject) { return; }
+
+        this._update(e);
+
+        if (this._attachedObject.onMouseUp) {
+            this._attachedObject.onMouseUp(e, this);
+        }
+        this._attachedObject = null;
+
+        this._down = false;
+        this._move = false;
     };
 
     return Mouse;

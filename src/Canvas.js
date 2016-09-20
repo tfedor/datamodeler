@@ -46,6 +46,17 @@ var Canvas = (function($) {
                 })
                 .toDefs();
 
+        this._sharedElements.CentralControlPoint =
+            this.Paper.rect(0, 0, 6, 6)
+                .attr({
+                    fill: "black",
+                    strokeWidth: 1,
+                    stroke: "black",
+                    shapeRendering: "crispEdges",
+                    transform: "translate(-3,-3)"
+                })
+                .toDefs();
+
         var input = document.createElement("input");
         input.className = "editableSvgText";
         input.type = "text";
@@ -53,6 +64,10 @@ var Canvas = (function($) {
         this._sharedElements.EditableTextInput = input;
 
         // relation anchors
+        this._sharedElements.anchorControl = canvas.Paper.rect(-0.5,-7.5, 10.5,16.5).attr({
+            fill: 'none',
+            stroke:'none'
+        }).toDefs();
         this._sharedElements.anchorBase = canvas.Paper.polyline(0.5,0.5, 10.5,0.5).attr({
             fill: 'none',
             stroke:'black',
@@ -79,6 +94,7 @@ var Canvas = (function($) {
 
     Canvas.prototype.getRelationAnchor = function(multi, identifying) {
         var g = this.Paper.g(
+            this.Paper.use(this.getSharedElement('anchorControl')),
             this.Paper.use(this.getSharedElement('anchorBase'))
         );
         if (multi) {
@@ -167,6 +183,8 @@ var Canvas = (function($) {
         }
         this._entities[id] = this._newEntity;
         this._newEntity = null;
+
+        return true;
     };
 
     return Canvas;

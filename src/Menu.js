@@ -193,9 +193,7 @@ var Menu = (function(){
 
         // create mouse events
         var that = this;
-        this._dom.mousedown(function(e){
-            canvas.Mouse.down(e, that, (e.target.nodeName == "text" ? e.target.getAttribute('data-action') : null));
-        });
+        this._dom.node.addEventListener("click", function(e) { that.onClick(e); });
 
         // hide
         this._hide();
@@ -203,11 +201,12 @@ var Menu = (function(){
         return this._dom;
     };
 
-    Menu.prototype.onMouseUp = function(e, mouse) {
+    Menu.prototype.onClick = function(e) {
         if (e.target.nodeName == "text" && this._anchorObject && this._anchorObject.handleMenu) {
-            this._anchorObject.handleMenu(mouse.getParams());
-        }
-    };
+            this._anchorObject.handleMenu(e.target.getAttribute('data-action'));
 
+        }
+        e.stopPropagation();
+    };
     return Menu;
 })();
