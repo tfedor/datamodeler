@@ -12,7 +12,7 @@ var Attribute = (function(){
             primary: false,
             unique: false
         };
-        this._type = {
+        this._position = {
             nullable: false
         };
         this._name = new EditableText(30, 0, "Attribute", {dominantBaseline: "text-before-edge"});
@@ -42,9 +42,9 @@ var Attribute = (function(){
 
     Attribute.prototype.isNullable = function(bool) {
         if (typeof bool == 'boolean') {
-            this._type.nullable = bool;
+            this._position.nullable = bool;
         } else {
-            return this._type.nullable;
+            return this._position.nullable;
         }
     };
 
@@ -63,7 +63,7 @@ var Attribute = (function(){
     Attribute.prototype._updateType = function() {
         if (this._indexDom) {
             var str = "*";
-            if (this._type.nullable) {
+            if (this._position.nullable) {
                 str = "o";
             }
             this._typeDom.node.innerHTML = str

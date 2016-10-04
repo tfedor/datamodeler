@@ -1,15 +1,15 @@
 
 var Menu = (function(){
 
-    function Menu(type, color) {
-        this._type = type; // top | right | bottom | left
+    function Menu(namedPosition, color) {
+        this._position = namedPosition; // top | right | bottom | left
         this._color = color || "#bada55";
         this._options = [];
 
         // determines how is the position modified when attaching menu to object
         this._posModifier = { x: 0, y: 0 };
 
-        this._anchorObject = null;
+        this._menuHandler = null;
 
         this._canvas = null;
         this._dom = null;
@@ -22,7 +22,7 @@ var Menu = (function(){
         return this;
     };
 
-    Menu.prototype.attachTo = function(parentObject, offset, anchorObject) {
+    Menu.prototype.attachTo = function(parentObject, offset, menuHandler) {
         if (!this._dom) { return; }
 
         if (this._timer) {
@@ -33,7 +33,7 @@ var Menu = (function(){
         if (this._attachedTo == parentObject) { return; }
         this._attachedTo = parentObject;
 
-        this._anchorObject = anchorObject;
+        this._menuHandler = menuHandler;
 
         this._dom.insertBefore(parentObject.firstChild);
         this.reposition(offset);
@@ -43,7 +43,7 @@ var Menu = (function(){
     Menu.prototype.reposition = function(offset) {
         this._dom.attr({
             x: offset + this._posModifier.x,
-            y: this._posModifier.y * (this._type == "left" || this._type == "right" ? 0.5 : 1)
+            y: this._posModifier.y * (this._position == "left" || this._position == "right" ? 0.5 : 1)
         });
     };
 
@@ -87,11 +87,11 @@ var Menu = (function(){
 
         // create options
         var widthOffset = 0;
-        if (this._type == "right") {
+        if (this._position == "right") {
             widthOffset = tr;
         }
         var heightOffset = menuPadding[1];
-        if (this._type == "bottom") {
+        if (this._position == "bottom") {
             heightOffset += tr;
         }
 
@@ -117,7 +117,7 @@ var Menu = (function(){
         var height = 2*menuPadding[1] + this._dom.getBBox().height;
 
         var path;
-        switch(this._type) {
+        switch(this._position) {
             case "top":
                 path = "m0 0"
                     +"v"+ height
@@ -168,8 +168,8 @@ var Menu = (function(){
 
         // set size, create invisible background for mouse events
         this._dom.attr({
-            width: width   + (this._type == 'left' || this._type == 'right' ? tr : 0),
-            height: height + (this._type == 'left' || this._type == 'right' ? 0 : tr)
+            width: width   + (this._position == 'left' || this._position == 'right' ? tr : 0),
+            height: height + (this._position == 'left' || this._position == 'right' ? 0 : tr)
         });
 
         canvas.Paper.rect(0, 0, "100%", "100%")
@@ -181,7 +181,7 @@ var Menu = (function(){
 
         var modx;
         var mody;
-        switch(this._type) {
+        switch(this._position) {
             case "top":    modx = -0.5; mody = -1; break;
             case "bottom": modx = -0.5; mody =  0; break;
             case "left":   modx = -1;   mody = -0.5; break;
@@ -202,8 +202,8 @@ var Menu = (function(){
     };
 
     Menu.prototype.onClick = function(e) {
-        if (e.target.nodeName == "text" && this._anchorObject && this._anchorObject.handleMenu) {
-            this._anchorObject.handleMenu(e.target.getAttribute('data-action'));
+        if (e.target.nodeName == "text" && this._menuHandler && this._menuHandler.handleMenu) {
+            this._menuHandler.handleMenu(e.target.getAttribute('data-action'));
 
         }
         e.stopPropagation();

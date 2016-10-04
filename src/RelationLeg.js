@@ -10,6 +10,7 @@ var RelationLeg = (function(){
         this.anchorWidth = 0;
         this.dom = {
             relationContainer: null,
+            anchorContainer: null,
             anchor: null,
             leg: null,
             control: null
@@ -135,7 +136,7 @@ var RelationLeg = (function(){
 
         this._positionAnchor(this.points[0].x, this.points[0].y);
 
-        group.add(this.dom.leg, this.dom.control, this.dom.anchor);
+        group.add(this.dom.leg, this.dom.control, this.dom.anchorContainer);
         this.dom.relationContainer = group;
     };
 
@@ -193,7 +194,10 @@ var RelationLeg = (function(){
     };
 
     RelationLeg.prototype._createAnchor = function() {
+        this.dom.anchorContainer = this._canvas.Paper.g();
         this.dom.anchor = this._canvas.getRelationAnchor(this.cardinality != 1, this.identifying);
+        this.dom.anchorContainer.add(this.dom.anchor);
+
         this.anchorWidth = this.dom.anchor.getBBox().width;
 
         // add event handlers
@@ -202,14 +206,12 @@ var RelationLeg = (function(){
             that._canvas.Mouse.down(e, that, {action: 'anchor'});
         });
 
-        /*
-        this.dom.anchor.node.addEventListener("mouseenter", function(e) {
-            that._canvas.menu.RelationLeg.attachTo(that.dom.relationContainer.node, 10, that);
+        this.dom.anchorContainer.node.addEventListener("mouseenter", function(e) {
+            that._canvas.menu.RelationLeg.attachTo(that.dom.anchorContainer.node, 0, that);
         });
-        this.dom.anchor.node.addEventListener("mouseleave", function(e) {
+        this.dom.anchorContainer.node.addEventListener("mouseleave", function(e) {
             that._canvas.menu.RelationLeg.detach();
         });
-        */
     };
 
     //
@@ -266,8 +268,11 @@ var RelationLeg = (function(){
             return;
         }
 
+        this.dom.anchorContainer.attr({
+            transform: "translate("+ (Math.ceil(anchorX)) +", "+ (Math.ceil(anchorY)) +")"
+        });
         this.dom.anchor.attr({
-            transform: "translate("+ (Math.ceil(anchorX)) +", "+ (Math.ceil(anchorY)) +") rotate("+rot+")"
+            transform: "rotate("+rot+")"
         });
 
         this.points[0].x = anchorX + offsetX;
@@ -380,6 +385,28 @@ var RelationLeg = (function(){
         var params = mouse.getParams();
         if (params.action == 'newCP') {
             this._addPoint({x: mouse.x, y: mouse.y}, mouse);
+        }
+    };
+
+    RelationLeg.prototype.handleMenu = function(action) {
+        switch(action) {
+            case "identifying": this.identifying = !this.identifying; break;
+            case "optional":    this.optional    = !this.optional;    break;
+            case "cardinality": this.cardinality = !this.cardinality; break;
+        }
+
+        this.dom.anchor.remove();
+        this._createAnchor();
+        this._positionAnchor(this.points[0].x, this.points[0].y);
+
+        if (this.optional) {
+            this.dom.leg.attr({
+                strokeDasharray: "7.5 7.5"
+            });
+        } else {
+            this.dom.leg.attr({
+                strokeDasharray: ""
+            });
         }
     };
 
