@@ -1,51 +1,101 @@
+var DBSDM = DBSDM || {};
 
-var Canvas = (function($) {
+/**
+ * Canvas controller
+ * Creates canvas which is used to manipulate other elements
+ */
+DBSDM.Canvas = (function() {
 
-    function Canvas(container, svg) {
-        this._container = container;
-        this.Paper = Snap(svg);
+    function Canvas() {
+        this.id = Random.string(5);
 
+        this._container = null;
+        this._svg = null;
+        this.Paper = null;
+
+        /**
+         * Mouse controller
+         */
         this.Mouse = null;
 
-        this._sharedElements = {};
         this.menu = {};
 
-        this._newEntity = null;
         this._entities = {};
     }
 
+    Canvas.prototype.create = function() {
+        this._container = document.createElement("div");
+        this._container.className = "dbsdmCanvas";
+
+        this._svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        this._container.appendChild(this._svg);
+
+        this._defs = document.createElement("defs");
+        this._svg.appendChild(this._defs);
+
+        if (document.currentScript) {
+            document.currentScript.parentNode.insertBefore(this._container, document.currentScript);
+        } else {
+            document.body.appendChild(this._container);
+        }
+
+        this.Paper = Snap(this._svg);
+        this.Mouse = new DBSDM.Mouse(this._svg);
+
+        //this._createContextMenus();
+
+        // set up callbacks
+        var that = this;
+        this._svg.addEventListener("mousedown", (function(e) { that.Mouse.down(e, that); }));
+        this._svg.addEventListener("mousemove", (function(e) { that.Mouse.move(e); }));
+        this._svg.addEventListener("mouseup",   (function(e) { that.Mouse.up(e); }));
+    };
+
+    // shared elements for all canvas
+
+    // svg elements
+    Canvas.prototype.hasSharedElement = function(name) {
+        return document.getElementById(this.id + "." + name) != null;
+    };
+
+    Canvas.prototype.createSharedElement = function(id, element) {
+        element.node.id = this.id + "." + id;
+        element.toDefs();
+    };
+
+    Canvas.prototype.getSharedElement = function(name) {
+        if (!this.hasSharedElement(name)) { return null; }
+        return this.Paper.use("#" + this.id + "." + name);
+    };
+
+    // html elements
+    Canvas.prototype.hasSharedHTMLElement = function(name) {
+        return document.getElementById(this.id + "." + name) != null;
+    };
+
+    Canvas.prototype.createSharedHTMLElement = function(id, element) {
+        element.id = this.id + "." + id;
+        this._container.appendChild(element);
+    };
+
+    Canvas.prototype.getSharedHTMLElement = function(name) {
+        if (!this.hasSharedHTMLElement(name)) { return null; }
+        return document.getElementById(this.id + "." + name);
+    };
+
+    // event handlers
+
+    Canvas.prototype.onMouseDown = function() {
+        var ent = new DBSDM.Control.Entity(this);
+        ent.create();
+
+        this.Mouse.attachObject(ent);
+    };
+
+
+/*
     Canvas.prototype._createSharedElements = function(){
-        this._sharedElements.EntityBg =
-            this.Paper.rect(0, 0, "100%", "100%", 10, 10)
-                .attr({
-                    fill: "#A4E1FF",
-                    stroke: "#5271FF",
-                    strokeWidth: 3
-                })
-                .toDefs();
 
-        this._sharedElements.ControlRectangle =
-            this.Paper.rect(0, 0, "100%", "100%")
-                .attr({
-                    fill: "none",
-                    strokeWidth: 1,
-                    shapeRendering: "crispEdges",
-                    pointerEvents: "none",
-                    stroke: "black"
-                })
-                .toDefs();
-
-        this._sharedElements.ControlPoint =
-            this.Paper.rect(0, 0, 6, 6)
-                .attr({
-                    fill: "none",
-                    strokeWidth: 1,
-                    stroke: "black",
-                    shapeRendering: "crispEdges",
-                    transform: "translate(-3,-3)",
-                    pointerEvents: "visible"
-                })
-                .toDefs();
 
         this._sharedElements.CentralControlPoint =
             this.Paper.rect(0, 0, 6, 6)
@@ -58,12 +108,6 @@ var Canvas = (function($) {
                     pointerEvents: "visible"
                 })
                 .toDefs();
-
-        var input = document.createElement("input");
-        input.className = "editableSvgText";
-        input.type = "text";
-        this._container.appendChild(input);
-        this._sharedElements.EditableTextInput = input;
 
         // relation anchors
         this._sharedElements.anchorControl = canvas.Paper.rect(-0.5,-7.5, 10.5,16.5).attr({
@@ -142,59 +186,12 @@ var Canvas = (function($) {
         }
     };
 
-    Canvas.prototype.draw = function() {
-        this.Mouse = new Mouse(this.Paper.node);
-        this._createSharedElements();
-        this._createContextMenus();
-        for (var key in this._entities) {
-            if (this._entities.hasOwnProperty(key)) {
-                this._entities[key].draw(this);
-            }
-        }
-
-        // set up callbacks
-        var that = this;
-        this.Paper.mousedown(function(e) { that.Mouse.down(e, that); });
-        this.Paper.mousemove(function(e) { that.Mouse.move(e); });
-        this.Paper.mouseup(function(e) { that.Mouse.up(e); });
-    };
-
     Canvas.prototype.clear = function() {
         this._sharedElements = {};
         this.Paper.clear();
     };
 
-    Canvas.prototype.onMouseDown = function(e) {
-        this._newEntity = new Entity(this.Mouse.x, this.Mouse.y);
-        this._newEntity.draw(this);
-    };
-
-    Canvas.prototype.onMouseMove = function(e) {
-        if (!this._newEntity) { return; }
-
-        if (this.Mouse.dx < 0) {
-            this._newEntity.translateTo(this.Mouse.x);
-        }
-        if (this.Mouse.dy < 0) {
-            this._newEntity.translateTo(null, this.Mouse.y);
-        }
-
-        this._newEntity.resize(Math.abs(this.Mouse.dx), Math.abs(this.Mouse.dy));
-    };
-
-    Canvas.prototype.onMouseUp = function(e) {
-        if (!this._newEntity) { return; }
-        var id = this._newEntity.getId();
-        if (!this.Mouse.isDragged()) {
-            this.removeEntity(id);
-            this._newEntity = null;
-            return;
-        }
-        this._entities[id] = this._newEntity;
-        this._newEntity = null;
-
-        return true;
-    };
+*/
 
     return Canvas;
-})(jQuery);
+})();

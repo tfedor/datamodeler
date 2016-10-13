@@ -6,28 +6,73 @@
     <link rel="stylesheet" type="text/css" href="styles/reset.css">
     <link rel="stylesheet" type="text/css" href="styles/styles.css">
 
-    <script type="application/javascript" src="libs/jquery-3.1.0.min.js"></script>
+    <!--    <script type="application/javascript" src="libs/jquery-3.1.0.min.js"></script> -->
     <script type="application/javascript" src="libs/snap.svg-min.js"></script>
+
+    <!-- data -->
+    <script type="application/javascript" src="src/data/Entity.js"></script>
+    <script type="application/javascript" src="src/data/Attribute.js"></script>
+    <script type="application/javascript" src="src/data/Relation.js"></script>
+
+    <!-- view -->
+    <script type="application/javascript" src="src/view/Entity.js"></script>
+    <script type="application/javascript" src="src/view/EditableText.js"></script>
+
+    <!-- control -->
+    <script type="application/javascript" src="src/control/Entity.js"></script>
+
     <script type="application/javascript" src="src/Random.js"></script>
-    <script type="application/javascript" src="src/Mouse.js"></script>
     <script type="application/javascript" src="src/Canvas.js"></script>
+    <script type="application/javascript" src="src/Mouse.js"></script>
+
+
+<!--
     <script type="application/javascript" src="src/Entity.js"></script>
     <script type="application/javascript" src="src/EditableText.js"></script>
     <script type="application/javascript" src="src/Attribute.js"></script>
     <script type="application/javascript" src="src/RelationControl.js"></script>
     <script type="application/javascript" src="src/RelationLeg.js"></script>
     <script type="application/javascript" src="src/Menu.js"></script>
+    -->
 </head>
 <body>
 
     <a href="javascript:void(0)" onClick="canvas.clear()">clear</a>
     <a href="javascript:void(0)" onClick="canvas.clear();canvas.draw()">draw</a>
 
-    <div id="canvas" style="width:100%;height:1000px;border:1px solid red;margin:50px;">
-        <svg style="width:100%;height:100%;border:1px solid blue;"></svg>
-    </div>
-
     <script>
+
+        dv = 0;
+        console.log(dv || 1);
+
+        dv = null;
+        console.log(dv || 1);
+
+        var canvas = new DBSDM.Canvas();
+        canvas.create();
+
+
+        /*
+        var e1 = new Entity();
+        e1.setName("First");
+        e1.addAttribute(new Attribute());
+        e1.addAttribute(new Attribute());
+        e1.addAttribute(new Attribute());
+
+        var e2 = new Entity();
+        e2.setName("Second");
+
+        var r = new Relation(e1, e2);
+        r.setSource(false, true, 0);
+        e1.addRelation(r);
+        e2.addRelation(r);
+
+        console.log(e1.toString());
+        console.log(e2.toString());
+        */
+
+
+        /*
         var canvas = new Canvas(document.getElementById('canvas'), '#canvas svg');
         canvas.draw();
 
@@ -39,6 +84,7 @@
         var e2 = new Entity(800, 80);
         e2.resize(80, 60);
         e2.draw(canvas);
+        */
 
         //var r = new Relation(e1);
         //r.draw(canvas);

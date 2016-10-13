@@ -1,18 +1,43 @@
-body {
+body,input {
     font-family: Verdana, sans-serif;
 }
 
+div.dbsdmCanvas {
+    width:100%;height:1000px;border:1px solid red;margin:50px;
+    font-size: 1em;
+}
+div.dbsdmCanvas > svg {
+    width:100%;height:100%;border:1px solid blue;
+}
+
+use.e-cp-nw { cursor: nw-resize; }
+use.e-cp-n  { cursor: n-resize; }
+use.e-cp-ne { cursor: ne-resize; }
+use.e-cp-e  { cursor: e-resize; }
+use.e-cp-se { cursor: se-resize; }
+use.e-cp-s  { cursor: s-resize; }
+use.e-cp-sw { cursor: sw-resize; }
+use.e-cp-w  { cursor: w-resize; }
+
 input.editableSvgText {
     position:absolute;
-    font-size:13px;
-    padding:0 2px;
-    margin:0;
+    font-size:0.8em;
+    padding:3px 2px;
+    margin:-2px 0 0 -3px;
     border:1px solid black;
     box-shadow: 0 1px 3px 0 rgba(0,0,0,0.75);
+    height:auto;
+    box-sizing:content-box;
 }
+
 text {
-    font-size:13px;
+    font-size:0.8em;
 }
+
+
+
+
+
 
 svg {
     -webkit-touch-callout: none; /* iOS Safari */
@@ -25,10 +50,6 @@ svg {
     pointer-events: all;
 }
 
-.rsz-tl { pointer-events: all; cursor:nw-resize; }
-.rsz-tr { pointer-events: all; cursor:ne-resize; }
-.rsz-bl { pointer-events: all; cursor:sw-resize; }
-.rsz-br { pointer-events: all; cursor:se-resize; }
 
 .rsz {display:none;}
 svg:hover > .rsz {display: block;}

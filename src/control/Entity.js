@@ -1,136 +1,165 @@
+var DBSDM = DBSDM || {};
+DBSDM.Control = DBSDM.Control ||{};
 
-var Entity = (function(){
+DBSDM.Control.Entity = (function(){
+    Entity.activeEntity = null;
 
-    function Entity(x, y) {
-        this._id = Random.string(15);
-        this._position = {
-            'x': x || 0,
-            'y': y || 0
-        };
+    function Entity(canvas) {
+        this._canvas = canvas;
 
-        this._size = {
-            width: 0,
-            height: 0
-        };
+        this._model = null;
+        this._view  = null;
 
-        this._name = new EditableText("50%", 0, "Entity", {
-            textAnchor: "middle",
-            dominantBaseline: "text-before-edge"
-        });
-        this._attributes = [];
-        this._relations = [];
-
-        this._menuBlocked = false; // blocks menu attachment
-        this._menuAttached = false;
-
-        this._canvas = null;
-        this._dom = null;
+        this._new = true;
     }
 
-    Entity.prototype.getId = function() {
-        return this._id;
+    /**
+     * Create empty entity
+     */
+    Entity.prototype.create = function() {
+        this._model = new DBSDM.Data.Entity();
+        this._view = new DBSDM.View.Entity(this._model, this._canvas);
+
+        var x = this._canvas.Mouse.x;
+        var y = this._canvas.Mouse.y;
+        this._model.setPosition(x, y);
+
+        this._view.createEmpty();
     };
 
-    Entity.prototype.translateTo = function(x, y) {
-        if (x) { this._position.x = x; }
-        if (y) { this._position.y = y; }
+    /**
+     * Place entity during creation
+     * Set up initial position during canvas drag'n'drop creation
+     */
+    Entity.prototype.place = function(mouse) {
+        if (mouse.dx < 0) {
+            this._model.setPosition(mouse.x);
+        }
+        if (mouse.dy < 0) {
+            this._model.setPosition(null, mouse.y);
+        }
+        this._model.setSize(Math.abs(mouse.dx), Math.abs(mouse.dy));
+    };
 
-        if (this._dom) {
-            this._dom.attr(this._position);
+    /**
+     * Drag entity
+     */
+    Entity.prototype.drag = function(mouse) {
+        this._model.translate(mouse.rx, mouse.ry);
+    };
+
+    Entity.prototype.dragControlPoint = function(mouse, cp) {
+        switch(cp) {
+            case "nw":
+                this._model.translate(mouse.rx, mouse.ry);
+                this._model.resize(-mouse.rx, -mouse.ry);
+                break;
+            case "n":
+                this._model.translate(null, mouse.ry);
+                this._model.resize(null, -mouse.ry);
+                break;
+            case "ne":
+                this._model.translate(null, mouse.ry);
+                this._model.resize(mouse.rx, -mouse.ry);
+                break;
+            case "e":
+                this._model.resize(mouse.rx);
+                break;
+            case "se":
+                this._model.resize(mouse.rx, mouse.ry);
+                break;
+            case "s":
+                this._model.resize(null, mouse.ry);
+                break;
+            case "sw":
+                this._model.translate(mouse.rx);
+                this._model.resize(-mouse.rx, mouse.ry);
+                break;
+            case "w":
+                this._model.translate(mouse.rx);
+                this._model.resize(-mouse.rx);
+                break;
         }
     };
 
-    Entity.prototype.translateBy = function(dx, dy) {
-        if (!dx) { dx = 0 }
-        if (!dy) { dy = 0; }
-        this.translateTo(this._position.x + dx, this._position.y + dy);
-    };
-
-    Entity.prototype.resize = function(width, height) {
-        this._size.width = width;
-        this._size.height = height;
-
-        if (this._dom) {
-            this._dom.attr(this._size);
+    /**
+     * Activate entity
+     * Shows control points, menu and allows other actions
+     */
+    Entity.prototype.activate = function() {
+        if (Entity.activeEntity) {
+            Entity.activeEntity.deactivate();
         }
+        Entity.activeEntity = this;
+
+        this._view.showControls();
     };
-    Entity.prototype.resizeBy = function(dx, dy) {
-        if (!dx) {dx = 0;}
-        if (!dy) {dy = 0;}
 
-        this._size.width += dx;
-        this._size.height += dy;
-
-        if (this._dom) {
-            this._dom.attr(this._size);
+    Entity.prototype.deactivate = function() {
+        if (Entity.activeEntity == this) {
+            Entity.activeEntity = null;
+            this._view.hideControls();
         }
     };
 
-    Entity.prototype.draw = function(canvas) {
-        this._canvas = canvas;
-        this._dom = canvas.Paper.svg(this._position.x, this._position.y, this._size.width, this._size.height);
-        this._dom.attr({
-            style: "overflow:visible"
-        });
+    // Event Handlers
 
-        // create background
-        this._dom.append(
-            canvas.Paper.use(canvas.getSharedElement("EntityBg"))
-        );
+    Entity.prototype.onMouseDown = function(e, mouse) {
+        var matches = e.target.className.baseVal.match(/e-cp-(\w+)/);
+        if (matches) {
+            mouse.setParam("action", "cp");
+            mouse.setParam("cp", matches[1]);
+        }
+    };
 
-        this._dom.append(this._name.draw(canvas));
+    Entity.prototype.onMouseMove = function(e, mouse) {
 
-        for (var key in this._attributes) {
-            this._dom.append(this._attributes[key].draw(canvas));
+        if (this._new) {
+            this.place(mouse);
+        } else if (mouse.isDown()) {
+            var params = mouse.getParams();
+            if (params.action == "cp") {
+                this.dragControlPoint(mouse, params.cp);
+            } else {
+                this.drag(mouse);
+            }
         }
 
-        // set event callbacks
-        var that = this;
-
-        // drag
-        this._dom.mousedown(function(e) { canvas.Mouse.down(e, that, {action: "drag"}); });
-
-        // menu
-        this._dom.node.addEventListener("mouseenter", function() { that.attachMenu(); });
-        this._dom.node.addEventListener("mouseleave", function() { that.detachMenu(); });
-
-        // create resize control
-        this._dom.append(
-            canvas.Paper.g(
-                canvas.Paper.use(canvas.getSharedElement('ControlRectangle')),
-                canvas.Paper.use(canvas.getSharedElement('ControlPoint')).attr({class: "rsz-tl", x: 0, y: 0}),
-                canvas.Paper.use(canvas.getSharedElement('ControlPoint')).attr({class: "rsz-bl", x: 0, y: "100%"}),
-                canvas.Paper.use(canvas.getSharedElement('ControlPoint')).attr({class: "rsz-tr", x: "100%", y: 0}),
-                canvas.Paper.use(canvas.getSharedElement('ControlPoint')).attr({class: "rsz-br", x: "100%", y: "100%"})
-            )
-            .attr({
-                class: "rsz",
-                pointerEvents: "none"
-            })
-            .mousedown(function(e){
-                canvas.Mouse.down(e, that, {action: e.target.className.baseVal})
-            })
-        );
-
-        return this._dom;
+        this._view.redraw();
     };
 
-    Entity.prototype.boundingBox = function() {
-        return {
-            top: this._position.y,
-            right: this._position.x + this._size.width,
-            bottom: this._position.y + this._size.height,
-            left: this._position.x
-        };
+    Entity.prototype.onMouseUp = function(e, mouse) {
+        if (this._new) {
+            this._new = false;
+
+            // view create other elements
+            if (mouse.dx == 0 || mouse.dy == 0) {
+                this._view.remove();
+
+                if (Entity.activeEntity) {
+                    Entity.activeEntity.deactivate();
+                }
+            } else {
+                this._view.create(this);
+            }
+        } else if (!mouse.didMove()) {
+            this.activate();
+        }
     };
 
-    // relations
-    Entity.prototype.addRelation = function(relation) {
-        this._relations.push(relation);
-    };
 
-    // menu
 
+
+
+
+
+
+
+
+
+
+
+    /*
     Entity.prototype.attachMenu = function() {
         if (this._menuBlocked) { return; }
         this._menuAttached = true;
@@ -290,6 +319,7 @@ var Entity = (function(){
         }
         return true;
     };
+    */
 
     return Entity;
 })();

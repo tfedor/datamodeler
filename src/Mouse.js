@@ -1,12 +1,18 @@
+var DBSDM = DBSDM || {};
 
-var Mouse = (function(){
+/**
+ * Mouse controller
+ * Attached to given canvas, handles current mouse position and fires event to attached objects
+ * Object is attached either on mouse down, or programatically.
+ */
+DBSDM.Mouse = (function(){
 
     function Mouse(canvasNode) {
         this._node = canvasNode; // dom element coordinates are related to
 
         this._targetObject = null; // object at which the event was fired
         this._attachedObject = null;
-        this._params = null;
+        this._params = {};
 
         this._down = false;
         this._move = false;
@@ -28,22 +34,23 @@ var Mouse = (function(){
         this.ry = 0;
     }
 
-    Mouse.prototype.isDragged = function() {
-        return this._down && this._move;
-    };
-
     Mouse.prototype.attachObject = function(object, params) {
         this._attachedObject = object;
-        this._params = params;
+        this._params = params || {};
     };
 
     Mouse.prototype.detachObject = function() {
         this._attachedObject = null;
-        this._params = null;
+        this._params = {};
     };
 
     Mouse.prototype.getParams = function() {
         return this._params;
+    };
+
+    Mouse.prototype.setParam = function(name, value) {
+        console.log(this._params);
+        this._params[name] = value;
     };
 
     Mouse.prototype.getTarget = function() {
@@ -56,6 +63,14 @@ var Mouse = (function(){
         this.y = e.clientY - offset.top;
     };
 
+    Mouse.prototype.isDown = function() {
+        return this._down;
+    };
+
+    Mouse.prototype.didMove = function() {
+        return this._move;
+    };
+
     Mouse.prototype.down = function(e, object, params) {
         this._targetObject = object;
 
@@ -66,9 +81,9 @@ var Mouse = (function(){
         if (!this._attachedObject) {
             return;
         }
+        this._down = true;
         this._update(e);
 
-        this._down = true;
         this.ox = this.x;
         this.oy = this.y;
         this.dx = 0;
