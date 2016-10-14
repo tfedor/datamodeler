@@ -1,5 +1,7 @@
+var DBSDM = DBSDM || {};
+DBSDM.View = DBSDM.View ||{};
 
-var Menu = (function(){
+DBSDM.View.Menu = (function(){
 
     function Menu(namedPosition, color) {
         this._position = namedPosition; // top | right | bottom | left

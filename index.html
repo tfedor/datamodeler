@@ -5,6 +5,7 @@
     <title>Kreslítko</title>
     <link rel="stylesheet" type="text/css" href="styles/reset.css">
     <link rel="stylesheet" type="text/css" href="styles/styles.css">
+    <link rel="stylesheet" href="libs/font-awesome-4.6.3/css/font-awesome.min.css">
 
     <!--    <script type="application/javascript" src="libs/jquery-3.1.0.min.js"></script> -->
     <script type="application/javascript" src="libs/snap.svg-min.js"></script>
@@ -25,22 +26,114 @@
     <script type="application/javascript" src="src/Canvas.js"></script>
     <script type="application/javascript" src="src/Mouse.js"></script>
 
-
-<!--
-    <script type="application/javascript" src="src/Entity.js"></script>
-    <script type="application/javascript" src="src/EditableText.js"></script>
-    <script type="application/javascript" src="src/Attribute.js"></script>
-    <script type="application/javascript" src="src/RelationControl.js"></script>
-    <script type="application/javascript" src="src/RelationLeg.js"></script>
-    <script type="application/javascript" src="src/Menu.js"></script>
-    -->
+    <!--
+        <script type="application/javascript" src="src/Entity.js"></script>
+        <script type="application/javascript" src="src/EditableText.js"></script>
+        <script type="application/javascript" src="src/Attribute.js"></script>
+        <script type="application/javascript" src="src/RelationControl.js"></script>
+        <script type="application/javascript" src="src/RelationLeg.js"></script>
+        <script type="application/javascript" src="src/Menu.js"></script>
+        -->
 </head>
 <body>
+
+<div id="menu" class="contextMenu">
+    <ul>
+        <li>
+            <div class="icon"><i class="fa fa-list"></i></div>
+            Add Attribute
+        </li>
+        <li>
+            <i class="fa fa-caret-right"></i>
+            <div class="icon"><i class="fa fa-link"></i></div>
+            Add Relation
+            <ul>
+                <li>
+                    <div class="icon">&nbsp;</div>
+                    N:M
+                </li>
+                <li>
+                    <div class="icon">&nbsp;</div>
+                    N:1
+                </li>
+                <li>
+                    <div class="icon">&nbsp;</div>
+                    1:N
+                </li>
+                <li>
+                    <div class="icon">&nbsp;</div>
+                    1:1
+                </li>
+            </ul>
+        </li>
+        <li>
+            <div class="icon"><i class="fa fa-ban"></i></div>
+            Delete Entity
+        </li>
+    </ul>
+
+    <ul>
+        <li>
+            <div class="icon"><i class="fa fa-key"></i></div>
+            Primary Key
+        </li>
+        <li>
+            <div class="icon">&nbsp;</div>
+            Unique
+        </li>
+        <li>
+            <div class="icon">&nbsp;</div>
+            Nullable
+        </li>
+
+        <li>
+            <div class="icon"><i class="fa fa-ban"></i></div>
+            Delete Attribute
+        </li>
+    </ul>
+
+    <ul>
+        <li>
+            <i class="fa fa-caret-right"></i>
+            <div class="icon">&nbsp;</div>
+            Cardinality
+            <ul>
+                <li>
+                    <div class="icon">&nbsp;</div>
+                    Single
+                </li>
+                <li>
+                    <div class="icon">&nbsp;</div>
+                    Multiple
+                </li>
+            </ul>
+        </li>
+        <li>
+            <div class="icon"><i class="fa fa-square-o"></i></div>
+            Identifying
+        </li>
+        <li>
+            <div class="icon"><i class="fa fa-check-square-o"></i></div>
+            Required
+        </li>
+        <li>
+            <div class="icon"><i class="fa fa-unlink"></i></div>
+            Delete Relation
+        </li>
+    </ul>
+</div>
 
     <a href="javascript:void(0)" onClick="canvas.clear()">clear</a>
     <a href="javascript:void(0)" onClick="canvas.clear();canvas.draw()">draw</a>
 
     <script>
+
+        function test(e) {
+            document.getElementById('menu').style.top=e.clientY+"px";
+            document.getElementById('menu').style.left=e.clientX+"px";
+            e.preventDefault();
+        }
+        document.body.addEventListener("contextmenu", test);
 
         dv = 0;
         console.log(dv || 1);

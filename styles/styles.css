@@ -35,6 +35,77 @@ text {
 }
 
 
+div.contextMenu {
+    position:absolute;
+    top:40px;
+    left:40px;
+}
+
+/** menu and submenu boxes */
+div.contextMenu, div.contextMenu li ul {
+    overflow:visible;
+    background-color: #f0f0f0;
+    border: 1px solid #f5f5f5;
+    box-shadow:
+            0 0 0 1px #979797,
+            4px 4px 3px #8e8e8e;
+}
+
+/** separators */
+div.contextMenu ul {
+    border-top: 1px solid #e0e0e0;
+    border-bottom: 1px solid white;
+}
+div.contextMenu ul:first-of-type {
+    border-top-width:0
+}
+div.contextMenu ul:last-of-type {
+    border-bottom-width:0;
+}
+
+/** items */
+div.contextMenu ul li {
+    font-size:0.75rem;
+    position:relative;
+    line-height:16px;
+    white-space: nowrap;
+    padding: 3px 6px 3px 10px;
+    border:1px solid transparent;
+    border-radius:3px;
+}
+div.contextMenu ul li:hover {
+    background: linear-gradient(#f1f1f1, #e2e3e3);
+    border-color:#979797;
+}
+
+div.contextMenu ul li i {
+    line-height:16px;
+    color: #282828;
+}
+div.contextMenu i.fa-caret-right {
+    float:right;
+}
+
+div.contextMenu div.icon {
+    display:inline-block;
+    font-size:15px;
+    width:1.3em;
+}
+
+div.contextMenu li ul {
+    position:absolute;
+    left:99%;
+    top:-2px;
+    z-index:1000;
+    float:left;
+    display:none;
+}
+div.contextMenu li:hover ul {
+    display:block;
+}
+
+
+
 
 
 
