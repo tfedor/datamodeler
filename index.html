@@ -26,17 +26,18 @@
     <script type="application/javascript" src="src/Canvas.js"></script>
     <script type="application/javascript" src="src/Mouse.js"></script>
 
+    <script type="application/javascript" src="src/MenuController.js"></script>
+
     <!--
         <script type="application/javascript" src="src/Entity.js"></script>
         <script type="application/javascript" src="src/EditableText.js"></script>
         <script type="application/javascript" src="src/Attribute.js"></script>
         <script type="application/javascript" src="src/RelationControl.js"></script>
         <script type="application/javascript" src="src/RelationLeg.js"></script>
-        <script type="application/javascript" src="src/Menu.js"></script>
         -->
 </head>
 <body>
-
+<!--
 <div id="menu" class="contextMenu">
     <ul>
         <li>
@@ -122,24 +123,14 @@
         </li>
     </ul>
 </div>
+-->
 
     <a href="javascript:void(0)" onClick="canvas.clear()">clear</a>
     <a href="javascript:void(0)" onClick="canvas.clear();canvas.draw()">draw</a>
 
     <script>
 
-        function test(e) {
-            document.getElementById('menu').style.top=e.clientY+"px";
-            document.getElementById('menu').style.left=e.clientX+"px";
-            e.preventDefault();
-        }
-        document.body.addEventListener("contextmenu", test);
-
-        dv = 0;
-        console.log(dv || 1);
-
-        dv = null;
-        console.log(dv || 1);
+        DBSDM.Menu.build();
 
         var canvas = new DBSDM.Canvas();
         canvas.create();

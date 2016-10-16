@@ -77,6 +77,8 @@ DBSDM.Mouse = (function(){
         e.stopPropagation();
         if (e.button != 0 || this._attachedObject) { return; }
 
+        DBSDM.Menu.hide(); // hide menu
+
         this.attachObject(object, params);
         if (!this._attachedObject) {
             return;

@@ -46,9 +46,11 @@ DBSDM.Canvas = (function() {
 
         // set up callbacks
         var that = this;
-        this._svg.addEventListener("mousedown", (function(e) { that.Mouse.down(e, that); }));
-        this._svg.addEventListener("mousemove", (function(e) { that.Mouse.move(e); }));
-        this._svg.addEventListener("mouseup",   (function(e) { that.Mouse.up(e); }));
+        this._svg.addEventListener("mousedown", function(e) { that.Mouse.down(e, that); });
+        this._svg.addEventListener("mousemove", function(e) { that.Mouse.move(e); });
+        this._svg.addEventListener("mouseup",   function(e) { that.Mouse.up(e); });
+
+        this._svg.addEventListener("contextmenu", function(e) { DBSDM.Menu.show(e); });
     };
 
     // shared elements for all canvas

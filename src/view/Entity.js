@@ -97,8 +97,7 @@ DBSDM.View.Entity = (function(){
         this._dom.append(nameInput.getTextDom());
 
         this._dom.node.addEventListener("mousedown", function(e) { mouse.down(e, control); });
-
-        this._dom.node.addEventListener("contextmenu", function(e) { e.preventDefault(); e.stopPropagation(); });
+        this._dom.node.addEventListener("contextmenu", function(e) { DBSDM.Menu.attach(control, "entity"); });
     };
 
     Entity.prototype.redraw = function() {

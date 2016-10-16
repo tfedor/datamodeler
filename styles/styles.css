@@ -8,6 +8,7 @@ div.dbsdmCanvas {
 }
 div.dbsdmCanvas > svg {
     width:100%;height:100%;border:1px solid blue;
+    pointer-events: all;
 }
 
 use.e-cp-nw { cursor: nw-resize; }
@@ -34,15 +35,16 @@ text {
     font-size:0.8em;
 }
 
-
-div.contextMenu {
+/** MENU */
+#dbsdmContextMenu {
     position:absolute;
     top:40px;
     left:40px;
+    display:none;
 }
 
 /** menu and submenu boxes */
-div.contextMenu, div.contextMenu li ul {
+#dbsdmContextMenu, #dbsdmContextMenu li > ul {
     overflow:visible;
     background-color: #f0f0f0;
     border: 1px solid #f5f5f5;
@@ -52,47 +54,47 @@ div.contextMenu, div.contextMenu li ul {
 }
 
 /** separators */
-div.contextMenu ul {
+#dbsdmContextMenu ul + ul {
     border-top: 1px solid #e0e0e0;
+}
+#dbsdmContextMenu ul:not(:last-of-type) {
     border-bottom: 1px solid white;
-}
-div.contextMenu ul:first-of-type {
-    border-top-width:0
-}
-div.contextMenu ul:last-of-type {
-    border-bottom-width:0;
 }
 
 /** items */
-div.contextMenu ul li {
+#dbsdmContextMenu ul li {
     font-size:0.75rem;
     position:relative;
     line-height:16px;
     white-space: nowrap;
-    padding: 3px 6px 3px 10px;
+    padding: 3px 30px 3px 10px;
     border:1px solid transparent;
     border-radius:3px;
 }
-div.contextMenu ul li:hover {
+#dbsdmContextMenu ul li:hover {
     background: linear-gradient(#f1f1f1, #e2e3e3);
     border-color:#979797;
 }
+#dbsdmContextMenu ul li[data-action]:hover {
+    cursor:pointer;
+}
 
-div.contextMenu ul li i {
+#dbsdmContextMenu ul li i {
     line-height:16px;
     color: #282828;
 }
-div.contextMenu i.fa-caret-right {
-    float:right;
+#dbsdmContextMenu li > i.fa-caret-right {
+    position:absolute;
+    right:6px;
 }
 
-div.contextMenu div.icon {
+#dbsdmContextMenu div.icon {
     display:inline-block;
     font-size:15px;
     width:1.3em;
 }
 
-div.contextMenu li ul {
+#dbsdmContextMenu li ul {
     position:absolute;
     left:99%;
     top:-2px;
@@ -100,28 +102,29 @@ div.contextMenu li ul {
     float:left;
     display:none;
 }
-div.contextMenu li:hover ul {
+#dbsdmContextMenu li:hover > ul {
     display:block;
 }
 
 
-
-
-
-
-
-svg {
+/** turn off text selectino */
+div.dbsdmCanvas > svg, #dbsdmContextMenu {
     -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none;   /* Chrome/Safari/Opera */
     -moz-user-select: none;      /* Firefox */
     -ms-user-select: none;       /* Internet Explorer/Edge */
-    user-select: none;           /* Non-prefixed version, currently
-                                  not supported by any browser */
-
-    pointer-events: all;
+    user-select: none;
 }
 
 
+
+
+
+
+
+
+
+/*
 .rsz {display:none;}
 svg:hover > .rsz {display: block;}
 
@@ -132,6 +135,6 @@ svg:hover > .rsz {display: block;}
 
 
 .hidden { display:none; }
-
+*/
 /*g.relation .cp { visibility: hidden; }
 g.relation.over .cp { visibility: visible; }*/

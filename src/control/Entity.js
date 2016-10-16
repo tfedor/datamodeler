@@ -102,6 +102,27 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
+    Entity.prototype._delete = function() {
+        this._view.remove();
+        // TODO this._model
+    };
+
+    // Menu Handlers
+    Entity.prototype.handleMenu = function(action) {
+        switch(action) {
+            case "delete":
+                this._delete();
+                break;
+            case "attr":
+                break;
+            case "rel-nm":
+            case "rel-n1":
+            case "rel-1n":
+            case "rel-11":
+                break;
+        }
+    };
+
     // Event Handlers
 
     Entity.prototype.onMouseDown = function(e, mouse) {
