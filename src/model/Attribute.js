@@ -1,10 +1,10 @@
 var DBSDM = DBSDM || {};
-DBSDM.Data = DBSDM.Data ||{};
+DBSDM.Model = DBSDM.Model ||{};
 
 /**
- * Attribute data class
+ * Attribute model class
  */
-DBSDM.Data.Attribute = (function(){
+DBSDM.Model.Attribute = (function(){
 
     function Attribute(name) {
         this._name = name || "Attribute";
@@ -13,27 +13,50 @@ DBSDM.Data.Attribute = (function(){
         this._nullable = false;
     }
 
-    Attribute.prototype.isPrimary = function(bool) {
+    Attribute.prototype.getName = function() {
+        return this._name;
+    };
+
+    Attribute.prototype.setName = function(name) {
+        this._name = name;
+    };
+
+    //
+    Attribute.prototype.isPrimary = function() {
+        return this._primary;
+    };
+
+    Attribute.prototype.setPrimary = function(bool) {
         if (typeof bool == 'boolean') {
-            this.primary = bool;
-        } else {
-            return this.primary;
+            this._primary = bool;
+            if (bool) {
+                this._unique = false;
+            }
         }
     };
 
+    //
     Attribute.prototype.isUnique = function(bool) {
+        return this._unique;
+    };
+
+    Attribute.prototype.setUnique = function(bool) {
         if (typeof bool == 'boolean') {
-            this._index.unique = bool;
-        } else {
-            return this._index.unique;
+            this._unique = bool;
+            if (bool) {
+                this._primary = false;
+            }
         }
     };
 
-    Attribute.prototype.isNullable = function(bool) {
+    //
+    Attribute.prototype.isNullable = function() {
+        return this._nullable;
+    };
+
+    Attribute.prototype.setNullable = function(bool) {
         if (typeof bool == 'boolean') {
-            this.nullable = bool;
-        } else {
-            return this.nullable;
+            this._nullable = bool;
         }
     };
 

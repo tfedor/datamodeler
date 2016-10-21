@@ -8,23 +8,28 @@
     <link rel="stylesheet" href="libs/font-awesome-4.6.3/css/font-awesome.min.css">
 
     <!--    <script type="application/javascript" src="libs/jquery-3.1.0.min.js"></script> -->
-    <script type="application/javascript" src="libs/snap.svg-min.js"></script>
+    <!--    <script type="application/javascript" src="libs/snap.svg-min.js"></script> -->
 
-    <!-- data -->
-    <script type="application/javascript" src="src/data/Entity.js"></script>
-    <script type="application/javascript" src="src/data/Attribute.js"></script>
-    <script type="application/javascript" src="src/data/Relation.js"></script>
+    <!-- model -->
+    <script type="application/javascript" src="src/model/Entity.js"></script>
+    <script type="application/javascript" src="src/model/Attribute.js"></script>
+    <script type="application/javascript" src="src/model/AttributeList.js"></script>
+    <script type="application/javascript" src="src/model/Relation.js"></script>
 
     <!-- view -->
-    <script type="application/javascript" src="src/view/Entity.js"></script>
     <script type="application/javascript" src="src/view/EditableText.js"></script>
+    <script type="application/javascript" src="src/view/Entity.js"></script>
+    <script type="application/javascript" src="src/view/Attribute.js"></script>
 
     <!-- control -->
     <script type="application/javascript" src="src/control/Entity.js"></script>
+    <script type="application/javascript" src="src/control/Attribute.js"></script>
+    <script type="application/javascript" src="src/control/AttributeList.js"></script>
 
     <script type="application/javascript" src="src/Random.js"></script>
     <script type="application/javascript" src="src/Canvas.js"></script>
     <script type="application/javascript" src="src/Mouse.js"></script>
+    <script type="application/javascript" src="src/Element.js"></script>
 
     <script type="application/javascript" src="src/MenuController.js"></script>
 
@@ -127,6 +132,47 @@
 
     <a href="javascript:void(0)" onClick="canvas.clear()">clear</a>
     <a href="javascript:void(0)" onClick="canvas.clear();canvas.draw()">draw</a>
+
+<!--
+<svg width="100%" height="500">
+    <defs>
+        <linearGradient id="Gradient1"  x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#eaeaea" stop-opacity="1"/>
+        </linearGradient>
+    </defs>
+
+    <rect x="0" y="0" width="100%" height="100%" fill="#a4e1ff"></rect>
+    <text x="10" y="50" style="font-size:0.65em">
+        <tspan style="font-family:'Courier New';font-size:1.2em">#</tspan>
+        <tspan dy="2px" style="font-family:'Courier New';font-size:1.2em">*</tspan>
+        <tspan dy="-2px">Attribute</tspan>
+    </text>
+    <text x="10" y="65" style="font-size:0.65em">
+        <tspan style="font-family:'Courier New';font-size:1.2em"> </tspan>
+        <tspan dy="-1px" style="font-family:'Courier New';font-size:1.2em">o</tspan>
+        <tspan dy="1px">Attribute</tspan>
+    </text>
+
+    <svg class="attr" x="10" y="80" width="200" height="18">
+        <rect x="0" y="0" width="100%" height="100%" rx="4" ry="4" fill="url(#Gradient1)" stroke-width="1" stroke="#5271ff"></rect>
+        <text x="10" y="50%" style="font-size:0.65em;dominant-baseline:central">
+            <tspan style="font-family:'Courier New';font-size:1.2em">U</tspan>
+            <tspan dy="-1px" style="font-family:'Courier New';font-size:1.2em">o</tspan>
+            <tspan dy="1px">Attribute</tspan>
+        </text>
+    </svg>
+
+    <svg class="attr" x="10" y="98" width="200" height="18">
+        <rect x="0" y="0" width="100%" height="100%" rx="4" ry="4" fill="url(#Gradient1)" stroke-width="1" stroke="#5271ff"></rect>
+        <text x="10" y="50%" style="font-size:0.65em;dominant-baseline:central">
+            <tspan style="font-family:'Courier New';font-size:1.2em">#</tspan>
+            <tspan dy="2px" style="font-family:'Courier New';font-size:1.2em">*</tspan>
+            <tspan dy="-2px">Attribute</tspan>
+        </text>
+    </svg>
+</svg>
+-->
 
     <script>
 

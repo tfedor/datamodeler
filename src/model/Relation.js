@@ -1,10 +1,10 @@
 var DBSDM = DBSDM || {};
-DBSDM.Data = DBSDM.Data ||{};
+DBSDM.Model = DBSDM.Model ||{};
 
 /**
- * Relation data class
+ * Relation model class
  */
-DBSDM.Data.Relation = (function(){
+DBSDM.Model.Relation = (function(){
 
     function Relation(sourceEntity, targetEntity) {
         this._source = {

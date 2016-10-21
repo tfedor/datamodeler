@@ -52,8 +52,10 @@ DBSDM.Menu = {
         menu: null,
         sections: {}
     },
-    _handlers: {},
-    _attached: false,
+    _handlers: {
+        attached: {},
+        active: {}
+    },
 
     build: function() {
         function createIconElement(icon) {
@@ -122,29 +124,33 @@ DBSDM.Menu = {
      * */
     attach: function(handler, section) {
         if (!this._dom.sections.hasOwnProperty(section)) { return; }
-        this._handlers[section] = handler;
+        this._handlers.attached[section] = handler;
         this._dom.sections[section].style.display = "none";
-
-        this._attached = true;
+        console.log(this._handlers.attached);
     },
 
     show: function(e) {
-        if (!this._attached) { // check, whether new handlers were attached since last show
+        if (this._handlers.attached.length == 0) { // check, whether new handlers were attached since last show
             this.hide();
             return;
         }
-        this._attached = false;
+        this._handlers.active = {};
+        Object.assign(this._handlers.active, this._handlers.attached);
+        this._handlers.attached = {};
 
         var show = false;
         for (var section in this._dom.sections) {
-            if (this._dom.sections.hasOwnProperty(section) && this._handlers.hasOwnProperty(section)) {
+            if (this._dom.sections.hasOwnProperty(section) && this._handlers.active.hasOwnProperty(section)) {
                 this._dom.sections[section].style.display = "block";
                 show = true;
             } else {
                 this._dom.sections[section].style.display = "none";
             }
         }
-        if (!show) { return; }
+        if (!show) {
+            this.hide();
+            return;
+        }
 
         var doc = document.documentElement;
         var left = e.clientX + (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0);
@@ -159,7 +165,6 @@ DBSDM.Menu = {
 
     hide: function() {
         this._dom.menu.style.display = "none";
-        this._handlers = {};
     },
 
     /** Event Handlers */
@@ -176,8 +181,8 @@ DBSDM.Menu = {
         while (node && node.dataset && !(handler = node.dataset.handler)) {
             node = node.parentNode;
         }
-        if (handler && this._handlers[handler] && this._handlers[handler].handleMenu) {
-            this._handlers[handler].handleMenu(action);
+        if (handler && this._handlers.active[handler] && this._handlers.active[handler].handleMenu) {
+            this._handlers.active[handler].handleMenu(action);
             this.hide();
         }
     }

@@ -9,16 +9,17 @@ div.dbsdmCanvas {
 div.dbsdmCanvas > svg {
     width:100%;height:100%;border:1px solid blue;
     pointer-events: all;
+    font-size:15px;
 }
 
-use.e-cp-nw { cursor: nw-resize; }
-use.e-cp-n  { cursor: n-resize; }
-use.e-cp-ne { cursor: ne-resize; }
-use.e-cp-e  { cursor: e-resize; }
-use.e-cp-se { cursor: se-resize; }
-use.e-cp-s  { cursor: s-resize; }
-use.e-cp-sw { cursor: sw-resize; }
-use.e-cp-w  { cursor: w-resize; }
+use.e-cp-nw { cursor: nwse-resize; }
+use.e-cp-n  { cursor: ns-resize; }
+use.e-cp-ne { cursor: nesw-resize; }
+use.e-cp-e  { cursor: ew-resize; }
+use.e-cp-se { cursor: nwse-resize; }
+use.e-cp-s  { cursor: ns-resize; }
+use.e-cp-sw { cursor: nesw-resize; }
+use.e-cp-w  { cursor: ew-resize; }
 
 input.editableSvgText {
     position:absolute;
@@ -29,10 +30,6 @@ input.editableSvgText {
     box-shadow: 0 1px 3px 0 rgba(0,0,0,0.75);
     height:auto;
     box-sizing:content-box;
-}
-
-text {
-    font-size:0.8em;
 }
 
 /** MENU */
@@ -116,10 +113,47 @@ div.dbsdmCanvas > svg, #dbsdmContextMenu {
     user-select: none;
 }
 
+/** ENTITY */
+text.entity-name {
+    fill: blue;
+    font-size: 0.75em;
+}
+
+/** ATTRIBUTE */
+svg.attr {
+    cursor: grab;
+    cursor: -webkit-grab;
+}
+svg.attr.dragged, svg.attr.dragged * {
+    cursor: grabbing;
+    cursor: -webkit-grabbing;
+}
+
+svg.attr text {
+    font-size: 0.65em;
+    dominant-baseline: central;
+    cursor: text;
+}
+tspan.attr-index, tspan.attr-nullable {
+    font-size: 1.2em;
+    font-family: "Courier New", monospace;
+    cursor: grab;
+}
+tspan.attr-index {
+    fill: blue;
+}
+tspan.attr-nullable {
+    fill: red;
+}
+
+use.attr-bg { visibility: hidden; }
+svg.attr:hover use.attr-bg { visibility: visible; }
 
 
 
 
+/*svg.attr rect {display:none;}
+svg.attr:hover rect {display:block;}*/
 
 
 

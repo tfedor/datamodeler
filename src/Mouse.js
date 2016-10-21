@@ -49,7 +49,6 @@ DBSDM.Mouse = (function(){
     };
 
     Mouse.prototype.setParam = function(name, value) {
-        console.log(this._params);
         this._params[name] = value;
     };
 

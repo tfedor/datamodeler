@@ -2,24 +2,28 @@ var DBSDM = DBSDM || {};
 DBSDM.Control = DBSDM.Control ||{};
 
 DBSDM.Control.Entity = (function(){
+    var ns = DBSDM;
+
     Entity.activeEntity = null;
 
     function Entity(canvas) {
         this._canvas = canvas;
 
-        this._model = null;
-        this._view  = null;
+        this._model = new ns.Model.Entity();
+        this._attributeList = new ns.Control.AttributeList(this._model.getAttributeList(), this._canvas, this);
+        this._view = new ns.View.Entity(this._model, this._canvas);
 
         this._new = true;
     }
+
+    Entity.prototype.getDom = function() {
+        return this._view.getDom();
+    };
 
     /**
      * Create empty entity
      */
     Entity.prototype.create = function() {
-        this._model = new DBSDM.Data.Entity();
-        this._view = new DBSDM.View.Entity(this._model, this._canvas);
-
         var x = this._canvas.Mouse.x;
         var y = this._canvas.Mouse.y;
         this._model.setPosition(x, y);
@@ -75,7 +79,7 @@ DBSDM.Control.Entity = (function(){
                 this._model.translate(mouse.rx);
                 this._model.resize(-mouse.rx, mouse.ry);
                 break;
-            case "w":
+            case "width":
                 this._model.translate(mouse.rx);
                 this._model.resize(-mouse.rx);
                 break;
@@ -114,6 +118,7 @@ DBSDM.Control.Entity = (function(){
                 this._delete();
                 break;
             case "attr":
+                this._attributeList.createAttribute();
                 break;
             case "rel-nm":
             case "rel-n1":

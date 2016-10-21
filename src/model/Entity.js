@@ -1,20 +1,21 @@
 var DBSDM = DBSDM || {};
-DBSDM.Data = DBSDM.Data ||{};
+DBSDM.Model = DBSDM.Model ||{};
 
 /**
- * Entity data class
+ * Entity model class
  */
-DBSDM.Data.Entity = (function(){
+DBSDM.Model.Entity = (function(){
+    var ns = DBSDM;
 
     function Entity(name) {
         this._name = name || "Entity";
-        this._attributes = [];
+        this._attributes = new ns.Model.AttributeList();
         this._relations = [];
         this._transform = {
             x: 0,
             y: 0,
-            w: 0,
-            h: 0
+            width: 0,
+            height: 0
         }
     }
 
@@ -26,8 +27,8 @@ DBSDM.Data.Entity = (function(){
         this._name = name;
     };
 
-    Entity.prototype.addAttribute = function(attribute) {
-        this._attributes.push(attribute);
+    Entity.prototype.getAttributeList = function() {
+        return this._attributes;
     };
 
     Entity.prototype.addRelation = function(relation) {
@@ -45,13 +46,13 @@ DBSDM.Data.Entity = (function(){
     };
 
     Entity.prototype.setSize = function(w, h) {
-        this._transform.w = (w != null ? w : this._transform.w);
-        this._transform.h = (h != null ? h : this._transform.h);
+        this._transform.width = (w != null ? w : this._transform.width);
+        this._transform.height = (h != null ? h : this._transform.height);
     };
 
     Entity.prototype.resize = function(dw, dh) {
-        this._transform.w += (dw != null ? dw : 0);
-        this._transform.h += (dh != null ? dh : 0);
+        this._transform.width += (dw != null ? dw : 0);
+        this._transform.height += (dh != null ? dh : 0);
     };
 
     Entity.prototype.getTransform = function() {
@@ -62,8 +63,8 @@ DBSDM.Data.Entity = (function(){
         return {
             left: this._transform.x,
             top: this._transform.y,
-            right: this._transform.x + this._transform.w,
-            bottom: this._transform.y + this._transform.h
+            right: this._transform.x + this._transform.width,
+            bottom: this._transform.y + this._transform.height
         };
     };
 

@@ -2,11 +2,14 @@ var DBSDM = DBSDM || {};
 DBSDM.View = DBSDM.View ||{};
 
 DBSDM.View.EditableText = (function(){
+    var ns = DBSDM;
 
-    function EditableText(canvas, x, y, properties, getHandler, setHandler) {
+    function EditableText(canvas, x, y, properties, getHandler, setHandler, el) {
         this._canvas = canvas;
 
-        this._properties = properties || {};
+        this._properties = Object.assign({
+            dominantBaseline: "text-before-edge"
+        }, (properties || {}));
 
         // handlers
         this._getHandler = getHandler;
@@ -15,14 +18,19 @@ DBSDM.View.EditableText = (function(){
         // dom
         this._createSharedElements();
 
-        this._text = canvas.Paper.text(x, y, this._getValue())
-            .attr(this._properties);
+        if (el == "tspan") {
+            this._text = ns.Element.el("tspan", this._properties);
+            this._text.innerHTML = this._getValue();
+        } else {
+            this._text = ns.Element.text(x, y, this._getValue(), this._properties);
+        }
 
         this._input = this._canvas.getSharedHTMLElement("EditableText.Input");
         this._hideInput();
 
         var that = this;
-        this._text.mousedown(function(e) { that._canvas.Mouse.down(e, that); });
+        //this._text.addEventListener("mousedown", function(e) { that._canvas.Mouse.down(e, that); });
+        this._text.addEventListener("click", function(e) { that._showInput(); });
     }
 
     EditableText.prototype._createSharedElements = function() {
@@ -49,29 +57,31 @@ DBSDM.View.EditableText = (function(){
         if (value == "") { return; }
 
         this._setHandler(value);
-        this._text.node.innerHTML = value;
+        this._text.innerHTML = value;
     };
 
     /** Input handling */
 
     EditableText.prototype._showInput = function() {
-        var rect = this._text.node.getBoundingClientRect();
+        var rect = this._text.getBoundingClientRect();
         var x = Math.floor(rect.left + (document.documentElement.scrollLeft || document.body.scrollLeft));
         var y = Math.floor(rect.top + (document.documentElement.scrollTop || document.body.scrollTop));
 
         var offset = Math.ceil(rect.width * 0.2); // offset size as percentage of text width
         var w = Math.ceil(rect.width) + offset;
 
+        // TODO
         var align = "left";
         if (this._properties.textAnchor && this._properties.textAnchor == "middle") {
             align = "center";
-            w += offset;
+//            width += offset;
             x -= offset;
         }
 
         this._input.style.left   = x + "px";
         this._input.style.top    = y + "px";
-        this._input.style.width  = w + "px";
+        // TODO this._input.style.width  = width + "px";
+        this._input.size = this._text.textContent.length * 1.2;
         this._input.style.textAlign = align;
 
         // set value
