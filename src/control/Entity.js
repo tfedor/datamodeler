@@ -3,6 +3,7 @@ DBSDM.Control = DBSDM.Control ||{};
 
 DBSDM.Control.Entity = (function(){
     var ns = DBSDM;
+    var Enum = ns.Enums;
 
     Entity.activeEntity = null;
 
@@ -111,6 +112,20 @@ DBSDM.Control.Entity = (function(){
         // TODO this._model
     };
 
+    Entity.prototype.getVisualCenter = function() {
+        var transform = this._model.getTransform();
+        return {
+            x: transform.x + transform.width*0.5,
+            y: transform.y + transform.height*0.5
+        };
+    };
+
+    // Relation creation
+    Entity.prototype._createRelation = function(sourceCardinality, targetCardinality) {
+        var control = new ns.Control.Relation(canvas, this, sourceCardinality, targetCardinality);
+        this._canvas.Mouse.attachObject(control);
+    };
+
     // Menu Handlers
     Entity.prototype.handleMenu = function(action) {
         switch(action) {
@@ -120,11 +135,10 @@ DBSDM.Control.Entity = (function(){
             case "attr":
                 this._attributeList.createAttribute();
                 break;
-            case "rel-nm":
-            case "rel-n1":
-            case "rel-1n":
-            case "rel-11":
-                break;
+            case "rel-nm": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.MANY); break;
+            case "rel-n1": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.ONE);  break;
+            case "rel-1n": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break;
+            case "rel-11": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.ONE);  break;
         }
     };
 
@@ -186,49 +200,6 @@ DBSDM.Control.Entity = (function(){
 
 
     /*
-    Entity.prototype.attachMenu = function() {
-        if (this._menuBlocked) { return; }
-        this._menuAttached = true;
-        canvas.menu.Entity.attachTo(this._dom.node, this._size.width/2, this);
-    };
-
-    Entity.prototype.detachMenu = function() {
-        if (this._menuBlocked) { return; }
-        canvas.menu.Entity.detach();
-        this._menuAttached = false;
-    };
-
-    Entity.prototype.handleMenu = function(action) {
-        if (action == "newAttribute") {
-            this.createAttribute();
-        } else if (action == "newRelation") {
-            this.createRelation();
-        } else if (action == "delete") {
-            this._canvas.removeEntity(this._id);
-
-            if (this._menuAttached) {
-                this._canvas.menu.Entity.detach();
-            }
-
-            if (this._dom) {
-                this._dom.remove();
-            }
-        }
-    };
-
-    Entity.prototype.createAttribute = function() {
-        var atr = new Attribute(this, this._attributes.length);
-        this._attributes.push(atr);
-        this._dom.append(atr.draw(this._canvas));
-    };
-
-    Entity.prototype.deleteAttribute = function(order) {
-        this._attributes.splice(order, 1);
-        for (var i=order; i<this._attributes.length; i++) {
-            this._attributes[i].reorder(i);
-        }
-    };
-
     Entity.prototype.createRelation = function() {
         var control = new RelationControl(canvas, this);
         control.draw(this._position.x + this._size.width / 2, this._position.y + this._size.height / 2);

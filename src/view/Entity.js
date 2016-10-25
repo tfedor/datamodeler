@@ -120,7 +120,6 @@ DBSDM.View.Entity = (function(){
     };
 
 
-
     Entity.prototype.createListeners = function() {
 
         /*

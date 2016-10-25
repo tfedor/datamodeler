@@ -128,7 +128,7 @@ DBSDM.Mouse = (function(){
         if (this._attachedObject.onMouseUp) {
             this._attachedObject.onMouseUp(e, this);
         }
-        this._attachedObject = null;
+        this.detachObject();
 
         this._down = false;
         this._move = false;
