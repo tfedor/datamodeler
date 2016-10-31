@@ -35,5 +35,15 @@ DBSDM.Model.AttributeList = (function(){
         return this._list.length;
     };
 
+
+    AttributeList.prototype.toString = function() {
+        var str = "";
+        for (var i in this._list) {
+            str += " " + this._list[i].toString() + "\n";
+        }
+        return str;
+    };
+
+
     return AttributeList;
 })();

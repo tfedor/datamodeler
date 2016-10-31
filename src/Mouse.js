@@ -134,5 +134,28 @@ DBSDM.Mouse = (function(){
         this._move = false;
     };
 
+
+    Mouse.prototype.enter = function(e, object) {
+        this._targetObject = object;
+
+        e.stopPropagation();
+        if (e.button != 0 || this._attachedObject) { return; }
+
+        if (this._attachedObject && this._attachedObject.onMouseEnter) {
+            this._attachedObject.onMouseEnter(e, this);
+        }
+    };
+
+    Mouse.prototype.leave = function(e) {
+        this._targetObject = null;
+
+        e.stopPropagation();
+        if (e.button != 0 || this._attachedObject) { return; }
+
+        if (this._attachedObject && this._attachedObject.onMouseLeave) {
+            this._attachedObject.onMouseLeave(e, this);
+        }
+    };
+
     return Mouse;
 })();

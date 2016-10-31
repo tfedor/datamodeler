@@ -89,6 +89,8 @@ DBSDM.View.EditableText = (function(){
         this._input.focus();
         this._input.value = this._getValue();
 
+        this._input.style.display = "block";
+
         // set input handlers
         var that = this;
         this._input.onkeydown = function(e) { that._keyPressHandler(e); };
@@ -96,7 +98,7 @@ DBSDM.View.EditableText = (function(){
     };
 
     EditableText.prototype._hideInput = function() {
-        this._input.style = "display:hidden";
+        this._input.style.display = "none";
     };
 
     EditableText.prototype.onMouseUp = function(e, mouse) {

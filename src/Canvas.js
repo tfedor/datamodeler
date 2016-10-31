@@ -101,60 +101,6 @@ DBSDM.Canvas = (function() {
 
 
 /*
-    Canvas.prototype._createSharedElements = function(){
-
-
-        this._sharedElements.CentralControlPoint =
-            this.Paper.rect(0, 0, 6, 6)
-                .attr({
-                    fill: "black",
-                    strokeWidth: 1,
-                    stroke: "black",
-                    shapeRendering: "crispEdges",
-                    transform: "translate(-3,-3)",
-                    pointerEvents: "visible"
-                })
-                .toDefs();
-
-        // relation anchors
-        this._sharedElements.anchorControl = canvas.Paper.rect(-0.5,-7.5, 10.5,16.5).attr({
-            fill: 'none',
-            stroke:'none'
-        }).toDefs();
-        this._sharedElements.anchorBase = canvas.Paper.polyline(0.5,0.5, 10.5,0.5).attr({
-            fill: 'none',
-            stroke:'black',
-            strokeWidth: 1,
-            shapeRendering: 'auto'
-        }).toDefs();
-        this._sharedElements.anchorMulti = canvas.Paper.polyline(0.5,-7.5, 10.5,0.5, 0.5,8.5).attr({
-            fill: 'none',
-            stroke:'black',
-            strokeWidth: 1,
-            shapeRendering: 'auto'
-        }).toDefs();
-        this._sharedElements.anchorIdentifying = canvas.Paper.polyline(10.5,-7.5, 10.5,7.5).attr({
-            fill: 'none',
-            stroke:'black',
-            strokeWidth: 1,
-            shapeRendering: 'auto'
-        }).toDefs();
-    };
-
-    Canvas.prototype.getRelationAnchor = function(multi, identifying) {
-        var g = this.Paper.g(
-            this.Paper.use(this.getSharedElement('anchorControl')),
-            this.Paper.use(this.getSharedElement('anchorBase'))
-        );
-        if (multi) {
-            g.add(this.Paper.use(this.getSharedElement('anchorMulti')));
-        }
-        if (identifying) {
-            g.add(this.Paper.use(this.getSharedElement('anchorIdentifying')));
-        }
-        return g;
-    };
-
     Canvas.prototype.removeEntity =  function(id) {
         if (this._entities.hasOwnProperty(id)) {
             delete this._entities[id];

@@ -12,6 +12,7 @@ DBSDM.Control.Entity = (function(){
 
         this._model = new ns.Model.Entity();
         this._attributeList = new ns.Control.AttributeList(this._model.getAttributeList(), this._canvas, this);
+        this._relationLegList = [];
         this._view = new ns.View.Entity(this._model, this._canvas);
 
         this._new = true;
@@ -51,6 +52,8 @@ DBSDM.Control.Entity = (function(){
      */
     Entity.prototype.drag = function(mouse) {
         this._model.translate(mouse.rx, mouse.ry);
+
+        // TODO translate attached relations
     };
 
     Entity.prototype.dragControlPoint = function(mouse, cp) {
@@ -85,6 +88,8 @@ DBSDM.Control.Entity = (function(){
                 this._model.resize(-mouse.rx);
                 break;
         }
+
+        // TODO translate attached relations
     };
 
     /**
@@ -120,10 +125,97 @@ DBSDM.Control.Entity = (function(){
         };
     };
 
-    // Relation creation
+    Entity.prototype.getEdges = function() {
+        var transform = this._model.getTransform();
+        return {
+            top: transform.y,
+            right: transform.x + transform.width,
+            bottom: transform.y + transform.height,
+            left: transform.x
+        };
+    };
+
+    // Relations
     Entity.prototype._createRelation = function(sourceCardinality, targetCardinality) {
         var control = new ns.Control.Relation(canvas, this, sourceCardinality, targetCardinality);
         this._canvas.Mouse.attachObject(control);
+    };
+
+    Entity.prototype.addRelationLeg = function(relationLegControl) {
+        this._relationLegList.push(relationLegControl);
+        this._model.addRelation(relationLegControl.getModel());
+    };
+
+    Entity.prototype.removeRelationLeg = function(relationLegControl) {
+        var index = null;
+        for (var i in this._relationLegList) {
+            if (this._relationLegList[i] == relationLegControl) {
+                index = i;
+                break;
+            }
+        }
+        if (index != null) {
+            this._relationLegList.splice(index, 1);
+            this._model.removeRelation(relationLegControl.getModel());
+        }
+    };
+
+    Entity.prototype._getMaxEdgeInterval = function(edge) {
+        var offset = 10; // TODO constants
+        var edgeStart, edgeEnd;
+
+        var edges = this.getEdges();
+
+        if ((edge & 1) == 0) {  // top, bottom
+            edgeStart = edges.left + offset;
+            edgeEnd = edges.right - offset;
+        } else {
+            edgeStart = edges.top + offset;
+            edgeEnd = edges.bottom - offset;
+        }
+
+        // add positions of current relation anchors
+        var positions = [];
+        positions.push(edgeStart); // minimal position of the edge
+
+        for (var i=0; i<this._relationLegList.length; i++) {
+            var anchor = this._relationLegList[i].getAnchorPosition();
+            if (anchor.edge == edge) {
+                positions.push( ((edge & 1) == 0 ? anchor.x : anchor.y) );
+            }
+        }
+
+        positions.push(edgeEnd); // maximal position of the edge
+        positions.sort(function(a, b) {
+            return a-b;
+        });
+
+        // pick position - find max interval and split it in half = new anchor position
+        var index = 1;
+        var maxLength = 0;
+        for (i=index; i<positions.length; i++) {
+            var len = positions[i] - positions[i-1];
+            if (len >= maxLength) {
+                index = i;
+                maxLength = len;
+            }
+        }
+
+        return [positions[index-1], positions[index], maxLength];
+    };
+
+    Entity.prototype.getEdgePosition = function(edge) {
+
+        var edges = this.getEdges();
+        var interval = this._getMaxEdgeInterval(edge);
+        var newPosition = Math.round((interval[0] + interval[1]) / 2);
+
+        switch (edge) {
+            case Enum.Edge.TOP:    return {x: newPosition, y: edges.top}; break;
+            case Enum.Edge.RIGHT:  return {x: edges.right, y: newPosition}; break;
+            case Enum.Edge.BOTTOM: return {x: newPosition, y: edges.bottom}; break;
+            case Enum.Edge.LEFT:   return {x: edges.left, y: newPosition}; break;
+        }
     };
 
     // Menu Handlers
@@ -195,67 +287,7 @@ DBSDM.Control.Entity = (function(){
 
 
 
-
-
-
-
     /*
-    Entity.prototype.createRelation = function() {
-        var control = new RelationControl(canvas, this);
-        control.draw(this._position.x + this._size.width / 2, this._position.y + this._size.height / 2);
-        this._canvas.Mouse.attachObject(control);
-    };
-
-    Entity.prototype.getEdgePosition = function(edge) {
-        var offset = 10;
-        var binWidth = 15;
-        var edgeLength;
-        var edgeStart;
-
-        if (edge == "top" || edge == "bottom") {
-            edgeLength = this._size.width;
-            edgeStart = this._position.x + offset;
-        } else {
-            edgeLength = this._size.height;
-            edgeStart = this._position.y + offset;
-        }
-
-        var binCount = Math.round((edgeLength - 2*offset) / binWidth);
-        var bins = new Array(binCount);
-        bins.fill(0);
-
-        var anchorPos;
-        var bin;
-        for(var key in this._relations) {
-            var relation = this._relations[key];
-
-            var anchor = relation.getAnchorPosition();
-            if (anchor.edge != edge) { continue }
-            if (edge == "top" || edge == "bottom") {
-                anchorPos = anchor.x;
-            } else {
-                anchorPos = anchor.y;
-            }
-
-            bin = Math.floor((anchorPos - edgeStart) / binWidth);
-            bins[bin]++;
-        }
-
-        var centerBin = Math.round(binCount/2);
-        var minBin = 0;
-        for (var i=centerBin; i<centerBin + binCount; i++) {
-            bin = i % binCount;
-            if (bins[bin] == 0) {
-                minBin = bin;
-                break;
-            }
-            if (bins[bin] < bins[minBin]) {
-                minBin = bin;
-            }
-        }
-
-        return edgeStart + offset + minBin * binWidth;
-    };
 
     // handlers
 

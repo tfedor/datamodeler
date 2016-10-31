@@ -17,19 +17,22 @@
     <script type="application/javascript" src="src/model/Attribute.js"></script>
     <script type="application/javascript" src="src/model/AttributeList.js"></script>
     <script type="application/javascript" src="src/model/Relation.js"></script>
-    <script type="application/javascript" src="src/model/RelationPart.js"></script>
+    <script type="application/javascript" src="src/model/RelationLeg.js"></script>
 
     <!-- view -->
     <script type="application/javascript" src="src/view/EditableText.js"></script>
     <script type="application/javascript" src="src/view/Entity.js"></script>
     <script type="application/javascript" src="src/view/Attribute.js"></script>
     <script type="application/javascript" src="src/view/RelationClue.js"></script>
+    <script type="application/javascript" src="src/view/Relation.js"></script>
+    <script type="application/javascript" src="src/view/RelationLeg.js"></script>
 
     <!-- control -->
     <script type="application/javascript" src="src/control/Entity.js"></script>
     <script type="application/javascript" src="src/control/Attribute.js"></script>
     <script type="application/javascript" src="src/control/AttributeList.js"></script>
     <script type="application/javascript" src="src/control/Relation.js"></script>
+    <script type="application/javascript" src="src/control/RelationLeg.js"></script>
 
     <script type="application/javascript" src="src/Random.js"></script>
     <script type="application/javascript" src="src/Canvas.js"></script>
@@ -43,98 +46,10 @@
         <script type="application/javascript" src="src/EditableText.js"></script>
         <script type="application/javascript" src="src/Attribute.js"></script>
         <script type="application/javascript" src="src/RelationControl.js"></script>
-        <script type="application/javascript" src="src/RelationPart.js"></script>
+        <script type="application/javascript" src="src/RelationLeg.js"></script>
         -->
 </head>
 <body>
-<!--
-<div id="menu" class="contextMenu">
-    <ul>
-        <li>
-            <div class="icon"><i class="fa fa-list"></i></div>
-            Add Attribute
-        </li>
-        <li>
-            <i class="fa fa-caret-right"></i>
-            <div class="icon"><i class="fa fa-link"></i></div>
-            Add Relation
-            <ul>
-                <li>
-                    <div class="icon">&nbsp;</div>
-                    N:M
-                </li>
-                <li>
-                    <div class="icon">&nbsp;</div>
-                    N:1
-                </li>
-                <li>
-                    <div class="icon">&nbsp;</div>
-                    1:N
-                </li>
-                <li>
-                    <div class="icon">&nbsp;</div>
-                    1:1
-                </li>
-            </ul>
-        </li>
-        <li>
-            <div class="icon"><i class="fa fa-ban"></i></div>
-            Delete Entity
-        </li>
-    </ul>
-
-    <ul>
-        <li>
-            <div class="icon"><i class="fa fa-key"></i></div>
-            Primary Key
-        </li>
-        <li>
-            <div class="icon">&nbsp;</div>
-            Unique
-        </li>
-        <li>
-            <div class="icon">&nbsp;</div>
-            Nullable
-        </li>
-
-        <li>
-            <div class="icon"><i class="fa fa-ban"></i></div>
-            Delete Attribute
-        </li>
-    </ul>
-
-    <ul>
-        <li>
-            <i class="fa fa-caret-right"></i>
-            <div class="icon">&nbsp;</div>
-            Cardinality
-            <ul>
-                <li>
-                    <div class="icon">&nbsp;</div>
-                    Single
-                </li>
-                <li>
-                    <div class="icon">&nbsp;</div>
-                    Multiple
-                </li>
-            </ul>
-        </li>
-        <li>
-            <div class="icon"><i class="fa fa-square-o"></i></div>
-            Identifying
-        </li>
-        <li>
-            <div class="icon"><i class="fa fa-check-square-o"></i></div>
-            Required
-        </li>
-        <li>
-            <div class="icon"><i class="fa fa-unlink"></i></div>
-            Delete Relation
-        </li>
-    </ul>
-</div>
--->
-
     <a href="javascript:void(0)" onClick="canvas.clear()">clear</a>
     <a href="javascript:void(0)" onClick="canvas.clear();canvas.draw()">draw</a>
 

@@ -27,9 +27,28 @@ DBSDM.Element = (function() {
                 ns = xlinkNS;
             }
 
-            node.setAttributeNS(ns, name, value)
+            if (value == null) {
+                node.removeAttributeNS(ns, name);
+            } else {
+                node.setAttributeNS(ns, name, value)
+            }
         }
         return node;
+    };
+
+    self.transform = function(node, translate, rotate, scale) {
+        var tran = [];
+        if (translate) {
+            tran.push("translate(" + translate.join(" ") + ")");
+        }
+        if (rotate) {
+            tran.push("rotate(" + rotate.join(" ") + ")");
+        }
+        if (scale) {
+            tran.push("scale(" + scale.join(" ") + ")");
+        }
+
+        self.attr(node, {transform: tran.join(" ")});
     };
 
     /** Element creation helpers */

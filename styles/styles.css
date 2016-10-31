@@ -3,7 +3,7 @@ body,input {
 }
 
 div.dbsdmCanvas {
-    width:100%;height:1000px;border:1px solid red;margin:50px;
+    width:80%;height:800px;border:1px solid red;margin:50px;
     font-size: 1em;
 }
 div.dbsdmCanvas > svg {

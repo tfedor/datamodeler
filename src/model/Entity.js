@@ -10,7 +10,7 @@ DBSDM.Model.Entity = (function(){
     function Entity(name) {
         this._name = name || "Entity";
         this._attributes = new ns.Model.AttributeList();
-        this._relations = [];
+        this._relationLegs = [];
         this._transform = {
             x: 0,
             y: 0,
@@ -31,8 +31,23 @@ DBSDM.Model.Entity = (function(){
         return this._attributes;
     };
 
-    Entity.prototype.addRelation = function(relation) {
-        this._relations.push(relation);
+    Entity.prototype.addRelation = function(relationLeg) {
+        this._relationLegs.push(relationLeg);
+        relationLeg.setEntity(this);
+    };
+
+    Entity.prototype.removeRelation = function(relationLeg) {
+        var index = null;
+        for (var i in this._relationLegs) {
+            if (this._relationLegs[i] == relationLeg) {
+                index = i;
+                break;
+            }
+        }
+        if (index != null) {
+            this._relationLegs.splice(index, 1);
+            relationLeg.setEntity(null);
+        }
     };
 
     Entity.prototype.setPosition = function(x, y) {
@@ -72,13 +87,12 @@ DBSDM.Model.Entity = (function(){
         var str = "";
         str += "Entity " + this._name + "\n";
         str += "----------------------\n";
-        for (var i in this._attributes) {
-            str += " " + this._attributes[i].toString() + "\n";
-        }
+        str += this._attributes.toString();
+        str += "\n";
 
         str += "----------------------\n";
-        for (i in this._relations) {
-            str += this._relations[i].toString() + "\n";
+        for (var i in this._relationLegs) {
+            str += this._relationLegs[i].getRelation().toString() + "\n";
         }
 
         str += "\n";
