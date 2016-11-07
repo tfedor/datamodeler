@@ -27,10 +27,6 @@ DBSDM.Control.RelationLeg = (function() {
         this._view.updatePoints();
     };
 
-    RelationLeg.prototype.clear = function() {
-        this._view.clear();
-    };
-
     RelationLeg.prototype.getDom = function() {
         return this._view.getDom();
     };
@@ -100,6 +96,32 @@ DBSDM.Control.RelationLeg = (function() {
 
     RelationLeg.prototype.clearControlPoints = function() {
         this._view.clearControlPoints();
+    };
+
+    RelationLeg.prototype.onEntityResize = function(edges) {
+        var edgeOffset = 10; // TODO;
+
+        // first, snap to edge if needed
+        var a = this._model.getAnchor();
+        switch(a.edge) {
+            case Enum.Edge.LEFT:   a.x = edges.left; break;
+            case Enum.Edge.RIGHT:  a.x = edges.right; break;
+            case Enum.Edge.TOP:    a.y = edges.top; break;
+            case Enum.Edge.BOTTOM: a.y = edges.bottom; break;
+        }
+
+        if ((a.edge & 1) != 0) {
+            a.y = Math.max(a.y, edges.top    + edgeOffset);
+            a.y = Math.min(a.y, edges.bottom - edgeOffset);
+        } else {
+            a.x = Math.max(a.x, edges.left   + edgeOffset);
+            a.x = Math.min(a.x, edges.right  - edgeOffset);
+        }
+        this._model.setAnchor(a.x, a.y, a.edge);
+        this._relation.onEntityResize();
+
+        this._view.updateAnchorPosition();
+        this._view.updatePoints();
     };
 
     RelationLeg.prototype.onMouseDown = function(e, mouse) {

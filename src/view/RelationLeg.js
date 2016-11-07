@@ -243,10 +243,5 @@ DBSDM.View.RelationLeg = (function(){
         this._cp = [];
     };
 
-    // clear
-    RelationLeg.prototype.clear = function() {
-        this._g.remove();
-    };
-
     return RelationLeg;
 })();

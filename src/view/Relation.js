@@ -59,6 +59,16 @@ DBSDM.View.Relation = (function(){
         ns.Element.attr(this._middle, this._model.getMiddlePoint());
     };
 
+    Relation.prototype.toBack = function() {
+        console.log(this._g.parentNode);
+        var first = this._g.parentNode.querySelector("g.rel");
+        if (first == this._g) { return; }
+        this._canvas.svg.insertBefore(this._g, first);
+    };
+    Relation.prototype.toFront = function() {
+        this._canvas.svg.appendChild(this._g);
+    };
+
     Relation.prototype.clear = function() {
         this._g.remove();
         this._g = null;

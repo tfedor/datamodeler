@@ -43,7 +43,7 @@ DBSDM.Model.RelationLeg = (function(){
     };
     RelationLeg.prototype.getEntity = function() {
         return this._entity;
-    }
+    };
 
     RelationLeg.prototype.isIdentifying = function() {
         return this._identifying

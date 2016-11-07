@@ -39,8 +39,8 @@ DBSDM.Control.Relation = (function() {
     };
 
     Relation.prototype.clear = function() {
-        this._legs.source.clear();
-        this._legs.target.clear();
+        this._sourceEntity.removeRelationLeg(this._legs.source);
+        this._targetEntity.removeRelationLeg(this._legs.target);
         this._view.clear();
     };
 
@@ -214,6 +214,12 @@ DBSDM.Control.Relation = (function() {
         this.redraw();
     };
 
+    Relation.prototype.onEntityResize = function() {
+        if (this._model.isManual()) { return; }
+        this._model.resetMiddlePoint();
+        this.redraw();
+    };
+
     Relation.prototype.onMouseMove = function(e, mouse) {
         if (this._new) {
             var target = mouse.getTarget();
@@ -254,8 +260,12 @@ DBSDM.Control.Relation = (function() {
                 this._legs.source.clearControlPoints();
                 this._legs.target.clearControlPoints();
                 break;
-            case "toback": break;
-            case "delete": break;
+            case "toback":
+                this._view.toBack();
+                break;
+            case "delete":
+                this.clear();
+                return;
         }
         this.redraw();
     };

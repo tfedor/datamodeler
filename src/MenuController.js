@@ -14,6 +14,13 @@ DBSDM.Menu = {
      * [string] icon:    Name of icon used from FontAwesome set, without fa- prefix. Can be null or omitted if no icon
      */
     definition: {
+        attribute: [
+            ["Primary", "primary", "key"],
+            ["Unique", "unique"],
+            ["Nullable", "nullable"],
+            ["Delete Attribute", "delete", "ban"]
+        ],
+
         entity: [
             ["Add Attribute", "attr", "list"],
             [
@@ -27,12 +34,6 @@ DBSDM.Menu = {
                 "link"
             ],
             ["Delete Entity", "delete", "ban"]
-        ],
-        attribute: [
-            ["Primary", "primary", "key"],
-            ["Unique", "unique"],
-            ["Nullable", "nullable"],
-            ["Delete Attribute", "delete", "ban"]
         ],
 
         relationMiddle: [

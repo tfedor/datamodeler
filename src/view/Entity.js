@@ -111,7 +111,7 @@ DBSDM.View.Entity = (function(){
             ns.Element.attr(this._canvas.getSharedElement("Entity.ControlPoint"), { class: "e-cp-se", x: "100%", y: "100%" }),
             ns.Element.attr(this._canvas.getSharedElement("Entity.ControlPoint"), { class: "e-cp-s",  x:  "50%", y: "100%" }),
             ns.Element.attr(this._canvas.getSharedElement("Entity.ControlPoint"), { class: "e-cp-sw", x:      0, y: "100%" }),
-            ns.Element.attr(this._canvas.getSharedElement("Entity.ControlPoint"), { class: "e-cp-width",  x:      0, y:  "50%" })
+            ns.Element.attr(this._canvas.getSharedElement("Entity.ControlPoint"), { class: "e-cp-w",  x:      0, y:  "50%" })
         );
         ns.Element.attr(this._controls, { class: "e-control" });
         this._dom.appendChild(this._controls);
