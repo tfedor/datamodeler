@@ -5,6 +5,8 @@ DBSDM.Control.Entity = (function(){
     var ns = DBSDM;
     var Enum = ns.Enums;
 
+    var EdgeOffset = 10;
+
     Entity.activeEntity = null;
 
     function Entity(canvas) {
@@ -16,6 +18,10 @@ DBSDM.Control.Entity = (function(){
         this._view = new ns.View.Entity(this._model, this._canvas);
 
         this._new = true;
+        this._dragged = false;
+
+        this._center = null;
+        this._edges = null;
     }
 
     Entity.prototype.getDom = function() {
@@ -50,10 +56,22 @@ DBSDM.Control.Entity = (function(){
     /**
      * Drag entity
      */
+    Entity.prototype._dragStart = function() {
+        this._dragged = true;
+    };
+
     Entity.prototype.drag = function(mouse) {
         this._model.translate(mouse.rx, mouse.ry);
 
-        // TODO translate attached relations
+        for (var i=0; i<this._relationLegList.length; i++) {
+            this._relationLegList[i].translate(mouse.rx, mouse.ry);
+            this._relationLegList[i].redraw();
+            this._relationLegList[i].getParentRelation().onEntityDrag();
+        }
+    };
+
+    Entity.prototype._dragEnd = function() {
+        this._dragged = false;
     };
 
     Entity.prototype.dragControlPoint = function(mouse, cp) {
@@ -115,6 +133,13 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype._delete = function() {
         this._view.remove();
         // TODO this._model
+
+        /*
+        TODO
+        for(var i=0; i<this._relationLegList.length; i++) {
+            this._relationLegList[i].getParentRelation().clear();
+        }
+        */
     };
 
     Entity.prototype.getVisualCenter = function() {
@@ -161,17 +186,16 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype._getMaxEdgeInterval = function(edge) {
-        var offset = 10; // TODO constants
         var edgeStart, edgeEnd;
 
         var edges = this.getEdges();
 
         if ((edge & 1) == 0) {  // top, bottom
-            edgeStart = edges.left + offset;
-            edgeEnd = edges.right - offset;
+            edgeStart = edges.left + EdgeOffset;
+            edgeEnd = edges.right - EdgeOffset;
         } else {
-            edgeStart = edges.top + offset;
-            edgeEnd = edges.bottom - offset;
+            edgeStart = edges.top + EdgeOffset;
+            edgeEnd = edges.bottom - EdgeOffset;
         }
 
         // add positions of current relation anchors
@@ -218,6 +242,29 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
+    Entity.prototype.getEdgeCursorPosition = function(x, y) {
+        var edges = this.getEdges();
+        var center = this.getVisualCenter();
+
+        if (edges.left+EdgeOffset < x && x < edges.right-EdgeOffset) {
+            if (y > center.y) {
+                return { x: x, y: edges.bottom, edge: Enum.Edge.BOTTOM };
+            } else {
+                return { x: x, y: edges.top, edge: Enum.Edge.TOP };
+            }
+        }
+
+        if (edges.top+EdgeOffset < y && y < edges.bottom-EdgeOffset) {
+            if (x < center.x) {
+                return { x: edges.left, y: y, edge: Enum.Edge.LEFT };
+            } else {
+                return { x: edges.right, y: y, edge: Enum.Edge.RIGHT };
+            }
+        }
+
+        return null;
+    };
+
     // Menu Handlers
     Entity.prototype.handleMenu = function(action) {
         switch(action) {
@@ -253,6 +300,9 @@ DBSDM.Control.Entity = (function(){
             if (params.action == "cp") {
                 this.dragControlPoint(mouse, params.cp);
             } else {
+                if (!this._dragged) {
+                    this._dragStart();
+                }
                 this.drag(mouse);
             }
         }
@@ -276,6 +326,10 @@ DBSDM.Control.Entity = (function(){
             }
         } else if (!mouse.didMove()) {
             this.activate();
+        }
+
+        if (this._dragged) {
+            this._dragEnd();
         }
     };
 

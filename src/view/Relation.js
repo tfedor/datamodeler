@@ -32,13 +32,22 @@ DBSDM.View.Relation = (function(){
     Relation.prototype.draw = function(sourceLegDomFragment, targetLegDomFragment) {
         var fragment = document.createDocumentFragment();
 
-        // legs
-        fragment.appendChild(sourceLegDomFragment);
-        fragment.appendChild(targetLegDomFragment);
+        var g = fragment.appendChild(ns.Element.g(
+            sourceLegDomFragment,
+            targetLegDomFragment
+        ));
+        ns.Element.attr(g, {class: "relg"});
+
+        g.addEventListener("mouseenter", function() {
+            console.log("over");
+        });
 
         // build middle point
-        this._middle = fragment.appendChild( this._canvas.getSharedElement("Relation.MiddlePoint") );
+        this._middle = g.appendChild( this._canvas.getSharedElement("Relation.MiddlePoint") );
         this._canvas.svg.appendChild(fragment);
+
+        this._middle.addEventListener("contextmenu", function(e) { ns.Menu.attach(null, "relationMiddle"); }); // TODO
+        g.addEventListener("contextmenu", function(e) { ns.Menu.attach(null, "relation"); }); // TODO
     };
 
     Relation.prototype.redraw = function() {

@@ -7,8 +7,8 @@ DBSDM.Model = DBSDM.Model ||{};
 DBSDM.Model.RelationLeg = (function(){
     var Enum = DBSDM.Enums;
 
-    function RelationLeg(relation, identifying, optional, cardinality) {
-        this._relation = relation;
+    function RelationLeg(identifying, optional, cardinality) {
+        this._relation = null;
 
         this._identifying = identifying;
         this._optional = optional;
@@ -29,13 +29,16 @@ DBSDM.Model.RelationLeg = (function(){
         ];
     }
 
+    RelationLeg.prototype.setRelation = function(relation) {
+        this._relation = relation;
+    };
+
     RelationLeg.prototype.getRelation = function() {
         return this._relation;
     };
 
     RelationLeg.prototype.setEntity = function(entity) {
         this._entity = entity;
-        this._entity.addRelation(this);
     };
 
     RelationLeg.prototype.isIdentifying = function() {
@@ -116,6 +119,18 @@ DBSDM.Model.RelationLeg = (function(){
         }
         return this._points[key];
     };
+    RelationLeg.prototype.getPointIndex = function(x, y) {
+        for (var i=0; i<this._points.length; i++) {
+            var p = this._points[i];
+            if (p.x == x && p.y == y) {
+                return i;
+            }
+        }
+    };
+
+    RelationLeg.prototype.removePoint = function(index) {
+        this._points.splice(index, 1);
+    };
 
     RelationLeg.prototype.clearPoints = function() {
         this._points.splice(1, this._points.length - 2);
@@ -123,6 +138,13 @@ DBSDM.Model.RelationLeg = (function(){
 
     RelationLeg.prototype.getPoints = function() {
         return this._points;
+    };
+
+    RelationLeg.prototype.translatePoints = function(rx, ry) {
+        for (var i=0; i<this._points.length; i++) {
+            this._points[i].x += rx;
+            this._points[i].y += ry;
+        }
     };
 
     //

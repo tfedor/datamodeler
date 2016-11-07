@@ -149,6 +149,19 @@ tspan.attr-nullable {
 use.attr-bg { visibility: hidden; }
 svg.attr:hover use.attr-bg { visibility: visible; }
 
+/** RELATION */
+use.cp {
+    display:none;
+}
+g.leg:hover use.cp {
+    display:block;
+}
+g.leg:hover polyline.line {
+    stroke: #ede8eb;
+}
+
+use.cp, use.anchor { cursor:move; }
+
 
 
 
@@ -156,6 +169,9 @@ svg.attr:hover use.attr-bg { visibility: visible; }
 svg.attr:hover rect {display:block;}*/
 
 
+
+/*polyline:hover {stroke:red;}*/
+/*.relg:hover polyline{stroke:red;}*/
 
 
 /*

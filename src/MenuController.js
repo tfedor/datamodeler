@@ -34,17 +34,29 @@ DBSDM.Menu = {
             ["Nullable", "nullable"],
             ["Delete Attribute", "delete", "ban"]
         ],
-        relation: [
+
+        relationMiddle: [
+            ["Reset point", "reset", "refresh"]
+        ],
+        relationCP: [
+            ["Remove point", "cp-delete"]
+        ],
+        relationLeg: [
             [
                 "Cardinality",
                 [
-                    ["Single", "single"],
-                    ["Multiple", "multiple"]
+                    ["One", "one"],
+                    ["Many", "many"]
                 ]
             ],
             ["Identifying", "identifying", "square-o"], // TODO icon
             ["Required", "required", "check-square-o"], // TODO icon
-            ["Delete Relation", "delete", "unlink"]
+            ["Show Name", "name"]
+        ],
+        relation: [
+            ["Straighten", "straighten", "compress"],
+            ["Send to Back", "toback", "level-down"],
+            ["Delete Relation", "delete"]
         ]
     },
 
@@ -56,6 +68,7 @@ DBSDM.Menu = {
         attached: {},
         active: {}
     },
+    _params: {},
 
     build: function() {
         function createIconElement(icon) {
@@ -122,11 +135,11 @@ DBSDM.Menu = {
     /**
      * Attach object handler for part of menu, which will be also displayed
      * */
-    attach: function(handler, section) {
+    attach: function(handler, section, params) {
         if (!this._dom.sections.hasOwnProperty(section)) { return; }
         this._handlers.attached[section] = handler;
         this._dom.sections[section].style.display = "none";
-        console.log(this._handlers.attached);
+        this._params[section] = params || null;
     },
 
     show: function(e) {
@@ -182,7 +195,7 @@ DBSDM.Menu = {
             node = node.parentNode;
         }
         if (handler && this._handlers.active[handler] && this._handlers.active[handler].handleMenu) {
-            this._handlers.active[handler].handleMenu(action);
+            this._handlers.active[handler].handleMenu(action, this._params[handler]);
             this.hide();
         }
     }

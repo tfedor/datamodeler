@@ -8,7 +8,10 @@ DBSDM.Model.Relation = (function(){
 
     function Relation(source, target) {
         this._source = source;
+        this._source.setRelation(this);
+
         this._target = target;
+        this._target.setRelation(this);
     }
 
     Relation.prototype.getSource = function() {
