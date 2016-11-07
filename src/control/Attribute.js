@@ -56,7 +56,7 @@ DBSDM.Control.Attribute = (function(){
 
     // Event Handlers
     Attribute.prototype.onMouseDown = function(e, mouse) {
-        this._dragOffset = e.clientY - this._view.getBoundingBox().top;
+        this._dragOffset = e.clientY - this._view.getEdges().top;
 
         this._dragStartPosition = this._list.getPosition(this._model);
         this._dragCurrentPosition = this._dragStartPosition;

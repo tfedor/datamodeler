@@ -4,13 +4,15 @@ DBSDM.View = DBSDM.View ||{};
 DBSDM.View.Relation = (function(){
     var ns = DBSDM;
 
-    function Relation(canvas, model) {
+    function Relation(canvas, model, control) {
         this._canvas = canvas;
         this._model = model;
+        this._control = control;
 
         this._createSharedElements();
 
         // DOM
+        this._g = null;
         this._middle = null;
     }
 
@@ -30,24 +32,27 @@ DBSDM.View.Relation = (function(){
     };
 
     Relation.prototype.draw = function(sourceLegDomFragment, targetLegDomFragment) {
-        var fragment = document.createDocumentFragment();
+        this._middle = this._canvas.getSharedElement("Relation.MiddlePoint", { class: "cp middle" });
 
-        var g = fragment.appendChild(ns.Element.g(
+        this._g = ns.Element.g(
             sourceLegDomFragment,
-            targetLegDomFragment
-        ));
-        ns.Element.attr(g, {class: "relg"});
+            targetLegDomFragment,
+            this._middle
+        );
+        this._g.classList.add("rel");
 
-        g.addEventListener("mouseenter", function() {
-            console.log("over");
+        this._canvas.svg.appendChild(this._g);
+
+        var that = this;
+        this._middle.addEventListener("mousedown", function(e) { that._canvas.Mouse.down(e, that._control); });
+
+        this._g.addEventListener("contextmenu", function(e) {
+            if (e.target.classList.contains("middle")) {
+                ns.Menu.attach(that._control, "relationMiddle");
+            }
+
+            ns.Menu.attach(that._control, "relation");
         });
-
-        // build middle point
-        this._middle = g.appendChild( this._canvas.getSharedElement("Relation.MiddlePoint") );
-        this._canvas.svg.appendChild(fragment);
-
-        this._middle.addEventListener("contextmenu", function(e) { ns.Menu.attach(null, "relationMiddle"); }); // TODO
-        g.addEventListener("contextmenu", function(e) { ns.Menu.attach(null, "relation"); }); // TODO
     };
 
     Relation.prototype.redraw = function() {
@@ -55,7 +60,8 @@ DBSDM.View.Relation = (function(){
     };
 
     Relation.prototype.clear = function() {
-        this._middle.remove();
+        this._g.remove();
+        this._g = null;
         this._middle = null;
     };
 

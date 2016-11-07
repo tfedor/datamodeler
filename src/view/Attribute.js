@@ -123,7 +123,7 @@ DBSDM.View.Attribute = (function(){
         this._dom.remove();
     };
 
-    Attribute.prototype.getBoundingBox = function() {
+    Attribute.prototype.getEdges = function() {
         return this._dom.getBoundingClientRect();
     };
 

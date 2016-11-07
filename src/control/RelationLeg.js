@@ -15,6 +15,7 @@ DBSDM.Control.RelationLeg = (function() {
 
     RelationLeg.prototype.setEntityControl = function(entityControl) {
         this._entity = entityControl;
+        this._view.onEntityAttached();
     };
 
     RelationLeg.prototype.getParentRelation = function() {
@@ -38,15 +39,26 @@ DBSDM.Control.RelationLeg = (function() {
         return this._model;
     };
 
-    RelationLeg.prototype.getAnchorPosition = function() {
-        return this._model.getAnchor();
-    };
-
     RelationLeg.prototype.translate = function(x, y) {
         var anchor = this._model.getAnchor();
         this._model.setAnchor(anchor.x + x, anchor.y + y, anchor.edge);
+    };
 
-        this._model.translatePoints(x, y);
+    RelationLeg.prototype._moveAnchor = function(mouse) {
+        var pos = this._entity.getEdgeCursorPosition(mouse.x, mouse.y);
+        if (pos != null) {
+            if ((pos.edge & 1) != 0) { // right/left
+                pos.y = ns.Geometry.snap(pos.y, this._model.getPoint(1).y, null, 5); // TODO snapping limit
+            } else {
+                pos.x = ns.Geometry.snap(pos.x, this._model.getPoint(1).x, null, 5); // TODO snapping limit
+            }
+            this._model.setAnchor(pos.x, pos.y, pos.edge);
+        }
+
+        this._model.anchorMoved = true;
+
+        this._view.updateAnchorPosition();
+        this._view.updatePoints();
     };
 
     RelationLeg.prototype.createControlPoint = function(P) {
@@ -73,6 +85,23 @@ DBSDM.Control.RelationLeg = (function() {
         return index;
     };
 
+    RelationLeg.prototype._moveControlPoint = function(index, mouse) {
+        var snappingLimit = 5; // TODO
+
+        var p = this._model.getPoint(index);
+        var prev = this._model.getPoint(index - 1);
+        var next = this._model.getPoint(index + 1);
+
+        p.x = ns.Geometry.snap(mouse.x, prev.x, next.x, snappingLimit);
+        p.y = ns.Geometry.snap(mouse.y, prev.y, next.y, snappingLimit);
+
+        this._view.updatePoints();
+    };
+
+    RelationLeg.prototype.clearControlPoints = function() {
+        this._view.clearControlPoints();
+    };
+
     RelationLeg.prototype.onMouseDown = function(e, mouse) {
         var params = mouse.getParams();
         if (params.action && params.action == "line") {
@@ -86,19 +115,9 @@ DBSDM.Control.RelationLeg = (function() {
         if (!params.action) { return; }
 
         if (params.action == "anchor") {
-            var pos = this._entity.getEdgeCursorPosition(mouse.x, mouse.y);
-            if (pos != null) {
-                this._model.setAnchor(pos.x, pos.y, pos.edge);
-            }
-
-            this._view.updateAnchorPosition();
-            this._view.updatePoints();
+            this._moveAnchor(mouse);
         } else if (params.action == "cp") {
-            var p = this._model.getPoint(params.index);
-            p.x += mouse.rx;
-            p.y += mouse.ry;
-
-            this._view.updatePoints();
+            this._moveControlPoint(params.index, mouse);
         }
     };
 

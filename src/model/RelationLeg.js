@@ -20,6 +20,7 @@ DBSDM.Model.RelationLeg = (function(){
             x: 0, y: 0,
             edge: null
         };
+        this.anchorMoved = false;
 
         // all description points of the line, two points are minimum
         this._anchorOffset = 0;
@@ -40,6 +41,9 @@ DBSDM.Model.RelationLeg = (function(){
     RelationLeg.prototype.setEntity = function(entity) {
         this._entity = entity;
     };
+    RelationLeg.prototype.getEntity = function() {
+        return this._entity;
+    }
 
     RelationLeg.prototype.isIdentifying = function() {
         return this._identifying
@@ -145,6 +149,12 @@ DBSDM.Model.RelationLeg = (function(){
             this._points[i].x += rx;
             this._points[i].y += ry;
         }
+    };
+
+    //
+
+    RelationLeg.prototype.isManual = function() {
+        return this.anchorMoved || this._points.length != 2;
     };
 
     //

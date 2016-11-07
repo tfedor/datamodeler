@@ -5,8 +5,6 @@ DBSDM.Control.Entity = (function(){
     var ns = DBSDM;
     var Enum = ns.Enums;
 
-    var EdgeOffset = 10;
-
     Entity.activeEntity = null;
 
     function Entity(canvas) {
@@ -151,13 +149,11 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.getEdges = function() {
-        var transform = this._model.getTransform();
-        return {
-            top: transform.y,
-            right: transform.x + transform.width,
-            bottom: transform.y + transform.height,
-            left: transform.x
-        };
+        return this._model.getEdges();
+    };
+
+    Entity.prototype.getEdgePosition = function(edge) {
+        return this._model.getEdgePosition(edge);
     };
 
     // Relations
@@ -185,66 +181,11 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
-    Entity.prototype._getMaxEdgeInterval = function(edge) {
-        var edgeStart, edgeEnd;
-
-        var edges = this.getEdges();
-
-        if ((edge & 1) == 0) {  // top, bottom
-            edgeStart = edges.left + EdgeOffset;
-            edgeEnd = edges.right - EdgeOffset;
-        } else {
-            edgeStart = edges.top + EdgeOffset;
-            edgeEnd = edges.bottom - EdgeOffset;
-        }
-
-        // add positions of current relation anchors
-        var positions = [];
-        positions.push(edgeStart); // minimal position of the edge
-
-        for (var i=0; i<this._relationLegList.length; i++) {
-            var anchor = this._relationLegList[i].getAnchorPosition();
-            if (anchor.edge == edge) {
-                positions.push( ((edge & 1) == 0 ? anchor.x : anchor.y) );
-            }
-        }
-
-        positions.push(edgeEnd); // maximal position of the edge
-        positions.sort(function(a, b) {
-            return a-b;
-        });
-
-        // pick position - find max interval and split it in half = new anchor position
-        var index = 1;
-        var maxLength = 0;
-        for (i=index; i<positions.length; i++) {
-            var len = positions[i] - positions[i-1];
-            if (len >= maxLength) {
-                index = i;
-                maxLength = len;
-            }
-        }
-
-        return [positions[index-1], positions[index], maxLength];
-    };
-
-    Entity.prototype.getEdgePosition = function(edge) {
-
-        var edges = this.getEdges();
-        var interval = this._getMaxEdgeInterval(edge);
-        var newPosition = Math.round((interval[0] + interval[1]) / 2);
-
-        switch (edge) {
-            case Enum.Edge.TOP:    return {x: newPosition, y: edges.top}; break;
-            case Enum.Edge.RIGHT:  return {x: edges.right, y: newPosition}; break;
-            case Enum.Edge.BOTTOM: return {x: newPosition, y: edges.bottom}; break;
-            case Enum.Edge.LEFT:   return {x: edges.left, y: newPosition}; break;
-        }
-    };
-
     Entity.prototype.getEdgeCursorPosition = function(x, y) {
-        var edges = this.getEdges();
+        var edges = this._model.getEdges();
         var center = this.getVisualCenter();
+
+        var EdgeOffset = 10; // TODO;
 
         if (edges.left+EdgeOffset < x && x < edges.right-EdgeOffset) {
             if (y > center.y) {

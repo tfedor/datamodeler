@@ -36,6 +36,10 @@ DBSDM.Element = (function() {
         return node;
     };
 
+    self.addClass = function(node, className) {
+        node.classList.add(className);
+    };
+
     self.transform = function(node, translate, rotate, scale) {
         var tran = [];
         if (translate) {

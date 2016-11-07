@@ -150,12 +150,17 @@ use.attr-bg { visibility: hidden; }
 svg.attr:hover use.attr-bg { visibility: visible; }
 
 /** RELATION */
-use.cp {
-    display:none;
-}
-g.leg:hover use.cp {
-    display:block;
-}
+g.rel       use.middle { display:none; }
+g.rel:hover use.middle { display:block; }
+
+g.leg polyline, g.leg use, g.leg g { pointer-events: none; }
+g.leg.attached use.anchor    { pointer-events: all; }
+g.leg.attached use.cp        { pointer-events: visible; }
+g.leg.attached polyline.line { pointer-events: stroke; }
+
+g.leg       use.cp { display:none; }
+g.leg:hover use.cp { display:block; }
+
 g.leg:hover polyline.line {
     stroke: #ede8eb;
 }

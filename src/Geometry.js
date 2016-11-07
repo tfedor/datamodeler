@@ -33,6 +33,26 @@ DBSDM.Geometry = (function() {
             self.isBetween(P.y, A.y, B.y, offset);
     };
 
+    /**
+     * Snap @coor to @snapA or @snapB, if inside @limit
+     */
+    self.snap = function(coor, snapA, snapB, limit) {
+        snapB = snapB || snapA;
+        var dA = Math.abs(coor - snapA);
+        var dB = Math.abs(coor - snapB);
+
+        if (dA < dB) {
+            if (dA < limit) {
+                return snapA;
+            }
+        } else {
+            if (dB < limit) {
+                return snapB;
+            }
+        }
+        return coor;
+    };
+
     self.triangleSides = function(A, B, C) {
         return [
             self.pointToPointDistance(B, C),

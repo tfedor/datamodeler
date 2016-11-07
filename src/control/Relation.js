@@ -25,7 +25,7 @@ DBSDM.Control.Relation = (function() {
         };
 
         // view
-        this._view = new ns.View.Relation(this._canvas, this._model);
+        this._view = new ns.View.Relation(this._canvas, this._model, this);
         this._view.draw(
             this._legs.source.getDom(),
             this._legs.target.getDom()
@@ -43,6 +43,23 @@ DBSDM.Control.Relation = (function() {
         this._legs.target.clear();
         this._view.clear();
     };
+
+    // middle point
+
+    Relation.prototype._moveMiddle = function(mouse) {
+        var s = this._legs.source._model.getPoint(-2);
+        var t = this._legs.target._model.getPoint(-2);
+
+        var x = ns.Geometry.snap(mouse.x, s.x, t.x, 5); // TODO snap limit
+        var y = ns.Geometry.snap(mouse.y, s.y, t.y, 5); // TODO snap limit
+
+        this._model.setMiddlePointPosition(x, y);
+        this._model.middleMoved = true;
+
+        this.redraw();
+    };
+
+    // creation
 
     Relation.prototype.moveToCursor = function(x, y) {
         var cursor = {x: x, y: y};
@@ -188,85 +205,27 @@ DBSDM.Control.Relation = (function() {
         }
     };
 
+
     Relation.prototype.onEntityDrag = function() {
-        var sourceModel = this._model.getSource();
-        var targetModel = this._model.getTarget();
-        if (this._sourceEntity == this._targetEntity) {return;}
+        if (this._model.isManual()) { return; }
 
-        var edges = [];
-        var source = { pos: [], best: 0 };
-        var target = { pos: [], best: 0 };
-
-        // get possible edges
-        var sourceEdges = this._sourceEntity.getEdges();
-        var targetEdges = this._targetEntity.getEdges();
-
-        if (sourceEdges.right < targetEdges.left) {
-            edges.push(Enum.Edge.RIGHT);
-        } else if (sourceEdges.left > targetEdges.right) {
-            edges.push(Enum.Edge.LEFT);
-        }
-
-        if (sourceEdges.bottom < targetEdges.top) {
-            edges.push(Enum.Edge.BOTTOM);
-        } else if (sourceEdges.top > targetEdges.bottom) {
-            edges.push(Enum.Edge.TOP);
-        }
-
-        if (edges.length > 0) {
-            // compute positions
-            var i,j;
-            var anchor;
-            for (i=0; i<edges.length; i++) {
-                anchor = sourceModel.getAnchor();
-                if (anchor.edge == edges[i]) {
-                    source.pos.push({x: anchor.x, y: anchor.y});
-                } else {
-                    source.pos.push(this._sourceEntity.getEdgePosition(edges[i]));
-                }
-
-                anchor = targetModel.getAnchor();
-                if (anchor.edge == (edges[i] + 2) % 4) {
-                    target.pos.push({x: anchor.x, y: anchor.y});
-                } else {
-                    target.pos.push(this._targetEntity.getEdgePosition((edges[i] + 2) % 4));
-                }
-            }
-
-            // check edges combinations and pick the best (shortest) one
-            var minLen;
-            for (i=0; i<edges.length; i++) {
-                for (j=0; j<edges.length; j++) {
-                    var len = ns.Geometry.pointToPointDistance(source.pos[i], target.pos[j]);
-                    if (!minLen || len < minLen) {
-                        minLen = len;
-                        source.best = i;
-                        target.best = j;
-                    }
-                }
-            }
-
-            // rotate and position anchor
-            sourceModel.setAnchor(source.pos[source.best].x, source.pos[source.best].y, edges[source.best]);
-            targetModel.setAnchor(target.pos[target.best].x, target.pos[target.best].y, (edges[target.best]+2)%4);
-        }
-
+        this._model.resetAnchors();
         this._model.resetMiddlePoint();
-
-        // update view
         this.redraw();
     };
 
     Relation.prototype.onMouseMove = function(e, mouse) {
-        if (!this._new) { return; }
-
-        var target = mouse.getTarget();
-        if (target instanceof ns.Control.Entity) {
-            this._targetEntity = target;
-            this.moveToEntity();
+        if (this._new) {
+            var target = mouse.getTarget();
+            if (target instanceof ns.Control.Entity) {
+                this._targetEntity = target;
+                this.moveToEntity();
+            } else {
+                this._targetEntity = null;
+                this.moveToCursor(mouse.x, mouse.y);
+            }
         } else {
-            this._targetEntity = null;
-            this.moveToCursor(mouse.x, mouse.y);
+            this._moveMiddle(mouse);
         }
     };
 
@@ -283,6 +242,22 @@ DBSDM.Control.Relation = (function() {
             this._targetEntity.addRelationLeg(this._legs.target);
             this._legs.target.setEntityControl(this._targetEntity);
         }
+    };
+
+    Relation.prototype.handleMenu = function(action, params) {
+        switch(action) {
+            case "reset":
+                this._model.resetMiddlePoint();
+                break;
+            case "straighten":
+                this._model.straighten();
+                this._legs.source.clearControlPoints();
+                this._legs.target.clearControlPoints();
+                break;
+            case "toback": break;
+            case "delete": break;
+        }
+        this.redraw();
     };
 
     return Relation;

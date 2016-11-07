@@ -30,8 +30,7 @@ DBSDM.View.RelationLeg = (function(){
         this._canvas.createSharedElement("Relation.AnchorControl",
             ns.Element.rect(-9.5,-13.5, 18,15, {
                 fill: "none",
-                stroke: "none",
-                pointerEvents: "all" // TODO
+                stroke: "none"
             })
         );
 
@@ -68,8 +67,7 @@ DBSDM.View.RelationLeg = (function(){
                 strokeWidth: 1,
                 stroke: "black",
                 shapeRendering: "crispEdges",
-                transform: "translate(-3,-3)",
-                pointerEvents: "visible"
+                transform: "translate(-3,-3)"
             })
         );
     };
@@ -117,6 +115,10 @@ DBSDM.View.RelationLeg = (function(){
         return this._g;
     };
 
+    RelationLeg.prototype.onEntityAttached = function() {
+        this._g.classList.add("attached");
+    };
+
     // anchor
 
     RelationLeg.prototype._buildAnchor = function() {
@@ -125,10 +127,6 @@ DBSDM.View.RelationLeg = (function(){
             this._canvas.getSharedElement('Relation.AnchorBase')
         );
         this.updateAnchorType();
-
-        ns.Element.attr(this._anchor, {
-            pointerEvents: "none"
-        });
 
         this._model.setAnchorOffset(11);
     };
@@ -170,8 +168,7 @@ DBSDM.View.RelationLeg = (function(){
             fill: "none",
             stroke: "black",
             strokeWidth: 1,
-            strokeLinejoin: "miter",
-            pointerEvents: "none"
+            strokeLinejoin: "miter"
         });
         this._lineControl = ns.Element.el("polyline", {
             points: "0 0 0 0",
@@ -180,7 +177,6 @@ DBSDM.View.RelationLeg = (function(){
             strokeWidth: 10,
             strokeLinecap: "butt",
             strokeLinejoin: "miter",
-            pointerEvents: "stroke",
             class: "line"
         });
 
@@ -226,11 +222,6 @@ DBSDM.View.RelationLeg = (function(){
         this.updatePoints();
     };
 
-    RelationLeg.prototype.removeControlPoint = function(index) {
-        this._cp[index].remove();
-        this._cp.splice(index, 1);
-    };
-
     RelationLeg.prototype.getCpIndex = function(cp) {
         for (var index = 0; index < this._cp.length; index++) {
             if (this._cp[index] == cp) {
@@ -238,6 +229,18 @@ DBSDM.View.RelationLeg = (function(){
             }
         }
         return -1;
+    };
+
+    RelationLeg.prototype.removeControlPoint = function(index) {
+        this._cp[index].remove();
+        this._cp.splice(index, 1);
+    };
+
+    RelationLeg.prototype.clearControlPoints = function() {
+        for (var i=0;i <this._cp.length; i++) {
+            this._cp[i].remove();
+        }
+        this._cp = [];
     };
 
     // clear
