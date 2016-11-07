@@ -28,7 +28,7 @@ DBSDM.View.RelationLeg = (function(){
         if (this._canvas.hasSharedElement("Relation.AnchorBase")) { return; }
 
         this._canvas.createSharedElement("Relation.AnchorControl",
-            ns.Element.rect(-9.5,-13.5, 18,15, {
+            ns.Element.rect(-9.5,-14.5, 18,15, {
                 fill: "none",
                 stroke: "none"
             })
@@ -36,7 +36,7 @@ DBSDM.View.RelationLeg = (function(){
 
         this._canvas.createSharedElement("Relation.AnchorBase",
             ns.Element.el("polyline", {
-                points: "0.5,0.5, 0.5,-10.5",
+                points: "0.5,-1.5, 0.5,-11.5",
                 fill: 'none',
                 stroke:'black',
                 strokeWidth: 1
@@ -45,7 +45,7 @@ DBSDM.View.RelationLeg = (function(){
 
         this._canvas.createSharedElement("Relation.AnchorMany",
             ns.Element.el("polyline", {
-                points: "-7.5,0.5, 0.5,-10.5, 7.5,0.5",
+                points: "-7.5,-1.5, 0.5,-11.5, 7.5,-1.5",
                 fill: 'none',
                 stroke:'black',
                 strokeWidth: 1
@@ -54,7 +54,7 @@ DBSDM.View.RelationLeg = (function(){
 
         this._canvas.createSharedElement("Relation.AnchorIdentifying",
             ns.Element.el("polyline", {
-                points: "-7.5,-10.5, 7.5,-10.5",
+                points: "-7.5,-11.5, 7.5,-11.5",
                 fill: 'none',
                 stroke:'black',
                 strokeWidth: 1
@@ -194,12 +194,21 @@ DBSDM.View.RelationLeg = (function(){
     RelationLeg.prototype.updatePoints = function() {
         var points = this._model.getPoints();
         var pointsString = this._getPointsString(points);
+
         ns.Element.attr(this._line, { points: pointsString });
         ns.Element.attr(this._lineControl, { points: pointsString });
 
         // update control points
-        for (var i=1; i<points.length-1; i++) {
-            ns.Element.attr(this._cp[i-1], points[i]);
+        var i;
+        if (this._cp.length != points.length-2) {
+            this.clearControlPoints();
+            for (i=1; i<points.length-1; i++) {
+                this.buildControlPoint(i, points[i])
+            }
+        } else {
+            for (i=1; i<points.length-1; i++) {
+                ns.Element.attr(this._cp[i-1], points[i]);
+            }
         }
     };
 
@@ -219,7 +228,6 @@ DBSDM.View.RelationLeg = (function(){
         );
 
         this._cp.splice(index-1, 0, cp);
-        this.updatePoints();
     };
 
     RelationLeg.prototype.getCpIndex = function(cp) {

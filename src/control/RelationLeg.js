@@ -78,6 +78,7 @@ DBSDM.Control.RelationLeg = (function() {
 
         this._model.addPoint(index, P);
         this._view.buildControlPoint(index, P);
+        this._view.updatePoints();
         return index;
     };
 

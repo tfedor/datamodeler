@@ -109,7 +109,7 @@ DBSDM.Control.Relation = (function() {
     };
 
     Relation.prototype._moveToSameEntity = function() {
-        var entityOffset = 20;
+        var entityOffset = 20; // TODO
 
         // rotate and position anchor
         var sourceModel = this._model.getSource();
@@ -124,6 +124,7 @@ DBSDM.Control.Relation = (function() {
 
         var targetModel = this._model.getTarget();
         var posTarget = this._targetEntity.getEdgePosition(Enum.Edge.LEFT);
+
         var targetPoint = { x: posTarget.x - entityOffset, y: posTarget.y };
         targetModel.setAnchor(posTarget.x, posTarget.y, Enum.Edge.LEFT);
         if (targetModel.getPointsCount() == 2) {
