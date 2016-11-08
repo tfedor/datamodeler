@@ -14,6 +14,8 @@ DBSDM.Model.RelationLeg = (function(){
         this._optional = optional;
         this._cardinality = cardinality;
 
+        this._name = null;
+
         // it would be enough to store just one coordinate and edge,
         // and compute rest from entity, but this simplifies things
         this._anchor = {
@@ -43,6 +45,14 @@ DBSDM.Model.RelationLeg = (function(){
     };
     RelationLeg.prototype.getEntity = function() {
         return this._entity;
+    };
+
+    RelationLeg.prototype.getName = function() {
+        return this._name;
+    };
+
+    RelationLeg.prototype.setName = function(name) {
+        this._name = name || null;
     };
 
     RelationLeg.prototype.isIdentifying = function() {

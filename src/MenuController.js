@@ -52,7 +52,7 @@ DBSDM.Menu = {
             ],
             ["Identifying", "identifying", "square-o"], // TODO icon
             ["Required", "required", "check-square-o"], // TODO icon
-            ["Show Name", "name"]
+            ["Toggle Name", "name"]
         ],
         relation: [
             ["Straighten", "straighten", "compress"],

@@ -150,6 +150,8 @@ use.attr-bg { visibility: hidden; }
 svg.attr:hover use.attr-bg { visibility: visible; }
 
 /** RELATION */
+g.rel text { font-size: 0.65em; }
+
 g.rel       use.middle { display:none; }
 g.rel:hover use.middle { display:block; }
 

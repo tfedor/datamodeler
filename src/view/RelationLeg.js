@@ -17,6 +17,7 @@ DBSDM.View.RelationLeg = (function(){
         this._anchor = null;
         this._line = null;
         this._lineControl = null;
+        this._name = null;
 
         this._cp = [];
 
@@ -210,6 +211,8 @@ DBSDM.View.RelationLeg = (function(){
                 ns.Element.attr(this._cp[i-1], points[i]);
             }
         }
+
+        this.updateNamePosition();
     };
 
     RelationLeg.prototype.updateType = function() {
@@ -219,6 +222,7 @@ DBSDM.View.RelationLeg = (function(){
     };
 
     // control points
+
     RelationLeg.prototype.buildControlPoint = function(index, p) {
         var cp = this._g.appendChild(
             this._canvas.getSharedElement("Relation.CP", {
@@ -249,6 +253,60 @@ DBSDM.View.RelationLeg = (function(){
             this._cp[i].remove();
         }
         this._cp = [];
+    };
+
+    // name
+    RelationLeg.prototype.showName = function() {
+        if (this._name) { return; }
+
+        var model = this._model;
+        this._name = new ns.View.EditableText(this._canvas, 0, 0, {},
+            function()     { return model.getName() || "Relation"; },
+            function(name) { model.setName(name); }
+        ).getTextDom();
+        this.updateNamePosition();
+
+        this._g.appendChild(this._name);
+    };
+
+    RelationLeg.prototype.hideName = function() {
+        if (!this._name) { return; }
+        this._name.remove();
+        this._name = null;
+    };
+
+    RelationLeg.prototype.toggleName = function() {
+        if (this._name) {
+            this.hideName();
+        } else {
+            this.showName();
+        }
+    };
+
+    RelationLeg.prototype.updateNamePosition = function() {
+        if (!this._name) { return; }
+        var nameOffset = 10; // TODO
+
+        var A = this._model.getAnchor();
+        var P = this._model.getPoint(0);
+
+        var textAnchor = "start";
+        var baseline = "text-after-edge";
+        var dx = 0;
+        var dy = 0;
+        switch(A.edge) {
+            case Enum.Edge.TOP:    dy = -nameOffset; break;
+            case Enum.Edge.RIGHT:  dx =  nameOffset; break;
+            case Enum.Edge.BOTTOM: dy =  nameOffset; baseline = "text-before-edge"; break;
+            case Enum.Edge.LEFT:   dx = -nameOffset; textAnchor = "end"; break;
+        }
+
+        ns.Element.attr(this._name, {
+            x: P.x + dx,
+            y: P.y + dy,
+            dominantBaseline: baseline,
+            textAnchor: textAnchor
+        });
     };
 
     return RelationLeg;

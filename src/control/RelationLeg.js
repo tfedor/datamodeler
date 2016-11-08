@@ -159,9 +159,7 @@ DBSDM.Control.RelationLeg = (function() {
             case "many":        this._model.setCardinality( Enum.Cardinality.MANY );        break;
             case "identifying": this._model.setIdentifying( !this._model.isIdentifying() ); break;
             case "required":    this._model.setOptional   ( !this._model.isOptional()    ); break;
-            case "name":
-                // TODO
-                break;
+            case "name":        this._view.toggleName(); break;
         }
 
         this._view.updateType();
