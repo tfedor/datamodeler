@@ -56,7 +56,7 @@ DBSDM.View.Attribute = (function(){
     };
 
     Attribute.prototype._getNullable = function() {
-        return (this._model.isNullable() ? "°" : "*");
+        return (this._model.isNullable() ? "o" : "*");
     };
 
     Attribute.prototype._getY = function() {
