@@ -29,7 +29,6 @@ DBSDM.View.EditableText = (function(){
         this._hideInput();
 
         var that = this;
-        //this._text.addEventListener("mousedown", function(e) { that._canvas.Mouse.down(e, that); });
         this._text.addEventListener("click", function(e) { that._showInput(); });
     }
 
@@ -63,38 +62,44 @@ DBSDM.View.EditableText = (function(){
     /** Input handling */
 
     EditableText.prototype._showInput = function() {
-        var rect = this._text.getBoundingClientRect();
-        var x = Math.floor(rect.left + (document.documentElement.scrollLeft || document.body.scrollLeft));
-        var y = Math.floor(rect.top + (document.documentElement.scrollTop || document.body.scrollTop));
-
-        var offset = Math.ceil(rect.width * 0.2); // offset size as percentage of text width
-        var w = Math.ceil(rect.width) + offset;
-
-        // TODO
-        var align = "left";
-        if (this._properties.textAnchor && this._properties.textAnchor == "middle") {
-            align = "center";
-//            width += offset;
-            x -= offset;
+        this._input.style.display = "block";
+        
+        var fontSize = window.getComputedStyle(this._text, null).getPropertyValue("font-size");
+        if (fontSize) {
+            this._input.style.fontSize = fontSize;
         }
 
-        this._input.style.left   = x + "px";
-        this._input.style.top    = y + "px";
-        // TODO this._input.style.width  = width + "px";
-        this._input.size = this._text.textContent.length * 1.2;
+        // position
+        var scrollX = (document.documentElement.scrollLeft || document.body.scrollLeft);
+        var scrollY = (document.documentElement.scrollTop || document.body.scrollTop);
+        var svgRect = this._text.getBoundingClientRect();
+        var textLen = this._text.getComputedTextLength();
+
+        this._input.style.width = (textLen*1.4) + "px";
+
+        var align = "left";
+        var x = svgRect.left + (svgRect.width - textLen); // width - length = fix for chrome not getting rect of tspan but whole text
+        var y = svgRect.top - 1;
+        if (this._properties.textAnchor && this._properties.textAnchor == "middle") {
+            align = "center";
+
+            var inputRect = this._input.getBoundingClientRect();
+            x = Math.floor((svgRect.left + svgRect.right)/2 - (inputRect.right - inputRect.left)/2 + 3);
+        }
+
         this._input.style.textAlign = align;
+        this._input.style.left   = (x + scrollX) + "px";
+        this._input.style.top    = (y + scrollY) + "px";
 
         // set value
         this._input.value = ""; // hack to get caret to the end of the input
         this._input.focus();
         this._input.value = this._getValue();
 
-        this._input.style.display = "block";
-
         // set input handlers
         var that = this;
         this._input.onkeydown = function(e) { that._keyPressHandler(e); };
-        this._input.onblur = function(e) { that._confirm(e) };
+        this._input.onblur    = function(e) { that._confirm(e); };
     };
 
     EditableText.prototype._hideInput = function() {

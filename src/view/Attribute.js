@@ -24,13 +24,13 @@ DBSDM.View.Attribute = (function(){
         gradient.appendChild(
             ns.Element.el("stop", {
                 "stop-color": "#ffffff",
-                "offset": "%0"
+                "offset": "0%"
             })
         );
         gradient.appendChild(
             ns.Element.el("stop", {
                 "stop-color": "#eaeaea",
-                "offset": "%100"
+                "offset": "100%"
             })
         );
         this._canvas.createSharedElement("Attr.BgGradient", gradient );
