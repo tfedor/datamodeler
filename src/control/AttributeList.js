@@ -32,6 +32,7 @@ DBSDM.Control.AttributeList = (function(){
             return element == control;
         });
         this._controls.splice(index, 1);
+        this._updatePositions();
     };
 
     AttributeList.prototype.getPosition = function(attrModel) {
@@ -46,10 +47,27 @@ DBSDM.Control.AttributeList = (function(){
         }
 
         this._model.setPosition(attrModel, position);
+        this._updatePositions();
+        return position;
+    };
+
+    AttributeList.prototype._updatePositions = function() {
         for (var i=0; i<this._controls.length; i++) {
             this._controls[i].reposition();
         }
-        return position;
+    };
+
+    AttributeList.prototype.getMinimalSize = function() {
+        var size = {
+            width: 0,
+            height: 0
+        };
+        for (var i=0; i<this._controls.length; i++) {
+            var a = this._controls[i].getMinimalSize();
+            size.width = Math.max(size.width, a.width);
+            size.height += a.height;
+        }
+        return size;
     };
 
     return AttributeList;

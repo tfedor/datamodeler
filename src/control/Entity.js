@@ -61,6 +61,8 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.dragControlPoint = function(mouse, cp) {
+        var min = this.getMinimalSize();
+
         var translate = {x: 0, y: 0};
         var resize    = {x: 0, y: 0};
 
@@ -81,6 +83,18 @@ DBSDM.Control.Entity = (function(){
         this._model.translate(translate.x, translate.y);
         this._model.resize(resize.x, resize.y);
 
+        // contraint
+        /* TODO ?
+        var transform = this._model.getTransform();
+        if (transform.width < min.width) {
+            this._model.setSize(min.width);
+        }
+        if (transform.height < min.height) {
+            this._model.setSize(null, min.height);
+        }
+        */
+
+        //
         var edges = this._model.getEdges();
         for (var i=0; i<this._relationLegList.length; i++) {
             this._relationLegList[i].onEntityResize(edges);
@@ -129,6 +143,16 @@ DBSDM.Control.Entity = (function(){
 
     Entity.prototype.getEdgePosition = function(edge) {
         return this._model.getEdgePosition(edge);
+    };
+
+    Entity.prototype.getMinimalSize = function() {
+        var size = this._view.getMinimalSize();
+
+        var attributes = this._attributeList.getMinimalSize();
+        size.width += attributes.width;
+        size.height += attributes.height;
+
+        return size;
     };
 
     // Relations
@@ -194,6 +218,17 @@ DBSDM.Control.Entity = (function(){
             case "rel-n1": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.ONE);  break;
             case "rel-1n": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break;
             case "rel-11": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.ONE);  break;
+            case "fit":
+                var size = this.getMinimalSize();
+                this._model.setSize(size.width, size.height);
+                this._view.redraw();
+
+                var edges = this._model.getEdges();
+                for (var i=0; i<this._relationLegList.length; i++) {
+                    this._relationLegList[i].onEntityResize(edges);
+                }
+                break;
+
         }
     };
 
@@ -241,77 +276,6 @@ DBSDM.Control.Entity = (function(){
             this.activate();
         }
     };
-
-
-
-
-
-
-
-
-
-    /*
-
-    // handlers
-
-    Entity.prototype.onMouseDown = function(e, mouse) {
-        var params = mouse.getParams();
-        if (params.action == 'newRelation') {
-            if (this._menuAttached) {
-                this._canvas.menu.Entity.detach();
-            }
-            this._menuBlocked = true;
-        }
-    };
-
-    Entity.prototype.onMouseMove = function(e, mouse){
-        var key;
-        var action = mouse.getParams().action;
-        if (action == "drag") {
-            this.translateBy(mouse.rx, mouse.ry);
-
-            for(key in this._relations) {
-                this._relations[key].translateAnchorBy(mouse.rx, mouse.ry);
-            }
-        } else {
-            if (action == "rsz-tl") {
-                this.translateBy(mouse.rx, mouse.ry);
-                this.resizeBy(-mouse.rx, -mouse.ry);
-            } else if (action == "rsz-br") {
-                this.resizeBy(mouse.rx, mouse.ry);
-            } else if (action == "rsz-bl") {
-                this.translateBy(mouse.rx);
-                this.resizeBy(-mouse.rx, mouse.ry);
-            } else if (action == "rsz-tr") {
-                this.translateBy(null, mouse.ry);
-                this.resizeBy(mouse.rx, -mouse.ry);
-            }
-
-            for(key in this._relations) {
-                if (this._relations.hasOwnProperty(key)) {
-                    this._relations[key].updateAnchorAfterResize();
-                }
-            }
-        }
-    };
-
-    Entity.prototype.onMouseUp = function(e, mouse){
-         this.translateTo(
-            parseInt(this._dom.attr('x')),
-            parseInt(this._dom.attr('y'))
-        );
-        this.resize(
-            parseInt(this._dom.attr('width')),
-            parseInt(this._dom.attr('height'))
-        );
-
-        this._menuBlocked = false;
-        if (this._menuAttached) {
-            this.attachMenu();
-        }
-        return true;
-    };
-    */
 
     return Entity;
 })();

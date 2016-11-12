@@ -12,7 +12,8 @@ DBSDM.View.Attribute = (function(){
         this._control = control;
         this._canvas = canvas;
 
-        this._dom = null;
+        this._svg = null;
+        this._text = null;
         this._index = null;
         this._nullable = null;
     }
@@ -63,30 +64,37 @@ DBSDM.View.Attribute = (function(){
         return offset + height * this._control.getPosition();
     };
 
+    Attribute.prototype.getMinimalSize = function() {
+        return {
+            width: this._text.getBoundingClientRect().width,
+            height: this._svg.getBoundingClientRect().height
+        };
+    };
+
     /**
      * Finish creation of entity, create other elements and attach control
      * */
     Attribute.prototype.create = function(control, parentDom) {
         this._createSharedElements();
 
-        this._dom = ns.Element.el("svg", {
+        this._svg = ns.Element.el("svg", {
             class: "attr",
             x: 0, y: this._getY(),
             width: "100%", height: height
         });
 
         // add background
-        this._dom.appendChild(
+        this._svg.appendChild(
             this._canvas.getSharedElement("Attr.Bg", { class: "attr-bg" })
         );
 
         // create text elements
-        var text = this._dom.appendChild( ns.Element.text(5, "50%") );
+        this._text = this._svg.appendChild( ns.Element.text(5, "50%") );
 
-        this._index    = text.appendChild( ns.Element.el("tspan", { class: "attr-index" }) );
+        this._index    = this._text.appendChild( ns.Element.el("tspan", { class: "attr-index" }) );
         this._index.textContent = this._getIndex();
 
-        this._nullable = text.appendChild( ns.Element.el("tspan", { class: "attr-nullable", dx: "2", dy: "0"}) );
+        this._nullable = this._text.appendChild( ns.Element.el("tspan", { class: "attr-nullable", dx: "2", dy: "0"}) );
         this._nullable.textContent = this._getNullable();
 
         var model = this._model;
@@ -97,14 +105,14 @@ DBSDM.View.Attribute = (function(){
             function(value) { model.setName(value); },
             "tspan"
         );
-        text.appendChild(nameInput.getTextDom());
+        this._text.appendChild(nameInput.getTextDom());
 
-        this._dom.appendChild(text);
-        parentDom.appendChild(this._dom);
+        this._svg.appendChild(this._text);
+        parentDom.appendChild(this._svg);
 
         var mouse = this._canvas.Mouse;
-        this._dom.addEventListener("mousedown", function(e) { mouse.down(e, control); });
-        this._dom.addEventListener("contextmenu", function(e) { ns.Menu.attach(control, "attribute"); });
+        this._svg.addEventListener("mousedown", function(e) { mouse.down(e, control); });
+        this._svg.addEventListener("contextmenu", function(e) { ns.Menu.attach(control, "attribute"); });
     };
 
     Attribute.prototype.redrawIndex = function() {
@@ -116,23 +124,25 @@ DBSDM.View.Attribute = (function(){
     };
 
     Attribute.prototype.reposition = function() {
-        ns.Element.attr(this._dom, {y: this._getY() });
+        ns.Element.attr(this._svg, {y: this._getY() });
+
+        console.log(this.getMinimalSize());
     };
 
     Attribute.prototype.destroy = function() {
-        this._dom.remove();
+        this._svg.remove();
     };
 
     Attribute.prototype.getEdges = function() {
-        return this._dom.getBoundingClientRect();
+        return this._svg.getBoundingClientRect();
     };
 
     Attribute.prototype.dragStarted = function() {
-        this._dom.classList.add("dragged");
+        this._svg.classList.add("dragged");
     };
 
     Attribute.prototype.dragEnded = function() {
-        this._dom.classList.remove("dragged");
+        this._svg.classList.remove("dragged");
     };
 
     return Attribute;

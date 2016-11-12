@@ -11,18 +11,22 @@ DBSDM.View.Entity = (function(){
         this._canvas = canvas;
 
         this._dom = null;
+        this._name = null;
         this._createSharedElements();
 
         this._controls = null;
-
-/*
-        this._attributes = [];
-        this._relations = [];
-        */
     }
 
     Entity.prototype.getDom = function() {
         return this._dom;
+    };
+
+    Entity.prototype.getMinimalSize = function() {
+        var rect = this._name.getBoundingClientRect();
+        return {
+            width: rect.width + 10, // TODO padding constant
+            height: rect.height + 15 // TODO padding constant
+        };
     };
 
     Entity.prototype._createSharedElements = function() {
@@ -84,7 +88,7 @@ DBSDM.View.Entity = (function(){
             function() { return that._model.getName(); },
             function(value) { that._model.setName(value); } // TODO set name in control?
         );
-        this._dom.appendChild(nameInput.getTextDom());
+        this._name = this._dom.appendChild(nameInput.getTextDom());
 
         this._dom.addEventListener("mousedown", function(e) { mouse.down(e, control); });
         this._dom.addEventListener("mouseenter", function(e) { mouse.enter(e, control); });
@@ -120,93 +124,6 @@ DBSDM.View.Entity = (function(){
     Entity.prototype.hideControls = function() {
         this._controls.remove();
     };
-
-
-    Entity.prototype.createListeners = function() {
-
-        /*
-        // set event callbacks
-        var that = this;
-
-        // menu
-        this._dom.node.addEventListener("mouseenter", function() { that.attachMenu(); });
-        this._dom.node.addEventListener("mouseleave", function() { that.detachMenu(); });
-
-        // create resize control
-        this._dom.append(
-            canvas.Paper.g(
-                canvas.Paper.use(canvas.getSharedElement('ControlRectangle')),
-                canvas.Paper.use(canvas.getSharedElement('ControlPoint')).attr({class: "rsz-tl", x: 0, y: 0}),
-                canvas.Paper.use(canvas.getSharedElement('ControlPoint')).attr({class: "rsz-bl", x: 0, y: "100%"}),
-                canvas.Paper.use(canvas.getSharedElement('ControlPoint')).attr({class: "rsz-tr", x: "100%", y: 0}),
-                canvas.Paper.use(canvas.getSharedElement('ControlPoint')).attr({class: "rsz-br", x: "100%", y: "100%"})
-            )
-            .attr({
-                class: "rsz",
-                pointerEvents: "none"
-            })
-            .mousedown(function(e){
-                canvas.Mouse.down(e, that, {action: e.target.className.baseVal})
-            })
-        );
-*/
-
-        return this._dom;
-    };
-
-    /*
-
-    // menu
-
-    Entity.prototype.attachMenu = function() {
-        if (this._menuBlocked) { return; }
-        this._menuAttached = true;
-        canvas.menu.Entity.attachTo(this._dom.node, this._size.width/2, this);
-    };
-
-    Entity.prototype.detachMenu = function() {
-        if (this._menuBlocked) { return; }
-        canvas.menu.Entity.detach();
-        this._menuAttached = false;
-    };
-
-    Entity.prototype.handleMenu = function(action) {
-        if (action == "newAttribute") {
-            this.createAttribute();
-        } else if (action == "newRelation") {
-            this.createRelation();
-        } else if (action == "delete") {
-            this._canvas.removeEntity(this._id);
-
-            if (this._menuAttached) {
-                this._canvas.menu.Entity.detach();
-            }
-
-            if (this._dom) {
-                this._dom.remove();
-            }
-        }
-    };
-
-    Entity.prototype.createAttribute = function() {
-        var atr = new Attribute(this, this._attributes.length);
-        this._attributes.push(atr);
-        this._dom.append(atr.draw(this._canvas));
-    };
-
-    Entity.prototype.deleteAttribute = function(order) {
-        this._attributes.splice(order, 1);
-        for (var i=order; i<this._attributes.length; i++) {
-            this._attributes[i].reorder(i);
-        }
-    };
-
-    Entity.prototype.createRelation = function() {
-        var control = new RelationControl(canvas, this);
-        control.draw(this._position.x + this._size.width / 2, this._position.y + this._size.height / 2);
-        this._canvas.Mouse.attachObject(control);
-    };
-    */
 
     return Entity;
 })();

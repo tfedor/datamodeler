@@ -33,6 +33,8 @@ DBSDM.Menu = {
                 ],
                 "link"
             ],
+            ["Is a...", "isa"],
+            ["Fit to contents", "fit"],
             ["Delete Entity", "delete", "ban"]
         ],
 

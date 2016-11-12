@@ -33,6 +33,10 @@ DBSDM.Control.Attribute = (function(){
         this._view.reposition();
     };
 
+    Attribute.prototype.getMinimalSize = function() {
+        return this._view.getMinimalSize();
+    };
+
     // Menu Handlers
     Attribute.prototype.handleMenu = function(action) {
         switch(action) {
