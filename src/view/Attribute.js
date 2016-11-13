@@ -4,7 +4,6 @@ DBSDM.View = DBSDM.View ||{};
 DBSDM.View.Attribute = (function(){
     var ns = DBSDM;
 
-    var offset = 20;
     var height = 18;
 
     function Attribute(model, control, canvas) {
@@ -61,7 +60,7 @@ DBSDM.View.Attribute = (function(){
     };
 
     Attribute.prototype._getY = function() {
-        return offset + height * this._control.getPosition();
+        return height * this._control.getPosition();
     };
 
     Attribute.prototype.getMinimalSize = function() {

@@ -19,7 +19,9 @@ DBSDM.Model.Entity = (function(){
             y: 0,
             width: 0,
             height: 0
-        }
+        };
+        this._parent = null;
+        this._children = [];
     }
 
     Entity.prototype.getName = function() {
@@ -28,6 +30,23 @@ DBSDM.Model.Entity = (function(){
 
     Entity.prototype.setName = function(name) {
         this._name = name;
+    };
+
+    Entity.prototype.setParent = function(parent) {
+        this._parent = parent;
+    };
+
+    Entity.prototype.addChild = function(child) {
+        this._children.push(child);
+    };
+
+    Entity.prototype.removeChild = function(child) {
+        for (var i=0; i<this._children.length; i++) {
+            if (child == this._children[i]) {
+                this._children.splice(i, 1);
+                return;
+            }
+        }
     };
 
     Entity.prototype.getAttributeList = function() {
@@ -77,12 +96,22 @@ DBSDM.Model.Entity = (function(){
         return this._transform;
     };
 
+    /** in Canvas coordinates! */
     Entity.prototype.getEdges = function() {
+        var transform = Object.assign({}, this._transform);
+        var parent = this._parent;
+        while (parent != null) {
+            var parentTransform = parent.getTransform();
+            transform.x += parentTransform.x;
+            transform.y += parentTransform.y;
+            parent = parent._parent;
+        }
+
         return {
-            top: this._transform.y,
-            right: this._transform.x + this._transform.width,
-            bottom: this._transform.y + this._transform.height,
-            left: this._transform.x
+            top: transform.y,
+            right: transform.x + transform.width,
+            bottom: transform.y + transform.height,
+            left: transform.x
         };
     };
 

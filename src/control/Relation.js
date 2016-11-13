@@ -65,8 +65,11 @@ DBSDM.Control.Relation = (function() {
         var cursor = {x: x, y: y};
 
         // get possible edges
-        var center = this._sourceEntity.getVisualCenter();
         var edges = this._sourceEntity.getEdges();
+        var center = {
+            x: (edges.left + edges.right)*0.5,
+            y: (edges.top + edges.bottom)*0.5
+        };
 
         var edgeLR, posLR, lenLR;
         if (x < edges.left || x > edges.right) {

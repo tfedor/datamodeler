@@ -9,7 +9,7 @@ DBSDM.Control.Attribute = (function(){
 
         this._model = (model || new DBSDM.Model.Attribute());
         this._view = new ns.View.Attribute(this._model, this, canvas);
-        this._view.create(this, entityControl.getDom());
+        this._view.create(this, entityControl.getAttrContainer());
 
         this._dragOffset = null;
         this._dragStartPosition = null;
@@ -19,10 +19,6 @@ DBSDM.Control.Attribute = (function(){
     Attribute.prototype._delete = function() {
         this._list.removeAttribute(this._model, this);
         this._view.destroy();
-    };
-
-    Attribute.prototype.appendTo = function(entityDom) {
-        this._view.appendTo(entityDom);
     };
 
     Attribute.prototype.getPosition = function() {

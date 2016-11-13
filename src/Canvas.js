@@ -13,7 +13,6 @@ DBSDM.Canvas = (function() {
         this._container = null;
         this.svg = null;
         this._defs = null;
-        this.Paper = null;
 
         /**
          * Mouse controller

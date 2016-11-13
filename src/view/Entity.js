@@ -4,7 +4,7 @@ DBSDM.View = DBSDM.View ||{};
 DBSDM.View.Entity = (function(){
     var ns = DBSDM;
 
-    var bgStrokeWidth = 3;
+    var bgStrokeWidth = 1;
 
     function Entity(model, canvas) {
         this._model = model;
@@ -12,6 +12,7 @@ DBSDM.View.Entity = (function(){
 
         this._dom = null;
         this._name = null;
+        this._attrContainer = null;
         this._createSharedElements();
 
         this._controls = null;
@@ -19,6 +20,10 @@ DBSDM.View.Entity = (function(){
 
     Entity.prototype.getDom = function() {
         return this._dom;
+    };
+
+    Entity.prototype.getAttrContainer = function() {
+        return this._attrContainer;
     };
 
     Entity.prototype.getMinimalSize = function() {
@@ -29,6 +34,10 @@ DBSDM.View.Entity = (function(){
         };
     };
 
+    Entity.prototype.setParent = function(parentDom) {
+        parentDom.appendChild(this._dom);
+    };
+
     Entity.prototype._createSharedElements = function() {
         if (this._canvas.hasSharedElement('Entity.Bg')) { return; }
 
@@ -36,7 +45,7 @@ DBSDM.View.Entity = (function(){
             ns.Element.rect(0, 0, "100%", "100%", {
                 rx: 10, ry: 10,
                 fill: "#A4E1FF",
-                stroke: "#5271FF",
+                stroke: "#0000FF", // #5271FF
                 strokeWidth: bgStrokeWidth
             })
         );
@@ -89,6 +98,11 @@ DBSDM.View.Entity = (function(){
             function(value) { that._model.setName(value); } // TODO set name in control?
         );
         this._name = this._dom.appendChild(nameInput.getTextDom());
+        this._attrContainer = this._dom.appendChild(
+            ns.Element.el("svg", {
+                x: 0, y: 20 // TODO offset
+            })
+        );
 
         this._dom.addEventListener("mousedown", function(e) { mouse.down(e, control); });
         this._dom.addEventListener("mouseenter", function(e) { mouse.enter(e, control); });

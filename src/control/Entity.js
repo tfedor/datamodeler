@@ -14,12 +14,19 @@ DBSDM.Control.Entity = (function(){
         this._attributeList = new ns.Control.AttributeList(this._model.getAttributeList(), this._canvas, this);
         this._relationLegList = [];
         this._view = new ns.View.Entity(this._model, this._canvas);
+        this._parent = null;
+        this._children = [];
 
         this._new = true;
+        this._ignoredInput = {x:0,y:0};
     }
 
     Entity.prototype.getDom = function() {
         return this._view.getDom();
+    };
+
+    Entity.prototype.getAttrContainer = function() {
+        return this._view.getAttrContainer();
     };
 
     /**
@@ -48,21 +55,81 @@ DBSDM.Control.Entity = (function(){
     };
 
     /**
+     * Set position with respect to parent entity
+     */
+    Entity.prototype._setPosition = function(newX, newY) {
+        var x,y;
+        if (this._parent != null) {
+            var padding = 10; // TODO
+
+            var transform = this._model.getTransform();
+            var parentTransform = this._parent._model.getTransform();
+            x = Math.min(
+                Math.max(
+                    newX - this._ignoredInput.x,
+                    padding
+                ),
+                parentTransform.width - transform.width - padding
+            );
+            this._ignoredInput.x += x - newX;
+
+            y = Math.min(
+                Math.max(
+                    newY - this._ignoredInput.y,
+                    padding
+                ),
+                parentTransform.height - transform.height - padding
+            );
+            this._ignoredInput.y += y - newY;
+        } else {
+            x = newX;
+            y = newY;
+        }
+
+        var delta = {
+            x: x - transform.x,
+            y: y - transform.y
+        };
+
+        this._model.setPosition(x, y);
+        return delta;
+    };
+
+    /**
      * Drag entity
      */
     Entity.prototype.drag = function(mouse) {
-        this._model.translate(mouse.rx, mouse.ry);
+        var delta;
+        if (this._parent != null) {
+            var transform = this._model.getTransform();
+            delta = this._setPosition(
+                transform.x + mouse.rx,
+                transform.y + mouse.ry
+            );
+        } else {
+            this._model.translate(mouse.rx, mouse.ry);
+            delta = {
+                x: mouse.rx,
+                y: mouse.ry
+            }
+        }
 
+        this.notifyDrag(delta.x, delta.y);
+    };
+
+    Entity.prototype.notifyDrag = function(x, y) {
         for (var i=0; i<this._relationLegList.length; i++) {
-            this._relationLegList[i].translate(mouse.rx, mouse.ry);
+            this._relationLegList[i].translate(x, y);
             this._relationLegList[i].redraw();
             this._relationLegList[i].getParentRelation().onEntityDrag();
+        }
+
+        for (var c=0; c<this._children.length; c++) {
+            this._children[c].notifyDrag(x, y);
         }
     };
 
     Entity.prototype.dragControlPoint = function(mouse, cp) {
-        var min = this.getMinimalSize();
-
         var translate = {x: 0, y: 0};
         var resize    = {x: 0, y: 0};
 
@@ -95,6 +162,10 @@ DBSDM.Control.Entity = (function(){
         */
 
         //
+        this._notifyResize();
+    };
+
+    Entity.prototype._notifyResize = function() {
         var edges = this._model.getEdges();
         for (var i=0; i<this._relationLegList.length; i++) {
             this._relationLegList[i].onEntityResize(edges);
@@ -129,14 +200,6 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
-    Entity.prototype.getVisualCenter = function() {
-        var transform = this._model.getTransform();
-        return {
-            x: transform.x + transform.width*0.5,
-            y: transform.y + transform.height*0.5
-        };
-    };
-
     Entity.prototype.getEdges = function() {
         return this._model.getEdges();
     };
@@ -148,10 +211,25 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype.getMinimalSize = function() {
         var size = this._view.getMinimalSize();
 
+        // attributes
         var attributes = this._attributeList.getMinimalSize();
         size.width += attributes.width;
         size.height += attributes.height;
 
+        // children entities
+        var count = this._children.length;
+        if (count != 0) {
+            var childrenWidth = (2+count-1) * 10; // TODO entity padding + in between margin;
+            var childrenHeight = 0;
+            for (var i=0; i<count; i++) {
+                var ent = this._children[i].getMinimalSize();
+                childrenWidth += ent.width;
+                childrenHeight = Math.max(childrenHeight, ent.height);
+            }
+
+            size.width = Math.max(size.width, childrenWidth);
+            size.height += childrenHeight;
+        }
         return size;
     };
 
@@ -182,7 +260,10 @@ DBSDM.Control.Entity = (function(){
 
     Entity.prototype.getEdgeCursorPosition = function(x, y) {
         var edges = this._model.getEdges();
-        var center = this.getVisualCenter();
+        var center = {
+            x: (edges.left + edges.right)*0.5,
+            y: (edges.top + edges.bottom)*0.5,
+        };
 
         var EdgeOffset = 10; // TODO;
 
@@ -205,30 +286,101 @@ DBSDM.Control.Entity = (function(){
         return null;
     };
 
+    // ISA
+    Entity.prototype._isa = function(parent) {
+        if (this._parent == parent) { return; }
+        if (this._parent != null) {
+            this._parent.removeChild(this);
+        }
+
+        var mouse = this._canvas.Mouse;
+
+        this._parent = parent;
+        if (parent == null) {
+            this._view.setParent(this._canvas.svg);
+            // TODO add to Canvas list
+
+            this._setPosition(mouse.x, mouse.y);
+        } else {
+            this._model.setParent(parent._model);
+            this._view.setParent(parent.getDom());
+
+            parent.addChild(this);
+
+            // set position inside
+            var parentTransform = parent._model.getTransform();
+            this._setPosition(mouse.x - parentTransform.x, mouse.y - parentTransform.y);
+        }
+
+        this._view.redraw();
+    };
+
+    Entity.prototype.removeChild = function(child) {
+        this._model.removeChild(child);
+
+        for (var i=0; i<this._children.length; i++) {
+            if (child == this._children[i]) {
+                this._children.splice(i, 1);
+                break;
+            }
+        }
+    };
+
+    Entity.prototype.addChild = function(child) {
+        this._model.addChild(child);
+        this._children.push(child);
+
+        var childTransform = child._model.getTransform();
+        var transform = this._model.getTransform();
+
+        var neededWidth  = childTransform.width + 2*10; // TODO padding
+        var neededHeight = childTransform.height + 2*10 ;// TODO padding
+
+        this._model.setSize(
+            (transform.width  < neededWidth  ? neededWidth  : null),
+            (transform.height < neededHeight ? neededHeight : null)
+        );
+
+        this._notifyResize();
+        this._view.redraw();
+    };
+
+    Entity.prototype.fitToContents = function() {
+        var size = this.getMinimalSize();
+        this._model.setSize(size.width, size.height);
+
+        //
+        if (this._children.length != 0) {
+            var offsetTop = this._view.getMinimalSize().height + this._attributeList.getMinimalSize().height - 10; // TODO padding
+            var offsetLeft = 10; // TODO padding
+
+            for (var i=0; i<this._children.length; i++) {
+                var child = this._children[i].getMinimalSize();
+
+                this._children[i].fitToContents();
+                this._children[i]._setPosition(offsetLeft, offsetTop);
+                this._children[i]._view.redraw();
+
+                offsetLeft += 10 + child.width; // TODO padding
+            }
+        }
+
+        //
+        this._view.redraw();
+        this._notifyResize();
+    };
+
     // Menu Handlers
     Entity.prototype.handleMenu = function(action) {
         switch(action) {
-            case "delete":
-                this._delete();
-                break;
-            case "attr":
-                this._attributeList.createAttribute();
-                break;
+            case "delete": this._delete(); break;
+            case "attr": this._attributeList.createAttribute(); break;
             case "rel-nm": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.MANY); break;
             case "rel-n1": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.ONE);  break;
             case "rel-1n": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break;
             case "rel-11": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.ONE);  break;
-            case "fit":
-                var size = this.getMinimalSize();
-                this._model.setSize(size.width, size.height);
-                this._view.redraw();
-
-                var edges = this._model.getEdges();
-                for (var i=0; i<this._relationLegList.length; i++) {
-                    this._relationLegList[i].onEntityResize(edges);
-                }
-                break;
-
+            case "fit": this.fitToContents(); break;
+            case "isa": this._canvas.Mouse.attachObject(this); break;
         }
     };
 
@@ -274,7 +426,16 @@ DBSDM.Control.Entity = (function(){
             }
         } else if (!mouse.didMove()) {
             this.activate();
+        } else {
+            var parent = mouse.getTarget();
+            if (parent instanceof ns.Control.Entity && parent != this) {
+                this._isa(parent);
+            } else if (parent instanceof ns.Canvas) {
+                this._isa(null);
+            }
         }
+
+        this._ignoredInput = {x:0, y:0};
     };
 
     return Entity;

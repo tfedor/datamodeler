@@ -139,7 +139,7 @@ DBSDM.Menu = {
      * Attach object handler for part of menu, which will be also displayed
      * */
     attach: function(handler, section, params) {
-        if (!this._dom.sections.hasOwnProperty(section)) { return; }
+        if (!this._dom.sections.hasOwnProperty(section) || this._handlers.attached.hasOwnProperty(section)) { return; }
         this._handlers.attached[section] = handler;
         this._dom.sections[section].style.display = "none";
         this._params[section] = params || null;
