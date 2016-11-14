@@ -13,7 +13,7 @@ DBSDM.Control.Entity = (function(){
         this._model = new ns.Model.Entity();
         this._attributeList = new ns.Control.AttributeList(this._model.getAttributeList(), this._canvas, this);
         this._relationLegList = [];
-        this._view = new ns.View.Entity(this._model, this._canvas);
+        this._view = new ns.View.Entity(this._canvas, this._model, this);
         this._parent = null;
         this._children = [];
 
@@ -53,6 +53,11 @@ DBSDM.Control.Entity = (function(){
             this._model.setPosition(null, mouse.y);
         }
         this._model.setSize(Math.abs(mouse.dx), Math.abs(mouse.dy));
+    };
+
+    Entity.prototype.setName = function(name) {
+        this._model.setName(name);
+        this.encompassContent();
     };
 
     /**
@@ -457,7 +462,7 @@ DBSDM.Control.Entity = (function(){
             case "delete": this.delete(); break;
             case "attr":
                 this._attributeList.createAttribute();
-                this.computeNeededSize();
+                this.encompassContent();
                 break;
             case "rel-nm": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.MANY); break;
             case "rel-n1": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.ONE);  break;
@@ -507,7 +512,7 @@ DBSDM.Control.Entity = (function(){
                 }
             } else {
                 this._view.create(this);
-                this.computeNeededSize();
+                this.encompassContent();
             }
         } else if (!mouse.didMove()) {
             this.activate();

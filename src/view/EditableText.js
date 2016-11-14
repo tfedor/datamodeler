@@ -64,8 +64,8 @@ DBSDM.View.EditableText = (function(){
         var value = this._input.value;
         if (value == "") { return; }
 
-        this._setHandler(value);
         this._text.innerHTML = value;
+        this._setHandler(value);
     };
 
     /** Input handling */
@@ -94,6 +94,8 @@ DBSDM.View.EditableText = (function(){
     };
 
     EditableText.prototype._showInput = function() {
+        ns.Menu.hide();
+        
         this._input.style.display = "block";
 
         var fontSize = window.getComputedStyle(this._text, null).getPropertyValue("font-size");

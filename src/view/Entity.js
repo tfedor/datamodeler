@@ -6,9 +6,10 @@ DBSDM.View.Entity = (function(){
 
     var bgStrokeWidth = 1;
 
-    function Entity(model, canvas) {
-        this._model = model;
+    function Entity(canvas, model, control) {
         this._canvas = canvas;
+        this._model = model;
+        this._control = control;
 
         this._dom = null;
         this._name = null;
@@ -95,7 +96,7 @@ DBSDM.View.Entity = (function(){
             "50%", bgStrokeWidth,
             { class: "entity-name", textAnchor: "middle" },
             function() { return that._model.getName(); },
-            function(value) { that._model.setName(value); } // TODO set name in control?
+            function(value) { that._control.setName(value); } // TODO set name in control?
         );
         this._name = this._dom.appendChild(nameInput.getTextDom());
         this._attrContainer = this._dom.appendChild(
