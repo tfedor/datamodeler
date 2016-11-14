@@ -19,6 +19,7 @@ DBSDM.Control.Entity = (function(){
 
         this._new = true;
         this._ignoredInput = {x:0,y:0};
+        this._neededSize = {width:0,height:0}; // size needed to encompass all content with it's current size
     }
 
     Entity.prototype.getDom = function() {
@@ -59,10 +60,10 @@ DBSDM.Control.Entity = (function(){
      */
     Entity.prototype._setPosition = function(newX, newY) {
         var x,y;
+        var transform = this._model.getTransform();
         if (this._parent != null) {
             var padding = 10; // TODO
 
-            var transform = this._model.getTransform();
             var parentTransform = this._parent._model.getTransform();
             x = Math.min(
                 Math.max(
@@ -130,44 +131,95 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.dragControlPoint = function(mouse, cp) {
-        var translate = {x: 0, y: 0};
-        var resize    = {x: 0, y: 0};
+        var transform = this._model.getTransform();
+        var x=null, y=null;
+        var width=null, height=null;
+
+        var cursor = {
+            x: mouse.x,
+            y: mouse.y
+        };
+        var parent = null;
+        if (this._parent != null) { // change coordinate scheme to parent local
+            parent = this._parent.getEdges(); // TODO do only once on drag start
+            cursor.x -= parent.left;
+            cursor.y -= parent.top;
+        }
+
+        // set desired state
 
         if (/n/.test(cp)) {
-            translate.y = mouse.ry;
-            resize.y = -mouse.ry;
+            y = (parent == null ? cursor.y : Math.max(cursor.y, 10)); // TODO edge padding
+            height = (transform.y - y) + transform.height;
         } else if (/s/.test(cp)) {
-            resize.y = mouse.ry;
+            height = cursor.y - transform.y;
         }
 
         if (/w/.test(cp)) {
-            translate.x = mouse.rx;
-            resize.x = -mouse.rx;
+            x = (parent == null ? cursor.x : Math.max(cursor.x, 10)); // TODO edge padding
+            width = (transform.x - x) + transform.width;
         } else if (/e/.test(cp)) {
-            resize.x = mouse.rx;
+            width = cursor.x - transform.x;
         }
 
-        this._model.translate(translate.x, translate.y);
-        this._model.resize(resize.x, resize.y);
+        // constrain width/height
 
-        // contraint
-        /* TODO ?
-        var transform = this._model.getTransform();
-        if (transform.width < min.width) {
-            this._model.setSize(min.width);
+        if (width != null && width < this._neededSize.width) {
+            width = this._neededSize.width;
+            if (x != null) {
+                x = transform.x + transform.width - this._neededSize.width;
+            }
         }
-        if (transform.height < min.height) {
-            this._model.setSize(null, min.height);
+        if (height != null && height < this._neededSize.height) {
+            height = this._neededSize.height;
+            if (y != null) {
+                y = transform.y + transform.height - this._neededSize.height;
+            }
         }
-        */
 
-        //
+        this._model.setPosition(x, y);
+        this._model.setSize(width, height);
         this._notifyResize();
     };
 
+    Entity.prototype.resetPosition = function() {
+        var t = this._model.getTransform();
+        this._setPosition(t.x, t.y);
+        this._view.redraw();
+    };
+
+    Entity.prototype.encompassContent = function() {
+        this.computeNeededSize();
+        var transform = this._model.getTransform();
+
+
+
+
+
+        this._model.setSize(
+            (transform.width < this._neededSize.width ? this._neededSize.width : null),
+            (transform.height < this._neededSize.height ? this._neededSize.height : null)
+        );
+
+        this._view.redraw();
+    };
+
     Entity.prototype._notifyResize = function() {
+        var i;
+
+        // children
+        for (i=0; i<this._children.length; i++) {
+            this._children[i].resetPosition();
+        }
+
+        // parent
+        if (this._parent != null) {
+            this._parent.encompassContent();
+        }
+
+        // relations
         var edges = this._model.getEdges();
-        for (var i=0; i<this._relationLegList.length; i++) {
+        for (i=0; i<this._relationLegList.length; i++) {
             this._relationLegList[i].onEntityResize(edges);
         }
     };
@@ -231,6 +283,28 @@ DBSDM.Control.Entity = (function(){
             size.height += childrenHeight;
         }
         return size;
+    };
+
+    Entity.prototype.computeNeededSize = function() {
+        var size = this._view.getMinimalSize();
+
+        // attributes
+        var attributes = this._attributeList.getMinimalSize();
+        size.width += attributes.width;
+        size.height += attributes.height;
+
+        // children entities
+        var count = this._children.length;
+        if (count != 0) {
+            for (var i=0; i<count; i++) {
+                var child = this._children[i]._model.getTransform();
+                size.width = Math.max(size.width, child.x + child.width + 10); // TODO padding
+                size.height = Math.max(size.height, child.y + child.height + 10); // TODO padding
+            }
+        }
+
+        this._neededSize.width = size.width;
+        this._neededSize.height = size.height;
     };
 
     // Relations
@@ -302,14 +376,13 @@ DBSDM.Control.Entity = (function(){
 
             this._setPosition(mouse.x, mouse.y);
         } else {
+            var parentTransform = parent._model.getTransform();
+            this._setPosition(mouse.x - parentTransform.x, mouse.y - parentTransform.y);;
+
             this._model.setParent(parent._model);
-            this._view.setParent(parent.getDom());
+            this._view.setParent(parent.getDom())
 
             parent.addChild(this);
-
-            // set position inside
-            var parentTransform = parent._model.getTransform();
-            this._setPosition(mouse.x - parentTransform.x, mouse.y - parentTransform.y);
         }
 
         this._view.redraw();
@@ -324,6 +397,7 @@ DBSDM.Control.Entity = (function(){
                 break;
             }
         }
+        this.computeNeededSize();
     };
 
     Entity.prototype.addChild = function(child) {
@@ -343,6 +417,7 @@ DBSDM.Control.Entity = (function(){
 
         this._notifyResize();
         this._view.redraw();
+        this.computeNeededSize();
     };
 
     Entity.prototype.fitToContents = function() {
@@ -374,7 +449,10 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype.handleMenu = function(action) {
         switch(action) {
             case "delete": this._delete(); break;
-            case "attr": this._attributeList.createAttribute(); break;
+            case "attr":
+                this._attributeList.createAttribute();
+                this.computeNeededSize();
+                break;
             case "rel-nm": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.MANY); break;
             case "rel-n1": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.ONE);  break;
             case "rel-1n": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break;
@@ -423,6 +501,7 @@ DBSDM.Control.Entity = (function(){
                 }
             } else {
                 this._view.create(this);
+                this.computeNeededSize();
             }
         } else if (!mouse.didMove()) {
             this.activate();
