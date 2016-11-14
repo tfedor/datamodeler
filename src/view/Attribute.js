@@ -124,8 +124,6 @@ DBSDM.View.Attribute = (function(){
 
     Attribute.prototype.reposition = function() {
         ns.Element.attr(this._svg, {y: this._getY() });
-
-        console.log(this.getMinimalSize());
     };
 
     Attribute.prototype.destroy = function() {

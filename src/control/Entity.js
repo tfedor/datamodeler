@@ -192,10 +192,6 @@ DBSDM.Control.Entity = (function(){
         this.computeNeededSize();
         var transform = this._model.getTransform();
 
-
-
-
-
         this._model.setSize(
             (transform.width < this._neededSize.width ? this._neededSize.width : null),
             (transform.height < this._neededSize.height ? this._neededSize.height : null)
@@ -386,6 +382,13 @@ DBSDM.Control.Entity = (function(){
         }
 
         this._view.redraw();
+
+        // redraw relations
+        for (var i=0; i<this._relationLegList.length; i++) {
+            this._relationLegList[i].getParentRelation().straighten();
+            this._relationLegList[i].redraw();
+            this._relationLegList[i].getParentRelation().onEntityDrag();
+        }
     };
 
     Entity.prototype.removeChild = function(child) {

@@ -44,9 +44,11 @@ DBSDM.Model.Relation = (function(){
         this.middleMoved = false;
     };
 
-    Relation.prototype.resetAnchors = function() {
-        var sourceEntity = this._source.getEntity();
-        var targetEntity = this._target.getEntity();
+    Relation.prototype.resetAnchors = function(recompute, sourceEntity, targetEntity) {
+        recompute = recompute || false;
+
+        sourceEntity = sourceEntity || this._source.getEntity();
+        targetEntity = targetEntity || this._target.getEntity();
         if (sourceEntity == targetEntity) { return; }
 
         var edges = [];
@@ -69,20 +71,27 @@ DBSDM.Model.Relation = (function(){
             edges.push(Enum.Edge.TOP);
         }
 
+        if (edges.length == 0) { // ISA or something weird
+            edges.push(Enum.Edge.TOP);
+            edges.push(Enum.Edge.RIGHT);
+            edges.push(Enum.Edge.BOTTOM);
+            edges.push(Enum.Edge.LEFT);
+        }
+
         if (edges.length > 0) {
             // compute positions
             var i,j;
             var anchor;
             for (i=0; i<edges.length; i++) {
                 anchor = this._source.getAnchor();
-                if (anchor.edge == edges[i]) {
+                if (!recompute && anchor.edge == edges[i]) {
                     source.pos.push({x: anchor.x, y: anchor.y});
                 } else {
                     source.pos.push(sourceEntity.getEdgePosition(edges[i]));
                 }
 
                 anchor = this._target.getAnchor();
-                if (anchor.edge == (edges[i] + 2) % 4) {
+                if (!recompute && anchor.edge == (edges[i] + 2) % 4) {
                     target.pos.push({x: anchor.x, y: anchor.y});
                 } else {
                     target.pos.push(targetEntity.getEdgePosition((edges[i] + 2) % 4));
@@ -111,10 +120,10 @@ DBSDM.Model.Relation = (function(){
         }
     };
 
-    Relation.prototype.straighten = function() {
+    Relation.prototype.straighten = function(recompute, sourceEntity, targetEntity) {
         this._source.clearPoints();
         this._target.clearPoints();
-        this.resetAnchors();
+        this.resetAnchors(recompute, sourceEntity, targetEntity);
         this.resetMiddlePoint();
     };
 
