@@ -240,11 +240,14 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
-    Entity.prototype._delete = function() {
-        this._view.remove();
+    Entity.prototype.delete = function() {
+        for (var i=0; i<this._children.length; i++) {
+            this._children[i].delete();
+        }
 
-        for(var i=0; i<this._relationLegList.length; i++) {
-            this._relationLegList[i].getParentRelation().clear();
+        this._view.remove();
+        while(this._relationLegList.length > 0) {
+            this._relationLegList[0].getParentRelation().clear();
         }
     };
 
@@ -451,7 +454,7 @@ DBSDM.Control.Entity = (function(){
     // Menu Handlers
     Entity.prototype.handleMenu = function(action) {
         switch(action) {
-            case "delete": this._delete(); break;
+            case "delete": this.delete(); break;
             case "attr":
                 this._attributeList.createAttribute();
                 this.computeNeededSize();
