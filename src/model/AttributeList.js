@@ -2,11 +2,13 @@ var DBSDM = DBSDM || {};
 DBSDM.Model = DBSDM.Model ||{};
 
 DBSDM.Model.AttributeList = (function(){
-    var ns = DBSDM;
-
     function AttributeList() {
         this._list = [];
     }
+
+    AttributeList.prototype.getList = function() {
+        return this._list;
+    };
 
     AttributeList.prototype.add = function(attribute, position) {
         if (position == undefined) {
@@ -43,7 +45,6 @@ DBSDM.Model.AttributeList = (function(){
         }
         return str;
     };
-
 
     return AttributeList;
 })();

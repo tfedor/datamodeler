@@ -74,6 +74,8 @@ DBSDM.View.RelationLeg = (function(){
     };
 
     RelationLeg.prototype.draw = function() {
+        this._g = ns.Element.g();
+
         this._buildLine();
         this._buildAnchor();
 
@@ -82,6 +84,10 @@ DBSDM.View.RelationLeg = (function(){
             this._line,
             this._anchor
         );
+
+        this.updatePoints();
+        this.updateType();
+
         ns.Element.attr(this._g, {class: "leg"});
 
         var that = this;
@@ -180,9 +186,6 @@ DBSDM.View.RelationLeg = (function(){
             strokeLinejoin: "miter",
             class: "line"
         });
-
-        this.updatePoints();
-        this.updateType();
     };
 
     RelationLeg.prototype._getPointsString = function(points) {

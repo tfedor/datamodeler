@@ -8,7 +8,7 @@ DBSDM.Canvas = (function() {
     var ns = DBSDM;
 
     function Canvas() {
-        this.id = Random.string(5);
+        this.id = ns.Random.string(5);
 
         this._container = null;
         this.svg = null;
@@ -21,7 +21,9 @@ DBSDM.Canvas = (function() {
 
         this.menu = {};
 
-        this._entities = {};
+        this.importMap = {}; // map Entity model ID to entity control
+        this._entities = [];
+        this._relations = [];
     }
 
     Canvas.prototype.create = function() {
@@ -89,6 +91,64 @@ DBSDM.Canvas = (function() {
         return document.getElementById(this._sharedElementName(name));
     };
 
+    // entities
+
+    Canvas.prototype.addEntity = function(entity) {
+        this._entities.push(entity);
+    };
+    Canvas.prototype.removeEntity =  function(entity) {
+        for (var i=0; i<this._entities.length; i++) {
+            if (this._entities[i] == entity) {
+                this._entities.splice(i, 1);
+                return;
+            }
+        }
+    };
+
+    Canvas.prototype.addRelation = function(relation) {
+        this._relations.push(relation);
+    };
+    Canvas.prototype.removeRelation = function(relation) {
+        for (var i=0; i<this._relations.length; i++) {
+            if (this._relations[i] == relation) {
+                this._relations.splice(i, 1);
+                return;
+            }
+        }
+    };
+
+    Canvas.prototype.clear = function() {
+        while (this._entities.length != 0) {
+            this._entities[0].delete();
+        }
+    };
+
+    Canvas.prototype.import = function(entityModelList, relationModelList) {
+        var i;
+        for (i=0; i < entityModelList.length; i++) {
+            (new ns.Control.Entity(this, entityModelList[i])).import();
+        }
+
+        for (i=0; i < relationModelList.length; i++) {
+            var model = relationModelList[i];
+
+            var sourceId = model.getSource().getEntity().getId();
+            var targetId = model.getTarget().getEntity().getId();
+
+            console.log(sourceId + " -> " + targetId);
+            (new ns.Control.Relation(this, this.importMap[sourceId], this.importMap[targetId], null, null, model))
+                .import();
+
+            //var targetLegModel = model.getTarget();
+
+            // from model to entity
+
+            //sourceEntityControl,
+            //targetEntityControl,
+            //model
+        }
+    };
+
     // event handlers
 
     Canvas.prototype.onMouseDown = function() {
@@ -97,21 +157,6 @@ DBSDM.Canvas = (function() {
 
         this.Mouse.attachObject(ent);
     };
-
-
-/*
-    Canvas.prototype.removeEntity =  function(id) {
-        if (this._entities.hasOwnProperty(id)) {
-            delete this._entities[id];
-        }
-    };
-
-    Canvas.prototype.clear = function() {
-        this._sharedElements = {};
-        this.Paper.clear();
-    };
-
-*/
 
     return Canvas;
 })();

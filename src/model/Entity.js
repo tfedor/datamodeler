@@ -11,9 +11,9 @@ DBSDM.Model.Entity = (function(){
     var EdgeOffset = 10; // TODO
 
     function Entity(name) {
+        this._id = ns.Random.id(8);
         this._name = name || "Entity";
         this._attributes = new ns.Model.AttributeList();
-        this._relationLegs = [];
         this._transform = {
             x: 0,
             y: 0,
@@ -22,7 +22,13 @@ DBSDM.Model.Entity = (function(){
         };
         this._parent = null;
         this._children = [];
+
+        this._relationLegs = []; // does not export from here
     }
+
+    Entity.prototype.getId = function() {
+        return this._id;
+    };
 
     Entity.prototype.getName = function() {
         return this._name;
@@ -47,6 +53,10 @@ DBSDM.Model.Entity = (function(){
                 return;
             }
         }
+    };
+
+    Entity.prototype.getChildren = function() {
+        return this._children;
     };
 
     Entity.prototype.getAttributeList = function() {
@@ -175,8 +185,6 @@ DBSDM.Model.Entity = (function(){
         str += "Entity " + this._name + "\n";
         str += "----------------------\n";
         str += this._attributes.toString();
-        str += "\n";
-
         str += "----------------------\n";
         for (var i in this._relationLegs) {
             str += this._relationLegs[i].getRelation().toString() + "\n";

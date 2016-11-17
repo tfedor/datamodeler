@@ -7,10 +7,10 @@ DBSDM.Control.Entity = (function(){
 
     Entity.activeEntity = null;
 
-    function Entity(canvas) {
+    function Entity(canvas, model) {
         this._canvas = canvas;
 
-        this._model = new ns.Model.Entity();
+        this._model = model || new ns.Model.Entity();
         this._attributeList = new ns.Control.AttributeList(this._model.getAttributeList(), this._canvas, this);
         this._relationLegList = [];
         this._view = new ns.View.Entity(this._canvas, this._model, this);
@@ -20,6 +20,11 @@ DBSDM.Control.Entity = (function(){
         this._new = true;
         this._ignoredInput = {x:0,y:0};
         this._neededSize = {width:0,height:0}; // size needed to encompass all content with it's current size
+
+        // if being imported, save to import map
+        if (model) {
+            this._canvas.importMap[this._model.getId()] = this;
+        }
     }
 
     Entity.prototype.getDom = function() {
@@ -39,6 +44,37 @@ DBSDM.Control.Entity = (function(){
         this._model.setPosition(x, y);
 
         this._view.createEmpty();
+    };
+
+    Entity.prototype._finishCreation = function() {
+        this._view.create(this);
+        this._canvas.addEntity(this);
+        this._new = false;
+    };
+
+    /** Draw from current model data (after import) */
+    Entity.prototype.import = function(parentControl) {
+        this._view.createEmpty();
+        this._finishCreation();
+
+        if (parentControl) {
+            this._parent = parentControl;
+            this._view.setParent(parentControl.getDom());
+            this._view.redraw();
+            this._canvas.removeEntity(this);
+        }
+
+        this._attributeList.draw();
+
+        // draw children
+        var children = this._model.getChildren();
+        for (var i=0; i<children.length; i++) {
+            var child = new ns.Control.Entity(this._canvas, children[i]);
+            this._children.push(child);
+            child.import(this);
+        }
+
+        this.computeNeededSize();
     };
 
     /**
@@ -246,6 +282,8 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.delete = function() {
+        this._canvas.removeEntity(this);
+
         for (var i=0; i<this._children.length; i++) {
             this._children[i].delete();
         }
@@ -313,7 +351,7 @@ DBSDM.Control.Entity = (function(){
 
     // Relations
     Entity.prototype._createRelation = function(sourceCardinality, targetCardinality) {
-        var control = new ns.Control.Relation(canvas, this, sourceCardinality, targetCardinality);
+        var control = new ns.Control.Relation(canvas, this, null, sourceCardinality, targetCardinality);
         this._canvas.Mouse.attachObject(control);
     };
 
@@ -376,7 +414,7 @@ DBSDM.Control.Entity = (function(){
         this._parent = parent;
         if (parent == null) {
             this._view.setParent(this._canvas.svg);
-            // TODO add to Canvas list
+            this._canvas.addEntity(this);
 
             this._setPosition(mouse.x, mouse.y);
         } else {
@@ -384,7 +422,8 @@ DBSDM.Control.Entity = (function(){
             this._setPosition(mouse.x - parentTransform.x, mouse.y - parentTransform.y);;
 
             this._model.setParent(parent._model);
-            this._view.setParent(parent.getDom())
+            this._view.setParent(parent.getDom());
+            this._canvas.removeEntity(this);
 
             parent.addChild(this);
         }
@@ -412,7 +451,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.addChild = function(child) {
-        this._model.addChild(child);
+        this._model.addChild(child._model);
         this._children.push(child);
 
         var childTransform = child._model.getTransform();
@@ -501,8 +540,6 @@ DBSDM.Control.Entity = (function(){
 
     Entity.prototype.onMouseUp = function(e, mouse) {
         if (this._new) {
-            this._new = false;
-
             // view create other elements
             if (mouse.dx == 0 || mouse.dy == 0) {
                 this._view.remove();
@@ -511,7 +548,7 @@ DBSDM.Control.Entity = (function(){
                     Entity.activeEntity.deactivate();
                 }
             } else {
-                this._view.create(this);
+                this._finishCreation();
                 this.encompassContent();
             }
         } else if (!mouse.didMove()) {

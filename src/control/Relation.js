@@ -5,18 +5,25 @@ DBSDM.Control.Relation = (function() {
     var ns = DBSDM;
     var Enum = ns.Enums;
 
-    function Relation(canvas, sourceEntityControl, sourceCardinality, targetCardinality) {
+    function Relation(canvas, sourceEntityControl, targetEntityControl, sourceCardinality, targetCardinality, model) {
         this._canvas = canvas;
 
         this._sourceEntity = sourceEntityControl;
-        this._targetEntity = null;
+        this._targetEntity = targetEntityControl || null;
 
         this._new = true;
 
         // model
-        var source = new ns.Model.RelationLeg(false, false, sourceCardinality);
-        var target = new ns.Model.RelationLeg(true, true, targetCardinality);
-        this._model = new ns.Model.Relation(source, target);
+        var source, target;
+        if (!model) {
+            source = new ns.Model.RelationLeg(false, false, sourceCardinality);
+            target = new ns.Model.RelationLeg(true, true, targetCardinality);
+            this._model = new ns.Model.Relation(source, target);
+        } else {
+            this._model = model;
+            source = this._model.getSource();
+            target = this._model.getTarget();
+        }
 
         // legs control
         this._legs = {
@@ -42,12 +49,27 @@ DBSDM.Control.Relation = (function() {
         this._sourceEntity.removeRelationLeg(this._legs.source);
         this._targetEntity.removeRelationLeg(this._legs.target);
         this._view.clear();
+
+        this._canvas.removeRelation(this);
     };
 
     Relation.prototype.straighten = function() {
         this._model.straighten();
         this._legs.source.clearControlPoints();
         this._legs.target.clearControlPoints();
+    };
+
+    Relation.prototype.import = function() {
+        this._new = false;
+
+        this._sourceEntity.addRelationLeg(this._legs.source);
+        this._legs.source.setEntityControl(this._sourceEntity);
+
+        this._targetEntity.addRelationLeg(this._legs.target);
+        this._legs.target.setEntityControl(this._targetEntity);
+
+        this._canvas.addRelation(this);
+        this.redraw();
     };
 
     // middle point
@@ -203,6 +225,8 @@ DBSDM.Control.Relation = (function() {
 
             this._targetEntity.addRelationLeg(this._legs.target);
             this._legs.target.setEntityControl(this._targetEntity);
+
+            this._canvas.addRelation(this);
         }
     };
 

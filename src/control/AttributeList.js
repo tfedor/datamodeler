@@ -13,16 +13,25 @@ DBSDM.Control.AttributeList = (function(){
     }
 
     AttributeList.prototype.createAttribute = function() {
-
-        // create new Attribute model and add it to list
         var attrModel = new ns.Model.Attribute();
         this._model.add(attrModel);
 
-        // create control for new model
-        var control = new ns.Control.Attribute(this, attrModel, this._canvas, this._entityControl, this._model.getSize() - 1);
-        this._controls.push(control);
+        this._createAttributeControl(attrModel);
+    };
 
-        return control;
+    AttributeList.prototype._createAttributeControl = function(attributeModel) {
+        this._controls.push(
+            new ns.Control.Attribute(this, attributeModel, this._canvas, this._entityControl)
+        );
+    };
+
+    /** Draw current model (after import) */
+    AttributeList.prototype.draw = function() {
+        var list = this._model.getList();
+        var count = list.length;
+        for (var i=0; i<count; i++) {
+            this._createAttributeControl(list[i]);
+        }
     };
 
     AttributeList.prototype.removeAttribute = function(attrModel, control) {

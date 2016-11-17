@@ -48,6 +48,12 @@
         -->
 </head>
 <body>
+
+    <a href="javascript:toString();void(0);">to string</a>
+    <a href="javascript:clear();void(0);">clear</a>
+
+    <a href="javascript:saveEntityModels();void(0);">save</a>
+    <a href="javascript:redrawEntities();void(0);">redraw</a>
     <script>
 
         DBSDM.Menu.build();
@@ -55,44 +61,60 @@
         var canvas = new DBSDM.Canvas();
         canvas.create();
 
+        function toString() {
+            for (var i=0; i <canvas._entities.length; i++) {
+                console.log(canvas._entities[i]._model.toString());
+            }
+        }
 
-        /*
-        var e1 = new Entity();
-        e1.setName("First");
-        e1.addAttribute(new Attribute());
-        e1.addAttribute(new Attribute());
-        e1.addAttribute(new Attribute());
+        function clear() {
+            canvas.clear();
+        }
 
-        var e2 = new Entity();
-        e2.setName("Second");
+        var entities = [];
+        var relations = [];
+        function saveEntityModels() {
+            entities = [];
+            var i;
+            for (i=0; i <canvas._entities.length; i++) {
+                entities.push(canvas._entities[i]._model);
+            }
+            console.log(entities);
 
-        var r = new Relation(e1, e2);
-        r.setSource(false, true, 0);
-        e1.addRelation(r);
-        e2.addRelation(r);
+            relations = [];
+            for (i=0; i <canvas._relations.length; i++) {
+                relations.push(canvas._relations[i]._model);
+            }
+        }
 
-        console.log(e1.toString());
-        console.log(e2.toString());
-        */
+        function redrawEntities() {
+            var e1 = new DBSDM.Model.Entity("Entity_1");
+            e1.setPosition(100, 150);
+            e1.setSize(50, 80);
 
+            var e2 = new DBSDM.Model.Entity("Entity_2");
+            e2.setPosition(300, 125);
+            e2.setSize(70, 50);
 
-        /*
-        var canvas = new Canvas(document.getElementById('canvas'), '#canvas svg');
-        canvas.draw();
+            var source = new DBSDM.Model.RelationLeg(true, true, DBSDM.Enums.Cardinality.MANY);
+            source.setEntity(e1);
+            source.setAnchorOffset(11);
+            source.setAnchor(150, 170, DBSDM.Enums.Edge.RIGHT);
 
+            var target = new DBSDM.Model.RelationLeg(false, false, DBSDM.Enums.Cardinality.ONE);
+            target.setEntity(e2);
+            target.setAnchorOffset(11);
+            target.setAnchor(300, 170, DBSDM.Enums.Edge.LEFT);
 
-        var e1 = new Entity(200, 100);
-        e1.resize(100, 150);
-        e1.draw(canvas);
+            var r1 = new DBSDM.Model.Relation(source, target);
+            r1.straighten();
 
-        var e2 = new Entity(800, 80);
-        e2.resize(80, 60);
-        e2.draw(canvas);
-        */
+            console.log(source._points);
+            source.addPoint(1, {x: 170, y: 200});
 
-        //var r = new Relation(e1);
-        //r.draw(canvas);
-        //r.setDestination(e2);
+            canvas.import([e1, e2], [r1]);
+        }
+
 
     </script>
 

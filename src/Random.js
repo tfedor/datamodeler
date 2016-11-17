@@ -1,5 +1,6 @@
+var DBSDM = DBSDM || {};
 
-var Random = {
+DBSDM.Random = {
     string: function(length) {
         var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
         var str = "";
@@ -12,7 +13,7 @@ var Random = {
     id: function(length) {
         var chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         var str = chars.charAt(Math.floor(Math.random() * chars.length));
-        str += Random.string(length - 1);
+        str += DBSDM.Random.string(length - 1);
         return str;
     }
 };
