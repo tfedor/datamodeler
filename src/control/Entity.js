@@ -524,6 +524,10 @@ DBSDM.Control.Entity = (function(){
         this.resetForce();
     };
 
+    Entity.prototype.hasParent = function() {
+        return this._model.hasParent();
+    };
+
     // Menu Handlers
     Entity.prototype.handleMenu = function(action) {
         switch(action) {

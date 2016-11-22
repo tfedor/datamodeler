@@ -186,6 +186,9 @@ DBSDM.Control.Relation = (function() {
     // sort
 
     Relation.prototype.getVector = function() {
+        if (this._sourceEntity == this._targetEntity) {
+            return new ns.Geometry.Vector(0,0);
+        }
         var s = this._model.getSource().getAnchor();
         var t = this._model.getTarget().getAnchor();
         return (new ns.Geometry.Vector()).fromPoints(s, t);

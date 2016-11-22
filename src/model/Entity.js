@@ -42,6 +42,10 @@ DBSDM.Model.Entity = (function(){
         this._parent = parent;
     };
 
+    Entity.prototype.hasParent = function() {
+        return this._parent != null;
+    };
+
     Entity.prototype.addChild = function(child) {
         this._children.push(child);
     };

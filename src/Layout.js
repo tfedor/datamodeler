@@ -3,30 +3,18 @@ var DBSDM = DBSDM || {};
 DBSDM.Layout = (function() {
     var ns = DBSDM;
 
-    var M = 100; // iterations
-    var c1 = 2;
-    var c2 = 1;
-    var c3 = 10000;
-    var c4 = 5;
-
+    var iterations = 100;
     var optimal = 150;
-    var C = 0.2;
+    var attractionScale = 0.3;
+    var straightenScale = 0.1;
+    var repulsionScale = 15;
+    var applyScale = 0.4;
 
     function Layout() {
-        this.limits = {
-            top: 0,
-            right: 0,
-            left: 0,
-            bottom: 0
-        };
-        this.center = {
-            x: 0,
-            y: 0
-        }
     }
 
     Layout.prototype.sort = function(entities, relations) {
-        for (var i=0; i<1; i++) {
+        for (var i=0; i<iterations; i++) {
             this._computeRelationsStrenghts(relations);
             this._computeEntitiesRepulsions(entities);
             this._applyForces(entities);
@@ -41,40 +29,31 @@ DBSDM.Layout = (function() {
 
             var length = force.getLength();
 
-            //var strength = c1 * Math.log(length / c2);
-            //force.multiply(strength/length); // normalize and set strength
-
-            var scale = 0.8;
-            force.multiply(scale*0.5*(length - optimal) / length);
+            // attraction
+            force.multiply(0.5 * attractionScale*(length - optimal) / length); // only count half of vector, since it's applied to both sides
             relations[i].addForceToEntities(force);
 
-            rot.multiply(0.1);
+            // straighten
+            rot.multiply(straightenScale * (1 - (rot.getLength() / length))); // scale also by length, should prefer shorter leg for straightening
             relations[i].addForceToEntities(rot);
         }
     };
 
     Layout.prototype._computeEntitiesRepulsions = function(entities) {
         var count = entities.length;
-        console.log(count);
         for (var i=0; i<count; i++) {
+            if (entities[i].hasParent()) { continue; }
             var centerA = entities[i].getCenter();
 
             for (var j=i+1; j<count; j++) {
+                if (entities[j].hasParent()) { continue; }
+
                 var centerB = entities[j].getCenter();
                 var length = ns.Geometry.pointToPointDistance(centerA, centerB);
-
-                //var strength = (c3 / (length * length));
-                //var force = (new ns.Geometry.Vector()).fromPoints(centerA, centerB) // create new vector
-                //    .multiply(strength/length); // normalize and set strength
-
                 if (length > optimal*1.5) { continue; }
 
-                var q1 = optimal*0.4;
-                var q2 = optimal*0.4;
-                var scale = 15;
-
                 var force = (new ns.Geometry.Vector()).fromPoints(centerA, centerB) // create new vector
-                    .multiply(scale * (q1*q2) / (length*length*length));
+                    .multiply(repulsionScale*optimal*optimal / (length*length*length));
 
                 // add repulsive forces to entities
                 entities[i].addForce(force.getOpposite());
@@ -86,7 +65,7 @@ DBSDM.Layout = (function() {
     Layout.prototype._applyForces = function(entities) {
         var count = entities.length;
         for (var i=0; i<count; i++) {
-            entities[i].applyForce(1);
+            entities[i].applyForce(applyScale);
         }
     };
 
