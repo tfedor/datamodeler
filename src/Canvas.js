@@ -19,6 +19,8 @@ DBSDM.Canvas = (function() {
          */
         this.Mouse = null;
 
+        this.Layout = new ns.Layout();
+
         this.menu = {};
 
         this.importMap = {}; // map Entity model ID to entity control
@@ -147,6 +149,22 @@ DBSDM.Canvas = (function() {
             //targetEntityControl,
             //model
         }
+    };
+
+    Canvas.prototype.sort = function() {
+        /*
+        for (var i=0; i<this._entities.length; i++) {
+            var entity = this._entities[i];
+
+            entity.encompassContent();
+            entity.encompassContent(); // called twice to get correct size of text elements if they were previously hidden
+
+            entity._model.setPosition(10, 10);
+
+            entity._view.redraw();
+        }
+        */
+        this.Layout.sort(this._entities, this._relations);
     };
 
     // event handlers

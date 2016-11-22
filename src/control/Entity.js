@@ -25,6 +25,8 @@ DBSDM.Control.Entity = (function(){
         if (model) {
             this._canvas.importMap[this._model.getId()] = this;
         }
+
+        this._force = new ns.Geometry.Vector();
     }
 
     Entity.prototype.getDom = function() {
@@ -493,6 +495,33 @@ DBSDM.Control.Entity = (function(){
         //
         this._view.redraw();
         this._notifyResize();
+    };
+
+    // Sort
+
+    Entity.prototype.getCenter = function() {
+        var transform = this._model.getTransform();
+        return {
+            x: transform.x + transform.width * 0.5,
+            y: transform.y + transform.height * 0.5
+        }
+    };
+
+    Entity.prototype.resetForce = function() {
+        this._force.reset();
+    };
+
+    Entity.prototype.addForce = function(force) {
+        this._force.add(force);
+    };
+
+    Entity.prototype.applyForce = function(modifier) {
+        this._force.multiply(modifier);
+
+        this._model.translate(this._force.x, this._force.y);
+        this.notifyDrag(this._force.x, this._force.y);
+        this._view.redraw();
+        this.resetForce();
     };
 
     // Menu Handlers

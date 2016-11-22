@@ -183,6 +183,20 @@ DBSDM.Control.Relation = (function() {
         }
     };
 
+    // sort
+
+    Relation.prototype.getVector = function() {
+        var s = this._model.getSource().getAnchor();
+        var t = this._model.getTarget().getAnchor();
+        return (new ns.Geometry.Vector()).fromPoints(s, t);
+    };
+
+    Relation.prototype.addForceToEntities = function(force) {
+        this._sourceEntity.addForce(force);
+        this._targetEntity.addForce(force.getOpposite());
+    };
+
+    // events
 
     Relation.prototype.onEntityDrag = function() {
         if (this._model.isManual()) { return; }

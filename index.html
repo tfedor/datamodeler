@@ -33,9 +33,11 @@
 
     <script type="application/javascript" src="src/Random.js"></script>
     <script type="application/javascript" src="src/Canvas.js"></script>
+    <script type="application/javascript" src="src/Layout.js"></script>
     <script type="application/javascript" src="src/Mouse.js"></script>
     <script type="application/javascript" src="src/Element.js"></script>
     <script type="application/javascript" src="src/Geometry.js"></script>
+    <script type="application/javascript" src="src/Vector.js"></script>
 
     <script type="application/javascript" src="src/MenuController.js"></script>
 
@@ -54,6 +56,7 @@
 
     <a href="javascript:saveEntityModels();void(0);">save</a>
     <a href="javascript:redrawEntities();void(0);">redraw</a>
+    <a href="javascript:sort();void(0);">sort</a>
     <script>
 
         DBSDM.Menu.build();
@@ -89,6 +92,9 @@
 
         function redrawEntities() {
             var e1 = new DBSDM.Model.Entity("Entity_1");
+            var e1atr = e1.getAttributeList();
+            e1atr.add(new DBSDM.Model.Attribute("Attribute_1"));
+
             e1.setPosition(100, 150);
             e1.setSize(50, 80);
 
@@ -109,12 +115,15 @@
             var r1 = new DBSDM.Model.Relation(source, target);
             r1.straighten();
 
-            console.log(source._points);
-            source.addPoint(1, {x: 170, y: 200});
+            //source.addPoint(1, {x: 170, y: 200});
 
             canvas.import([e1, e2], [r1]);
         }
 
+
+        function sort() {
+            canvas.sort();
+        }
 
     </script>
 
