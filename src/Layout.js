@@ -3,25 +3,44 @@ var DBSDM = DBSDM || {};
 DBSDM.Layout = (function() {
     var ns = DBSDM;
 
-    var iterations = 100;
+    var iterations = 1000;
     var optimal = 150;
-    var attractionScale = 0.3;
+    var attractionScale = 0.25;
     var straightenScale = 0.1;
     var repulsionScale = 15;
     var applyScale = 0.4;
+    var origin = {
+        x: 10,
+        y: 10
+    };
 
     function Layout() {
+        this._entities = null;
+        this._relations = null;
     }
 
     Layout.prototype.sort = function(entities, relations) {
+        this._entities = entities;
+        this._relations = relations;
+
+        this._fit();
         for (var i=0; i<iterations; i++) {
-            this._computeRelationsStrenghts(relations);
-            this._computeEntitiesRepulsions(entities);
-            this._applyForces(entities);
+            this._computeRelationsStrenghts();
+            this._computeEntitiesRepulsions();
+            this._applyForces();
+        }
+        this._moveToOrigin();
+    };
+
+    Layout.prototype._fit = function() {
+        var count = this._entities.length;
+        for (var i=0; i<count; i++) {
+            this._entities[i].fitToContents();
         }
     };
 
-    Layout.prototype._computeRelationsStrenghts = function(relations) {
+    Layout.prototype._computeRelationsStrenghts = function() {
+        var relations = this._relations;
         var count = relations.length;
         for (var i=0; i<count; i++) {
             var force = relations[i].getVector();
@@ -39,7 +58,8 @@ DBSDM.Layout = (function() {
         }
     };
 
-    Layout.prototype._computeEntitiesRepulsions = function(entities) {
+    Layout.prototype._computeEntitiesRepulsions = function() {
+        var entities = this._entities;
         var count = entities.length;
         for (var i=0; i<count; i++) {
             if (entities[i].hasParent()) { continue; }
@@ -62,10 +82,32 @@ DBSDM.Layout = (function() {
         }
     };
 
-    Layout.prototype._applyForces = function(entities) {
+    Layout.prototype._applyForces = function() {
+        var entities = this._entities;
         var count = entities.length;
         for (var i=0; i<count; i++) {
             entities[i].applyForce(applyScale);
+        }
+    };
+
+    Layout.prototype._moveToOrigin = function() {
+        var entities = this._entities;
+        var edges = entities[0].getEdges();
+        var local = {
+            x: edges.left,
+            y: edges.top
+        };
+        var count = entities.length;
+        for (var i=1; i<count; i++) {
+            edges = entities[i].getEdges();
+            if (edges.left < local.x) { local.x = edges.left; }
+            if (edges.top  < local.y) { local.y = edges.top;  }
+        }
+
+        var vector = (new ns.Geometry.Vector()).fromPoints(local, origin);
+        for (i=0; i<count; i++) {
+            entities[i].addForce(vector);
+            entities[i].applyForce();
         }
     };
 

@@ -516,7 +516,9 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.applyForce = function(modifier) {
-        this._force.multiply(modifier);
+        if (modifier && modifier != 1) {
+            this._force.multiply(modifier);
+        }
 
         this._model.translate(this._force.x, this._force.y);
         this.notifyDrag(this._force.x, this._force.y);
