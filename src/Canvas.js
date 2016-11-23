@@ -125,6 +125,76 @@ DBSDM.Canvas = (function() {
         }
     };
 
+    Canvas.prototype.sort = function() {
+        /*
+        for (var i=0; i<this._entities.length; i++) {
+            var entity = this._entities[i];
+
+            entity.encompassContent();
+            entity.encompassContent(); // called twice to get correct size of text elements if they were previously hidden
+
+            entity._model.setPosition(10, 10);
+
+            entity._view.redraw();
+        }
+        */
+        this.Layout.sort(this._entities, this._relations);
+    };
+
+    // save/load, export/import
+    Canvas.prototype._sortEntityModels = function(a, b) {
+        return a.getName().localeCompare(b.getName());
+    };
+
+    Canvas.prototype._sortRelationModels = function(a, b) {
+        return a.toString().localeCompare(b.toString());
+    };
+
+    Canvas.prototype.save = function() {
+
+    };
+
+    Canvas.prototype.load = function() {
+
+    };
+
+    Canvas.prototype.export = function() {
+        var entityModels = [];
+        var relationModels = [];
+
+        // get models for entities and relations
+        var count = this._entities.length;
+        for (var i=0; i<count; i++) {
+            entityModels.push(this._entities[i].getModel());
+        }
+        count = this._relations.length;
+        for (i=0; i<count; i++) {
+            relationModels.push(this._relations[i].getModel());
+        }
+
+        // sort by names
+        entityModels.sort(this._sortEntityModels);
+        relationModels.sort(this._sortRelationModels);
+
+        // get resulting object
+        var result = {
+            entities: [],
+            relations: []
+        };
+
+        count = entityModels.length;
+        for (i=0; i<count; i++) {
+            result.entities.push(entityModels[i].getExportData());
+        }
+
+        count = relationModels.length;
+        for (i=0; i<count; i++) {
+            result.relations.push(relationModels[i].getExportData());
+        }
+
+        ns.File.download(JSON.stringify(result, null, 2), "model-data.json", "application/json");
+    };
+
     Canvas.prototype.import = function(entityModelList, relationModelList) {
         var i;
         for (i=0; i < entityModelList.length; i++) {
@@ -151,26 +221,10 @@ DBSDM.Canvas = (function() {
         }
     };
 
-    Canvas.prototype.sort = function() {
-        /*
-        for (var i=0; i<this._entities.length; i++) {
-            var entity = this._entities[i];
-
-            entity.encompassContent();
-            entity.encompassContent(); // called twice to get correct size of text elements if they were previously hidden
-
-            entity._model.setPosition(10, 10);
-
-            entity._view.redraw();
-        }
-        */
-        this.Layout.sort(this._entities, this._relations);
-    };
-
     // event handlers
 
     Canvas.prototype.onMouseDown = function() {
-        var ent = new DBSDM.Control.Entity(this);
+        var ent = new ns.Control.Entity(this, new ns.Model.Entity("Entity_" + (this._entities.length + 1)));
         ent.create();
 
         this.Mouse.attachObject(ent);

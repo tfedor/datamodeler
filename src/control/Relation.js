@@ -39,6 +39,10 @@ DBSDM.Control.Relation = (function() {
         );
     }
 
+    Relation.prototype.getModel = function() {
+        return this._model;
+    };
+
     Relation.prototype.redraw = function() {
         this._legs.source.redraw();
         this._legs.target.redraw();

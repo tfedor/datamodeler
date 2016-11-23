@@ -10,7 +10,7 @@ DBSDM.Control.Entity = (function(){
     function Entity(canvas, model) {
         this._canvas = canvas;
 
-        this._model = model || new ns.Model.Entity();
+        this._model = model;
         this._attributeList = new ns.Control.AttributeList(this._model.getAttributeList(), this._canvas, this);
         this._relationLegList = [];
         this._view = new ns.View.Entity(this._canvas, this._model, this);
@@ -35,6 +35,10 @@ DBSDM.Control.Entity = (function(){
 
     Entity.prototype.getAttrContainer = function() {
         return this._view.getAttrContainer();
+    };
+
+    Entity.prototype.getModel = function() {
+        return this._model;
     };
 
     /**

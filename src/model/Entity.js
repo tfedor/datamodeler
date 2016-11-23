@@ -184,6 +184,8 @@ DBSDM.Model.Entity = (function(){
         }
     };
 
+    // Data representation
+
     Entity.prototype.toString = function() {
         var str = "";
         str += "Entity " + this._name + "\n";
@@ -196,6 +198,14 @@ DBSDM.Model.Entity = (function(){
 
         str += "\n";
         return str;
+    };
+
+    Entity.prototype.getExportData = function() {
+        return {
+            name: this._name,
+            parent: (this._parent == null ? null : this._parent.getName()),
+            attr: this._attributes.getExportData()
+        };
     };
 
     return Entity;

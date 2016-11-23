@@ -136,7 +136,28 @@ DBSDM.Model.Relation = (function(){
     //
 
     Relation.prototype.toString = function() {
-        return this._source.toString() + " -> " + this._target.toString();
+        var src = this._source.toString();
+        var tgt = this._target.toString();
+        if (src.localeCompare(tgt) > 0) {
+            return tgt + " -> " + src;
+        }
+        return src + " -> " + tgt;
+    };
+
+    Relation.prototype.getExportData = function() {
+        var src = this._source.toString();
+        var tgt = this._target.toString();
+
+        if (src.localeCompare(tgt) > 0) {
+            return [
+                this._target.getExportData(),
+                this._source.getExportData()
+            ];
+        }
+        return [
+            this._source.getExportData(),
+            this._target.getExportData()
+        ];
     };
 
     return Relation;

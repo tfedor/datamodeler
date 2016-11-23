@@ -83,5 +83,14 @@ DBSDM.Model.Attribute = (function(){
         return str;
     };
 
+    Attribute.prototype.getData = function() {
+        return {
+            name: this._name,
+            primary: this._primary,
+            unique: this._unique,
+            nullable: this._nullable
+        }
+    };
+
     return Attribute;
 })();

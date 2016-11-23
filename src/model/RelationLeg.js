@@ -10,6 +10,7 @@ DBSDM.Model.RelationLeg = (function(){
     function RelationLeg(identifying, optional, cardinality) {
         this._relation = null;
 
+        this._entity = null;
         this._identifying = identifying;
         this._optional = optional;
         this._cardinality = cardinality;
@@ -170,17 +171,22 @@ DBSDM.Model.RelationLeg = (function(){
     //
 
     RelationLeg.prototype.toString = function() {
-        var str = "";
-        str += this._entity.getName();
-        str += " ";
-
-        if (this._identifying) { str += "I"; }
-        if (this._optional)    { str += "O"; }
-        str += " ";
-
-        str += "Cardinality ";
+        var str = this._entity.getName();
+        str += " [";
+        str += (this._identifying ? "I" : "i");
+        str += (this._optional    ? "O" : "o");
+        str += "] ";
         str += (this._cardinality == Enum.Cardinality.ONE ? "1" : "N");
         return str;
+    };
+
+    RelationLeg.prototype.getExportData = function() {
+        return {
+            entity: this._entity.getName(),
+            identifying: this._identifying,
+            optional: this._optional,
+            cardinality: this._cardinality
+        };
     };
 
     return RelationLeg;

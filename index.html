@@ -38,6 +38,7 @@
     <script type="application/javascript" src="src/Element.js"></script>
     <script type="application/javascript" src="src/Geometry.js"></script>
     <script type="application/javascript" src="src/Vector.js"></script>
+    <script type="application/javascript" src="src/File.js"></script>
 
     <script type="application/javascript" src="src/MenuController.js"></script>
 
@@ -57,6 +58,7 @@
     <a href="javascript:saveEntityModels();void(0);">save</a>
     <a href="javascript:redrawEntities();void(0);">redraw</a>
     <a href="javascript:sort();void(0);">sort</a>
+    <a href="javascript:ex();void(0);">export</a>
     <script>
 
         DBSDM.Menu.build();
@@ -120,6 +122,10 @@
             canvas.import([e1, e2], [r1]);
         }
 
+
+        function ex() {
+            canvas.export();
+        }
 
         function sort() {
             canvas.sort();
