@@ -10,9 +10,11 @@ DBSDM.Model.Entity = (function(){
 
     var EdgeOffset = 10; // TODO
 
+    /**
+     * @param name       string|object   Name of new entity or object to create entity from
+     */
     function Entity(name) {
-        this._id = ns.Random.id(8);
-        this._name = name || "Entity";
+        this._name = (name && typeof name == "string") ? name : "Entity";
         this._attributes = new ns.Model.AttributeList();
         this._transform = {
             x: 0,
@@ -24,11 +26,11 @@ DBSDM.Model.Entity = (function(){
         this._children = [];
 
         this._relationLegs = []; // does not export from here
-    }
 
-    Entity.prototype.getId = function() {
-        return this._id;
-    };
+        if (name && typeof name == "object") {
+            this.import(name);
+        }
+    }
 
     Entity.prototype.getName = function() {
         return this._name;
@@ -203,9 +205,14 @@ DBSDM.Model.Entity = (function(){
     Entity.prototype.getExportData = function() {
         return {
             name: this._name,
-            parent: (this._parent == null ? null : this._parent.getName()),
+            parent: (this._parent == null ? null : this._parent.getName()), // only name of the parent, not the parent object!
             attr: this._attributes.getExportData()
         };
+    };
+
+    Entity.prototype.import = function(data) {
+        if (data.name) { this._name = data.name; }
+        if (data.attr) { this._attributes.import(data.attr); }
     };
 
     return Entity;

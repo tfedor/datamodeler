@@ -24,5 +24,35 @@ DBSDM.File = (function() {
         }
     };
 
+    self.upload = function(e, canvas) {
+        e.stopPropagation();
+        e.preventDefault();
+
+        // fetch FileList object
+        var files = e.target.files || e.dataTransfer.files;
+
+        // process all File objects
+        if (files.length > 0) {
+            var file = files[0];
+            console.log(file);
+            if (file.type != "application/json") {
+                // TODO
+                console.log("File is not a JSON file");
+                return;
+            }
+
+            var reader = new FileReader();
+            reader.onload = function(e) {
+                var result = e.target.result;
+                var data = JSON.parse(result);
+                canvas.import(data);
+            };
+            reader.onerror = function(e) {
+                // TODO error handling
+            };
+            reader.readAsText(file);
+        }
+    };
+
     return self;
 }());

@@ -19,6 +19,7 @@ DBSDM.Model.Attribute = (function(){
 
     Attribute.prototype.setName = function(name) {
         this._name = name;
+        return this;
     };
 
     //
@@ -33,6 +34,7 @@ DBSDM.Model.Attribute = (function(){
                 this._unique = false;
             }
         }
+        return this;
     };
 
     //
@@ -47,6 +49,7 @@ DBSDM.Model.Attribute = (function(){
                 this._primary = false;
             }
         }
+        return this;
     };
 
     //
@@ -58,6 +61,7 @@ DBSDM.Model.Attribute = (function(){
         if (typeof bool == 'boolean') {
             this._nullable = bool;
         }
+        return this;
     };
 
     Attribute.prototype.toString = function() {

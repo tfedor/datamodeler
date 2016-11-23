@@ -23,7 +23,6 @@ DBSDM.Canvas = (function() {
 
         this.menu = {};
 
-        this.importMap = {}; // map Entity model ID to entity control
         this._entities = [];
         this._relations = [];
     }
@@ -50,6 +49,10 @@ DBSDM.Canvas = (function() {
         this.svg.addEventListener("mouseup",   function(e) { that.Mouse.up(e); });
 
         this.svg.addEventListener("contextmenu", function(e) { DBSDM.Menu.show(e); });
+
+        this.svg.addEventListener("dragover", function(e) { e.preventDefault(); } );
+        //this.svg.addEventListener("dragleave", function() { console.log("dragleave"); } );
+        document.body.addEventListener("drop", function(e) { ns.File.upload(e, that); }, false);
     };
 
     // shared elements for all canvas
@@ -195,8 +198,35 @@ DBSDM.Canvas = (function() {
         ns.File.download(JSON.stringify(result, null, 2), "model-data.json", "application/json");
     };
 
-    Canvas.prototype.import = function(entityModelList, relationModelList) {
+    Canvas.prototype.import = function(data) {
+
+        // create models from data
+        var entityModels = [];
+        var relationModels = [];
+
         var i;
+        var count = data.entities.length;
+        for (i=0; i<count; i++) {
+            entityModels.push(new ns.Model.Entity(data.entities[i]));
+        }
+
+        count = data.relations.length;
+        for (i=0; i<count; i++) {
+            relationModels.push(new ns.Model.Relation(null, null, data.relations[i]));
+        }
+
+        console.log(entityModels);
+        console.log(relationModels);
+
+        // TODO set ISA
+        // TODO set relations
+
+
+
+        return;
+
+        //
+
         for (i=0; i < entityModelList.length; i++) {
             (new ns.Control.Entity(this, entityModelList[i])).import();
         }

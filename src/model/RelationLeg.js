@@ -11,9 +11,13 @@ DBSDM.Model.RelationLeg = (function(){
         this._relation = null;
 
         this._entity = null;
-        this._identifying = identifying;
-        this._optional = optional;
-        this._cardinality = cardinality;
+        this._identifying = false;
+        this._optional = false;
+        this._cardinality = false;
+
+        this.setIdentifying(identifying)
+            .setOptional(optional)
+            .setCardinality(cardinality);
 
         this._name = null;
 
@@ -63,6 +67,7 @@ DBSDM.Model.RelationLeg = (function(){
         if (typeof bool == 'boolean') {
             this._identifying = bool;
         }
+        return this;
     };
 
     RelationLeg.prototype.isOptional = function() {
@@ -72,16 +77,17 @@ DBSDM.Model.RelationLeg = (function(){
         if (typeof bool == 'boolean') {
             this._optional = bool;
         }
+        return this;
     };
 
     RelationLeg.prototype.getCardinality = function() {
         return this._cardinality;
     };
     RelationLeg.prototype.setCardinality = function(cardinality) {
-        if (cardinality != Enum.Cardinality.ONE && cardinality != Enum.Cardinality.MANY) {
-            return;
+        if (cardinality == Enum.Cardinality.ONE || cardinality == Enum.Cardinality.MANY) {
+            this._cardinality = cardinality;
         }
-        this._cardinality = cardinality;
+        return this;
     };
 
     // anchor

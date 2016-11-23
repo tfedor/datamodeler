@@ -2,6 +2,8 @@ var DBSDM = DBSDM || {};
 DBSDM.Model = DBSDM.Model ||{};
 
 DBSDM.Model.AttributeList = (function(){
+    var ns = DBSDM;
+
     function AttributeList() {
         this._list = [];
     }
@@ -70,6 +72,22 @@ DBSDM.Model.AttributeList = (function(){
             result.push(list[i].getData());
         }
         return result;
+    };
+
+    AttributeList.prototype.import = function(data) {
+        if (typeof data != "object") { return; }
+        var count = data.length;
+        for (var i=0; i<count; i++) {
+            var a = data[i];
+            if (!a.name) { return; }
+
+            this.add(
+                (new ns.Model.Attribute(a.name))
+                .setPrimary(a.primary)
+                .setUnique(a.unique)
+                .setNullable(a.nullable)
+            );
+        }
     };
 
     return AttributeList;
