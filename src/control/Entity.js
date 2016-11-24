@@ -21,11 +21,6 @@ DBSDM.Control.Entity = (function(){
         this._ignoredInput = {x:0,y:0};
         this._neededSize = {width:0,height:0}; // size needed to encompass all content with it's current size
 
-        // if being imported, save to import map
-        if (model) {
-            this._canvas.importMap[this._model.getId()] = this;
-        }
-
         this._force = new ns.Geometry.Vector();
     }
 
@@ -63,24 +58,10 @@ DBSDM.Control.Entity = (function(){
         this._view.createEmpty();
         this._finishCreation();
 
-        if (parentControl) {
-            this._parent = parentControl;
-            this._view.setParent(parentControl.getDom());
-            this._view.redraw();
-            this._canvas.removeEntity(this);
-        }
-
         this._attributeList.draw();
 
-        // draw children
-        var children = this._model.getChildren();
-        for (var i=0; i<children.length; i++) {
-            var child = new ns.Control.Entity(this._canvas, children[i]);
-            this._children.push(child);
-            child.import(this);
-        }
-
         this.computeNeededSize();
+        return this;
     };
 
     /**
@@ -413,6 +394,7 @@ DBSDM.Control.Entity = (function(){
         if (this._parent == parent) { return; }
         if (this._parent != null) {
             this._parent.removeChild(this);
+            this._model.setParent(null);
         }
 
         var mouse = this._canvas.Mouse;
@@ -499,6 +481,7 @@ DBSDM.Control.Entity = (function(){
         //
         this._view.redraw();
         this._notifyResize();
+        return this;
     };
 
     // Sort
@@ -593,6 +576,7 @@ DBSDM.Control.Entity = (function(){
         } else if (!mouse.didMove()) {
             this.activate();
         } else {
+            // TODO fix bug for when you get faster with than entity is
             var parent = mouse.getTarget();
             if (parent instanceof ns.Control.Entity && parent != this) {
                 this._isa(parent);

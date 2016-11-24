@@ -73,6 +73,8 @@ DBSDM.Control.Relation = (function() {
         this._legs.target.setEntityControl(this._targetEntity);
 
         this._canvas.addRelation(this);
+
+        this._model.straighten(true, this._sourceEntity._model, this._targetEntity._model); // TODO will break for same entity?
         this.redraw();
     };
 

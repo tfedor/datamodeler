@@ -56,8 +56,8 @@
     <a href="javascript:clear();void(0);">clear</a>
 
     <a href="javascript:saveEntityModels();void(0);">save</a>
-    <a href="javascript:redrawEntities();void(0);">redraw</a>
     <a href="javascript:sort();void(0);">sort</a>
+    <a href="javascript:im();void(0);">import</a>
     <a href="javascript:ex();void(0);">export</a>
     <script>
 
@@ -92,34 +92,9 @@
             }
         }
 
-        function redrawEntities() {
-            var e1 = new DBSDM.Model.Entity("Entity_1");
-            var e1atr = e1.getAttributeList();
-            e1atr.add(new DBSDM.Model.Attribute("Attribute_1"));
-
-            e1.setPosition(100, 150);
-            e1.setSize(50, 80);
-
-            var e2 = new DBSDM.Model.Entity("Entity_2");
-            e2.setPosition(300, 125);
-            e2.setSize(70, 50);
-
-            var source = new DBSDM.Model.RelationLeg(true, true, DBSDM.Enums.Cardinality.MANY);
-            source.setEntity(e1);
-            source.setAnchorOffset(11);
-            source.setAnchor(150, 170, DBSDM.Enums.Edge.RIGHT);
-
-            var target = new DBSDM.Model.RelationLeg(false, false, DBSDM.Enums.Cardinality.ONE);
-            target.setEntity(e2);
-            target.setAnchorOffset(11);
-            target.setAnchor(300, 170, DBSDM.Enums.Edge.LEFT);
-
-            var r1 = new DBSDM.Model.Relation(source, target);
-            r1.straighten();
-
-            //source.addPoint(1, {x: 170, y: 200});
-
-            canvas.import([e1, e2], [r1]);
+        function im() {
+            var json = '{"entities": [{"name": "DRUH","parent": null,"attr": [{"name": "id_druhu","primary": true,"unique": false,"nullable": false},{"name": "nazev","primary": false,"unique": false,"nullable": false}]},{"name": "KRMIC","parent": null,"attr": [{"name": "id_krmic","primary": true,"unique": false,"nullable": false},{"name": "adresa","primary": false,"unique": false,"nullable": false},{"name": "jmeno","primary": false,"unique": false,"nullable": false}]},{"name": "LEKAR","parent": null,"attr": [{"name": "id_lekare","primary": true,"unique": false,"nullable": false},{"name": "jmeno","primary": false,"unique": false,"nullable": false}]},{"name": "OBJEKT","parent": null,"attr": [{"name": "id_objektu","primary": true,"unique": false,"nullable": false}]},{"name": "PROHLIDKA","parent": null,"attr": [{"name": "datum","primary": true,"unique": false,"nullable": false}]},{"name": "ZVIRE","parent": null,"attr": [{"name": "id_zvirete","primary": true,"unique": false,"nullable": false},{"name": "dat_narozeni","primary": false,"unique": false,"nullable": false},{"name": "jmeno","primary": false,"unique": false,"nullable": false},{"name": "zeme_puvodu","primary": false,"unique": false,"nullable": false}]}],"relations": [[{"entity": "DRUH","identifying": false,"optional": true,"cardinality": 1},{"entity": "ZVIRE","identifying": true,"optional": false,"cardinality": 0}],[{"entity": "KRMIC","identifying": false,"optional": false,"cardinality": 1},{"entity": "OBJEKT","identifying": false,"optional": false,"cardinality": 0}],[{"entity": "LEKAR","identifying": false,"optional": true,"cardinality": 1},{"entity": "PROHLIDKA","identifying": false,"optional": false,"cardinality": 0}],[{"entity": "OBJEKT","identifying": false,"optional": true,"cardinality": 0},{"entity": "ZVIRE","identifying": false,"optional": false,"cardinality": 1}],[{"entity": "PROHLIDKA","identifying": true,"optional": false,"cardinality": 0},{"entity": "ZVIRE","identifying": false,"optional": true,"cardinality": 1}]]}';
+            canvas.import(JSON.parse(json));
         }
 
 

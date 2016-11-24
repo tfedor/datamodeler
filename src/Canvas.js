@@ -129,18 +129,6 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.sort = function() {
-        /*
-        for (var i=0; i<this._entities.length; i++) {
-            var entity = this._entities[i];
-
-            entity.encompassContent();
-            entity.encompassContent(); // called twice to get correct size of text elements if they were previously hidden
-
-            entity._model.setPosition(10, 10);
-
-            entity._view.redraw();
-        }
-        */
         this.Layout.sort(this._entities, this._relations);
     };
 
@@ -215,40 +203,57 @@ DBSDM.Canvas = (function() {
             relationModels.push(new ns.Model.Relation(null, null, data.relations[i]));
         }
 
-        console.log(entityModels);
-        console.log(relationModels);
+        // create controls and view for data
+        var entityControlsMap = {};
 
-        // TODO set ISA
-        // TODO set relations
-
-
-
-        return;
-
-        //
-
-        for (i=0; i < entityModelList.length; i++) {
-            (new ns.Control.Entity(this, entityModelList[i])).import();
+        count = entityModels.length;
+        for (i=0; i<count; i++) {
+            var name = entityModels[i].getName();
+            var control = new ns.Control.Entity(this, entityModels[i]);
+            entityControlsMap[name] = control.import();
         }
 
-        for (i=0; i < relationModelList.length; i++) {
-            var model = relationModelList[i];
+        // set ISA
+        count = data.entities.length;
+        for (i=0; i<count; i++) {
+            var entity = data.entities[i].name;
+            var parent = data.entities[i].parent;
+            if (parent) {
+                entityControlsMap[entity]._isa(entityControlsMap[parent]);
+            }
 
-            var sourceId = model.getSource().getEntity().getId();
-            var targetId = model.getTarget().getEntity().getId();
-
-            console.log(sourceId + " -> " + targetId);
-            (new ns.Control.Relation(this, this.importMap[sourceId], this.importMap[targetId], null, null, model))
-                .import();
-
-            //var targetLegModel = model.getTarget();
-
-            // from model to entity
-
-            //sourceEntityControl,
-            //targetEntityControl,
-            //model
+            entityControlsMap[entity].fitToContents();
         }
+
+        // place entites
+        count = this._entities.length;
+        var perRow = Math.ceil(Math.sqrt(count));
+        var r=0,c=0;
+        for (i=0; i<count; i++) {
+            control = this._entities[i];
+            control._model.setPosition(c*200, r*150);
+            control._view.redraw();
+
+            c++;
+            if (c == perRow) {
+                r++;
+                c = 0;
+            }
+        }
+
+        // set relations
+        count = data.relations.length;
+        for (i=0; i<count; i++) {
+            var model = relationModels[i];
+            var relation = data.relations[i];
+            var sourceEntityControl = entityControlsMap[relation[0].entity];
+            var targetEntityControl = entityControlsMap[relation[1].entity];
+
+            control = new ns.Control.Relation(this, sourceEntityControl, targetEntityControl, null, null, model);
+            control.import();
+        }
+
+        this.sort();
     };
 
     // event handlers

@@ -19,8 +19,8 @@ DBSDM.Model.Entity = (function(){
         this._transform = {
             x: 0,
             y: 0,
-            width: 0,
-            height: 0
+            width: 1,
+            height: 1
         };
         this._parent = null;
         this._children = [];
