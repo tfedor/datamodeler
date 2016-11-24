@@ -4,10 +4,11 @@ DBSDM.Layout = (function() {
     var ns = DBSDM;
 
     var iterations = 1000;
-    var optimal = 150;
+    var optimal = 100;
     var attractionScale = 0.25;
     var straightenScale = 0.1;
-    var repulsionScale = 15;
+    var repulsionScale = 25;
+    var repulsionDistanceScale = 2; // of optimal length
     var applyScale = 0.4;
     var origin = {
         x: 10,
@@ -46,14 +47,15 @@ DBSDM.Layout = (function() {
             var force = relations[i].getVector();
             var rot = (Math.abs(force.x) < Math.abs(force.y) ? new ns.Geometry.Vector(force.x, 0) : new ns.Geometry.Vector(0, force.y));
 
-            var length = force.getLength();
+            var length = force.getManhattan();
+            if (length == 0) { continue; }
 
             // attraction
             force.multiply(0.5 * attractionScale*(length - optimal) / length); // only count half of vector, since it's applied to both sides
             relations[i].addForceToEntities(force);
 
             // straighten
-            rot.multiply(straightenScale * (1 - (rot.getLength() / length))); // scale also by length, should prefer shorter leg for straightening
+            rot.multiply(-0.5 * straightenScale*(rot.getManhattan()-optimal) / length); // scale also by length, should prefer shorter leg for straightening
             relations[i].addForceToEntities(rot);
         }
     };
@@ -70,10 +72,10 @@ DBSDM.Layout = (function() {
 
                 var centerB = entities[j].getCenter();
                 var length = ns.Geometry.pointToPointDistance(centerA, centerB);
-                if (length > optimal*1.5) { continue; }
+                if (length > optimal*repulsionDistanceScale) { continue; }
 
                 var force = (new ns.Geometry.Vector()).fromPoints(centerA, centerB) // create new vector
-                    .multiply(repulsionScale*optimal*optimal / (length*length*length));
+                    .multiply(repulsionScale*optimal / (length*length));
 
                 // add repulsive forces to entities
                 entities[i].addForce(force.getOpposite());
