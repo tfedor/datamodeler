@@ -205,7 +205,7 @@ DBSDM.View.RelationLeg = (function(){
         // update control points
         var i;
         if (this._cp.length != points.length-2) {
-            this.clearControlPoints();
+            this._clearControlPoints();
             for (i=1; i<points.length-1; i++) {
                 this.buildControlPoint(i, points[i])
             }
@@ -251,7 +251,7 @@ DBSDM.View.RelationLeg = (function(){
         this._cp.splice(index, 1);
     };
 
-    RelationLeg.prototype.clearControlPoints = function() {
+    RelationLeg.prototype._clearControlPoints = function() {
         for (var i=0;i <this._cp.length; i++) {
             this._cp[i].remove();
         }

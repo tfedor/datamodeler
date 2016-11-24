@@ -5,6 +5,8 @@ DBSDM.Control.Relation = (function() {
     var ns = DBSDM;
     var Enum = ns.Enums;
 
+    var RecursiveEntityOffset = 20; // visual offset from anchor for the first control point
+
     function Relation(canvas, sourceEntityControl, targetEntityControl, sourceCardinality, targetCardinality, model) {
         this._canvas = canvas;
 
@@ -39,6 +41,28 @@ DBSDM.Control.Relation = (function() {
         );
     }
 
+    /**
+     * Finish creation of relation by connecting with entities and saving relation
+     */
+    Relation.prototype._setupEntities = function() {
+        this._new = false;
+
+        this._sourceEntity.addRelationLeg(this._legs.source);
+        this._legs.source.setEntityControl(this._sourceEntity);
+
+        this._targetEntity.addRelationLeg(this._legs.target);
+        this._legs.target.setEntityControl(this._targetEntity);
+
+        this._canvas.addRelation(this);
+    };
+
+    Relation.prototype.import = function() {
+        this._setupEntities();
+        this._moveToEntity();
+    };
+
+    //
+
     Relation.prototype.getModel = function() {
         return this._model;
     };
@@ -59,23 +83,17 @@ DBSDM.Control.Relation = (function() {
 
     Relation.prototype.straighten = function() {
         this._model.straighten();
-        this._legs.source.clearControlPoints();
-        this._legs.target.clearControlPoints();
     };
 
-    Relation.prototype.import = function() {
-        this._new = false;
-
-        this._sourceEntity.addRelationLeg(this._legs.source);
-        this._legs.source.setEntityControl(this._sourceEntity);
-
-        this._targetEntity.addRelationLeg(this._legs.target);
-        this._legs.target.setEntityControl(this._targetEntity);
-
-        this._canvas.addRelation(this);
-
-        this._model.straighten(true, this._sourceEntity._model, this._targetEntity._model); // TODO will break for same entity?
+    Relation.prototype.translate = function(dx, dy) {
+        this._legs.source.translate(dx, dy);
+        this._legs.target.translate(dx, dy);
+        this._model.translateMiddlePoint(dx, dy);
         this.redraw();
+    };
+
+    Relation.prototype.isRecursive = function() {
+        return this._sourceEntity == this._targetEntity;
     };
 
     // middle point
@@ -84,18 +102,23 @@ DBSDM.Control.Relation = (function() {
         var s = this._legs.source._model.getPoint(-2);
         var t = this._legs.target._model.getPoint(-2);
 
-        var x = ns.Geometry.snap(mouse.x, s.x, t.x, 5); // TODO snap limit
-        var y = ns.Geometry.snap(mouse.y, s.y, t.y, 5); // TODO snap limit
+        var x = ns.Geometry.snap(mouse.x, s.x, t.x, ns.Consts.SnappingLimit);
+        var y = ns.Geometry.snap(mouse.y, s.y, t.y, ns.Consts.SnappingLimit);
 
         this._model.setMiddlePointPosition(x, y);
-        this._model.middleMoved = true;
+        this._model.middleManual = true;
+    };
 
+    Relation.prototype.centerMiddlePoint = function() {
+        if (!this._model.middleManual) {
+            this._model.resetMiddlePoint();
+        }
         this.redraw();
     };
 
     // creation
 
-    Relation.prototype.moveToCursor = function(x, y) {
+    Relation.prototype._moveToCursor = function(x, y) {
         var cursor = {x: x, y: y};
 
         // get possible edges
@@ -131,7 +154,6 @@ DBSDM.Control.Relation = (function() {
 
         if (!pos) {
             console.log("Can't find appropriate position");
-            console.log(pos);
             return;
         }
 
@@ -146,31 +168,29 @@ DBSDM.Control.Relation = (function() {
     };
 
     Relation.prototype._moveToSameEntity = function() {
-        var entityOffset = 20; // TODO
-
         // rotate and position anchor
         var sourceModel = this._model.getSource();
         var posSource = this._sourceEntity.getEdgePosition(Enum.Edge.BOTTOM);
-        var sourcePoint = { x: posSource.x, y: posSource.y + entityOffset };
+        var sourcePoint = { x: posSource.x, y: posSource.y + RecursiveEntityOffset };
         sourceModel.setAnchor(posSource.x, posSource.y, Enum.Edge.BOTTOM);
         if (sourceModel.getPointsCount() == 2) {
             sourceModel.addPoint(1, sourcePoint);
         } else {
-            sourceModel.setPoint(1, sourcePoint);
+            sourceModel.setPoint(1, sourcePoint.x, sourcePoint.y);
         }
 
         var targetModel = this._model.getTarget();
         var posTarget = this._targetEntity.getEdgePosition(Enum.Edge.LEFT);
 
-        var targetPoint = { x: posTarget.x - entityOffset, y: posTarget.y };
+        var targetPoint = { x: posTarget.x - RecursiveEntityOffset, y: posTarget.y };
         targetModel.setAnchor(posTarget.x, posTarget.y, Enum.Edge.LEFT);
         if (targetModel.getPointsCount() == 2) {
             targetModel.addPoint(1, targetPoint);
         } else {
-            targetModel.setPoint(1, targetPoint);
+            targetModel.setPoint(1, targetPoint.x, targetPoint.y);
         }
 
-        this._model.setMiddlePointPosition(posTarget.x - entityOffset, posSource.y + entityOffset);
+        this._model.setMiddlePointPosition(posTarget.x - RecursiveEntityOffset, posSource.y + RecursiveEntityOffset);
 
         // update view
         this.redraw();
@@ -181,7 +201,7 @@ DBSDM.Control.Relation = (function() {
         this.redraw();
     };
 
-    Relation.prototype.moveToEntity = function() {
+    Relation.prototype._moveToEntity = function() {
         if (this._targetEntity == this._sourceEntity) {
             this._moveToSameEntity();
         } else {
@@ -192,12 +212,14 @@ DBSDM.Control.Relation = (function() {
     // sort
 
     Relation.prototype.getVector = function() {
-        if (this._sourceEntity == this._targetEntity) {
-            return new ns.Geometry.Vector(0,0);
+        var vector = new ns.Geometry.Vector(0,0);
+        if (this._sourceEntity != this._targetEntity) {
+            vector.fromPoints(
+                this._model.getSource().getAnchor(),
+                this._model.getTarget().getAnchor()
+            );
         }
-        var s = this._model.getSource().getAnchor();
-        var t = this._model.getTarget().getAnchor();
-        return (new ns.Geometry.Vector()).fromPoints(s, t);
+        return vector;
     };
 
     Relation.prototype.addForceToEntities = function(force) {
@@ -205,19 +227,28 @@ DBSDM.Control.Relation = (function() {
         this._targetEntity.addForce(force.getOpposite());
     };
 
-    // events
+    // Events
 
-    Relation.prototype.onEntityDrag = function() {
-        if (this._model.isManual()) { return; }
-
-        this._model.resetAnchors();
-        this._model.resetMiddlePoint();
+    // handles non-recursive relations
+    Relation.prototype.onEntityDrag = function(dx, dy) {
+        if (this._model.hasManualPoints()) {
+            this._model.resetAnchors();
+        }
+        this.centerMiddlePoint();
         this.redraw();
     };
 
     Relation.prototype.onEntityResize = function() {
-        if (this._model.isManual()) { return; }
-        this._model.resetMiddlePoint();
+        if (!this._model.middleManual) {
+            this._model.resetMiddlePoint();
+        }
+        this.redraw();
+    };
+
+    Relation.prototype.onAnchorMove = function() {
+        if (!this._model.middleManual) {
+            this._model.resetMiddlePoint();
+        }
         this.redraw();
     };
 
@@ -226,13 +257,14 @@ DBSDM.Control.Relation = (function() {
             var target = mouse.getTarget();
             if (target instanceof ns.Control.Entity) {
                 this._targetEntity = target;
-                this.moveToEntity();
+                this._moveToEntity();
             } else {
                 this._targetEntity = null;
-                this.moveToCursor(mouse.x, mouse.y);
+                this._moveToCursor(mouse.x, mouse.y);
             }
         } else {
             this._moveMiddle(mouse);
+            this.redraw();
         }
     };
 
@@ -243,15 +275,11 @@ DBSDM.Control.Relation = (function() {
         if (this._targetEntity == null) {
             this._view.clear();
         } else {
-            this._sourceEntity.addRelationLeg(this._legs.source);
-            this._legs.source.setEntityControl(this._sourceEntity);
-
-            this._targetEntity.addRelationLeg(this._legs.target);
-            this._legs.target.setEntityControl(this._targetEntity);
-
-            this._canvas.addRelation(this);
+            this._setupEntities();
         }
     };
+
+    // Menu
 
     Relation.prototype.handleMenu = function(action, params) {
         switch(action) {

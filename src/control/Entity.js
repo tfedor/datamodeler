@@ -148,9 +148,7 @@ DBSDM.Control.Entity = (function(){
 
     Entity.prototype.notifyDrag = function(x, y) {
         for (var i=0; i<this._relationLegList.length; i++) {
-            this._relationLegList[i].translate(x, y);
-            this._relationLegList[i].redraw();
-            this._relationLegList[i].getParentRelation().onEntityDrag();
+            this._relationLegList[i].onEntityDrag(x, y);
         }
 
         for (var c=0; c<this._children.length; c++) {
@@ -277,7 +275,7 @@ DBSDM.Control.Entity = (function(){
 
         this._view.remove();
         while(this._relationLegList.length > 0) {
-            this._relationLegList[0].getParentRelation().clear();
+            this._relationLegList[0].getRelation().clear();
         }
     };
 
@@ -420,9 +418,8 @@ DBSDM.Control.Entity = (function(){
 
         // redraw relations
         for (var i=0; i<this._relationLegList.length; i++) {
-            this._relationLegList[i].getParentRelation().straighten();
-            this._relationLegList[i].redraw();
-            this._relationLegList[i].getParentRelation().onEntityDrag();
+            this._relationLegList[i].getRelation().straighten();
+            this._relationLegList[i].getRelation().redraw();
         }
     };
 

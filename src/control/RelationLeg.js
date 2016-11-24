@@ -5,6 +5,9 @@ DBSDM.Control.RelationLeg = (function() {
     var ns = DBSDM;
     var Enum = ns.Enums;
 
+    var EdgeOffset = 10;
+    var ControlCreationOffset = 10; // to not require exact clicks on the relation leg
+
     function RelationLeg(relationControl, canvas, model) {
         this._relation = relationControl;
         this._entity = null;
@@ -13,12 +16,15 @@ DBSDM.Control.RelationLeg = (function() {
         this._view.draw();
     }
 
+    /**
+     * Attach relation leg to the given entity Control
+     */
     RelationLeg.prototype.setEntityControl = function(entityControl) {
         this._entity = entityControl;
         this._view.onEntityAttached();
     };
 
-    RelationLeg.prototype.getParentRelation = function() {
+    RelationLeg.prototype.getRelation = function() {
         return this._relation;
     };
 
@@ -35,30 +41,31 @@ DBSDM.Control.RelationLeg = (function() {
         return this._model;
     };
 
-    RelationLeg.prototype.translate = function(x, y) {
+    RelationLeg.prototype.translateAnchor = function(x, y) {
         var anchor = this._model.getAnchor();
         this._model.setAnchor(anchor.x + x, anchor.y + y, anchor.edge);
+    };
+
+    RelationLeg.prototype.translate = function(dx, dy) {
+        this.translateAnchor(dx, dy);
+        this._model.translatePoints(dx, dy);
     };
 
     RelationLeg.prototype._moveAnchor = function(mouse) {
         var pos = this._entity.getEdgeCursorPosition(mouse.x, mouse.y);
         if (pos != null) {
             if ((pos.edge & 1) != 0) { // right/left
-                pos.y = ns.Geometry.snap(pos.y, this._model.getPoint(1).y, null, 5); // TODO snapping limit
+                pos.y = ns.Geometry.snap(pos.y, this._model.getPoint(1).y, null, ns.Consts.SnappingLimit);
             } else {
-                pos.x = ns.Geometry.snap(pos.x, this._model.getPoint(1).x, null, 5); // TODO snapping limit
+                pos.x = ns.Geometry.snap(pos.x, this._model.getPoint(1).x, null, ns.Consts.SnappingLimit);
             }
             this._model.setAnchor(pos.x, pos.y, pos.edge);
         }
 
-        this._model.anchorMoved = true;
-
-        this._view.updateAnchorPosition();
-        this._view.updatePoints();
+        this._relation.onAnchorMove();
     };
 
     RelationLeg.prototype.createControlPoint = function(P) {
-        var offset = 10; // TODO
         var points = this._model.getPoints();
 
         var index = 1;
@@ -67,7 +74,7 @@ DBSDM.Control.RelationLeg = (function() {
             var A = points[i-1];
             var B = points[i];
 
-            if (ns.Geometry.pointIsInBox(P, A, B, offset)) {
+            if (ns.Geometry.pointIsInBox(P, A, B, ControlCreationOffset)) {
                 var dist = ns.Geometry.pointToLineDistance(P, A, B);
                 if (minDist == -1 || dist < minDist) {
                     minDist = dist;
@@ -79,28 +86,35 @@ DBSDM.Control.RelationLeg = (function() {
         this._model.addPoint(index, P);
         this._view.buildControlPoint(index, P);
         this._view.updatePoints();
+
+        this._model.pointsManual = true;
+
         return index;
     };
 
     RelationLeg.prototype._moveControlPoint = function(index, mouse) {
-        var snappingLimit = 5; // TODO
-
         var p = this._model.getPoint(index);
         var prev = this._model.getPoint(index - 1);
         var next = this._model.getPoint(index + 1);
 
-        p.x = ns.Geometry.snap(mouse.x, prev.x, next.x, snappingLimit);
-        p.y = ns.Geometry.snap(mouse.y, prev.y, next.y, snappingLimit);
+        p.x = ns.Geometry.snap(mouse.x, prev.x, next.x, ns.Consts.SnappingLimit);
+        p.y = ns.Geometry.snap(mouse.y, prev.y, next.y, ns.Consts.SnappingLimit);
 
-        this._view.updatePoints();
+        this._relation.centerMiddlePoint();
     };
 
-    RelationLeg.prototype.clearControlPoints = function() {
-        this._view.clearControlPoints();
+    // Events
+
+    RelationLeg.prototype.onEntityDrag = function(dx, dy) {
+        if (this._relation.isRecursive()) {
+            this._relation.translate(dx*0.5, dy*0.5);
+        } else {
+            this.translateAnchor(dx, dy);
+            this._relation.onEntityDrag();
+        }
     };
 
     RelationLeg.prototype.onEntityResize = function(edges) {
-        var edgeOffset = 10; // TODO;
 
         // first, snap to edge if needed
         var a = this._model.getAnchor();
@@ -112,17 +126,14 @@ DBSDM.Control.RelationLeg = (function() {
         }
 
         if ((a.edge & 1) != 0) {
-            a.y = Math.max(a.y, edges.top    + edgeOffset);
-            a.y = Math.min(a.y, edges.bottom - edgeOffset);
+            a.y = Math.max(a.y, edges.top    + EdgeOffset);
+            a.y = Math.min(a.y, edges.bottom - EdgeOffset);
         } else {
-            a.x = Math.max(a.x, edges.left   + edgeOffset);
-            a.x = Math.min(a.x, edges.right  - edgeOffset);
+            a.x = Math.max(a.x, edges.left   + EdgeOffset);
+            a.x = Math.min(a.x, edges.right  - EdgeOffset);
         }
         this._model.setAnchor(a.x, a.y, a.edge);
         this._relation.onEntityResize();
-
-        this._view.updateAnchorPosition();
-        this._view.updatePoints();
     };
 
     RelationLeg.prototype.onMouseDown = function(e, mouse) {
@@ -130,6 +141,7 @@ DBSDM.Control.RelationLeg = (function() {
         if (params.action && params.action == "line") {
             params.action = "cp";
             params.index = this.createControlPoint({x: mouse.x, y: mouse.y});
+
         }
     };
 
@@ -144,6 +156,8 @@ DBSDM.Control.RelationLeg = (function() {
         }
     };
 
+    // Menu
+
     RelationLeg.prototype.handleMenu = function(action, params) {
         switch(action) {
             case "cp-delete":
@@ -154,7 +168,6 @@ DBSDM.Control.RelationLeg = (function() {
                     return;
                 }
                 break;
-
             case "one":         this._model.setCardinality( Enum.Cardinality.ONE );         break;
             case "many":        this._model.setCardinality( Enum.Cardinality.MANY );        break;
             case "identifying": this._model.setIdentifying( !this._model.isIdentifying() ); break;

@@ -27,7 +27,6 @@ DBSDM.Model.RelationLeg = (function(){
             x: 0, y: 0,
             edge: null
         };
-        this.anchorMoved = false;
 
         // all description points of the line, two points are minimum
         this._anchorOffset = 0;
@@ -35,6 +34,7 @@ DBSDM.Model.RelationLeg = (function(){
             {x: 0, y: 0}, // 0th point, associated to anchor
             {x: 0, y: 0}  // middle point
         ];
+        this.pointsManual = false;
     }
 
     RelationLeg.prototype.setRelation = function(relation) {
@@ -125,12 +125,13 @@ DBSDM.Model.RelationLeg = (function(){
         this._points.splice(index, 0, point);
     };
 
-    RelationLeg.prototype.setPoint = function(index, point) {
+    RelationLeg.prototype.setPoint = function(index, x, y) {
         var key = index % this._points.length;
         if (key < 0) {
             key += this._points.length;
         }
-        this._points[key] = point;
+        this._points[key].x = x;
+        this._points[key].y = y;
     };
 
     RelationLeg.prototype.getPoint = function(index) {
@@ -155,26 +156,19 @@ DBSDM.Model.RelationLeg = (function(){
 
     RelationLeg.prototype.clearPoints = function() {
         this._points.splice(1, this._points.length - 2);
+        this.pointsManual = false;
     };
 
     RelationLeg.prototype.getPoints = function() {
         return this._points;
     };
 
-    RelationLeg.prototype.translatePoints = function(rx, ry) {
-        for (var i=0; i<this._points.length; i++) {
-            this._points[i].x += rx;
-            this._points[i].y += ry;
+    RelationLeg.prototype.translatePoints = function(dx, dy) {
+        for (var i=1; i<this._points.length-1; i++) {
+            this._points[i].x += dx;
+            this._points[i].y += dy;
         }
     };
-
-    //
-
-    RelationLeg.prototype.isManual = function() {
-        return this.anchorMoved || this._points.length != 2;
-    };
-
-    //
 
     RelationLeg.prototype.toString = function() {
         var str = this._entity.getName();

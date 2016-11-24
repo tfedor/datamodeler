@@ -20,7 +20,7 @@ DBSDM.Model.Relation = (function(){
         this._source.setRelation(this);
         this._target.setRelation(this);
 
-        this.middleMoved = false;
+        this.middleManual = false;
     }
 
     Relation.prototype.getSource = function() {
@@ -31,24 +31,42 @@ DBSDM.Model.Relation = (function(){
         return this._target
     };
 
-    // points
+    Relation.prototype.hasManualPoints = function() {
+        return !(this._source.pointsManual || this._target.pointsManual);
+    };
+
+    // middle point
 
     Relation.prototype.getMiddlePoint = function() {
         return this._source.getPoint(-1);
     };
 
     Relation.prototype.setMiddlePointPosition = function(x, y) {
-        this._source.setPoint(-1, {x: x, y: y});
-        this._target.setPoint(-1, {x: x, y: y});
+        this._source.setPoint(-1, x, y);
+        this._target.setPoint(-1, x, y);
+    };
+
+    Relation.prototype.translateMiddlePoint = function(dx, dy) {
+        var middle = this.getMiddlePoint();
+        var x = middle.x + dx;
+        var y = middle.y + dy;
+        this._source.setPoint(-1, x, y);
+        this._target.setPoint(-1, x, y);
     };
 
     Relation.prototype.resetMiddlePoint = function() {
         var lft = this._source.getPoint(-2);
         var rgt = this._target.getPoint(-2);
         this.setMiddlePointPosition((lft.x + rgt.x) / 2, (lft.y + rgt.y) / 2);
-        this.middleMoved = false;
+        this.middleManual = false;
     };
 
+    // anchors
+
+    /**
+     * Set anchors on entities edges, so the relation is as short as possible
+     * If recompute is false, entity won't change position on the same edge that it is already at
+     */
     Relation.prototype.resetAnchors = function(recompute, sourceEntity, targetEntity) {
         recompute = recompute || false;
 
@@ -118,10 +136,7 @@ DBSDM.Model.Relation = (function(){
 
             // rotate and position anchor
             this._source.setAnchor(source.pos[source.best].x, source.pos[source.best].y, edges[source.best]);
-            this._source.anchorMoved = false;
-
             this._target.setAnchor(target.pos[target.best].x, target.pos[target.best].y, (edges[target.best]+2)%4);
-            this._target.anchorMoved = false;
         }
     };
 
@@ -130,12 +145,6 @@ DBSDM.Model.Relation = (function(){
         this._target.clearPoints();
         this.resetAnchors(recompute, sourceEntity, targetEntity);
         this.resetMiddlePoint();
-    };
-
-    //
-
-    Relation.prototype.isManual = function() {
-        return this._source.isManual() || this._target.isManual() || this.middleMoved;
     };
 
     //
