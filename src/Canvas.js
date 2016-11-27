@@ -17,6 +17,7 @@ DBSDM.Canvas = (function() {
         this.snap = false;
         this._grid = null;
 
+        this._offset = {x:0, y:0};
         this._zoom = 1;
 
         /**
@@ -137,6 +138,7 @@ DBSDM.Canvas = (function() {
             this.svg.insertBefore(this._grid, this._defs.nextSibling);
         } else {
             this.svg.removeChild(this._grid);
+            this._grid = null;
         }
     };
 
@@ -145,11 +147,21 @@ DBSDM.Canvas = (function() {
         var width = rect.width;
         var height = rect.height;
 
-        var x = 0;
-        var y = 0;
+        var x = this._offset.x;
+        var y = this._offset.y;
         var w = width / this._zoom;
         var h = height / this._zoom;
         ns.Element.attr(this.svg, {_viewBox: x+" "+y+" "+w+" "+h});
+
+        if (this._grid) {
+            ns.Element.attr(this._grid, {x: x, y: y});
+        }
+    };
+
+    Canvas.prototype._scroll = function(rx, ry) {
+        this._offset.x -= rx;
+        this._offset.y -= ry;
+        this._updateViewbox();
     };
 
     Canvas.prototype.zoomIn = function() {
@@ -327,11 +339,17 @@ DBSDM.Canvas = (function() {
 
     // event handlers
 
-    Canvas.prototype.onMouseDown = function() {
+    Canvas.prototype.onMouseDown = function(e, mouse) {
+        if (mouse.button != 0) { return; }
         var ent = new ns.Control.Entity(this, new ns.Model.Entity("Entity_" + (this._entities.length + 1)));
         ent.create();
 
         this.Mouse.attachObject(ent);
+    };
+
+    Canvas.prototype.onMouseMove = function(e, mouse) {
+        if (mouse.button != 1) { return; }
+        this._scroll(mouse.rx, mouse.ry);
     };
 
     Canvas.prototype.handleMenu = function(action) {
@@ -341,7 +359,6 @@ DBSDM.Canvas = (function() {
             case "zoom-in": this.zoomIn(); break;
             case "zoom-reset": this.zoomReset(); break;
             case "zoom-out": this.zoomOut(); break;
-
         }
     };
 

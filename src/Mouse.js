@@ -19,6 +19,8 @@ DBSDM.Mouse = (function(){
         this._down = false;
         this._move = false;
 
+        this.button = null;
+
         // current coordinates
         this.x = 0;
         this.y = 0;
@@ -82,7 +84,15 @@ DBSDM.Mouse = (function(){
         this._targetObject = object;
 
         e.stopPropagation();
-        if (e.button != 0 || this._attachedObject) { return; }
+        if (this._attachedObject) { return; }
+        if (e.button == 1) {
+            object = this._canvas;
+            params = null;
+            e.preventDefault();
+        } else if (e.button != 0) {
+            return;
+        }
+        this.button = e.button;
 
         DBSDM.Menu.hide(); // hide menu
 
@@ -107,9 +117,7 @@ DBSDM.Mouse = (function(){
 
     Mouse.prototype.move = function(e) {
         e.stopPropagation();
-        if (e.button != 0) { return; }
         if (!this._attachedObject) { return; }
-
         var x = this.x;
         var y = this.y;
 
@@ -129,7 +137,7 @@ DBSDM.Mouse = (function(){
 
     Mouse.prototype.up = function(e) {
         e.stopPropagation();
-        if (e.button != 0 || !this._attachedObject) { return; }
+        if (!this._attachedObject) { return; }
 
         this._update(e);
 
