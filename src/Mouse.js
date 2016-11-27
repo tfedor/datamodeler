@@ -65,7 +65,7 @@ DBSDM.Mouse = (function(){
         this.x = (e.clientX - offset.left) / this._canvas._zoom;
         this.y = (e.clientY - offset.top) / this._canvas._zoom;
 
-        if (this.button == 0) {
+        if (this.button != 1) {
             this.x += this._canvas._offset.x;
             this.y += this._canvas._offset.y;
 
@@ -153,6 +153,8 @@ DBSDM.Mouse = (function(){
 
         this._down = false;
         this._move = false;
+
+        this.button = null;
     };
 
 
