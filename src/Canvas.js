@@ -17,6 +17,8 @@ DBSDM.Canvas = (function() {
         this.snap = false;
         this._grid = null;
 
+        this._zoom = 1;
+
         /**
          * Mouse controller
          */
@@ -136,6 +138,31 @@ DBSDM.Canvas = (function() {
         } else {
             this.svg.removeChild(this._grid);
         }
+    };
+
+    Canvas.prototype._updateViewbox = function() {
+        var rect = this.svg.getBoundingClientRect();
+        var width = rect.width;
+        var height = rect.height;
+
+        var x = 0;
+        var y = 0;
+        var w = width / this._zoom;
+        var h = height / this._zoom;
+        ns.Element.attr(this.svg, {_viewBox: x+" "+y+" "+w+" "+h});
+    };
+
+    Canvas.prototype.zoomIn = function() {
+        this._zoom = Math.min(2, this._zoom + 0.1);
+        this._updateViewbox();
+    };
+    Canvas.prototype.zoomOut = function() {
+        this._zoom = Math.max(0.1, this._zoom - 0.1);
+        this._updateViewbox();
+    };
+    Canvas.prototype.zoomReset = function() {
+        this._zoom = 1;
+        this._updateViewbox();
     };
 
     // entities
@@ -311,6 +338,10 @@ DBSDM.Canvas = (function() {
         switch(action) {
             case "snap": this._switchSnap(); break;
             case "export": this.export(); break;
+            case "zoom-in": this.zoomIn(); break;
+            case "zoom-reset": this.zoomReset(); break;
+            case "zoom-out": this.zoomOut(); break;
+
         }
     };
 

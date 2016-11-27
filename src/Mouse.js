@@ -60,8 +60,8 @@ DBSDM.Mouse = (function(){
 
     Mouse.prototype._update = function(e) {
         var offset = this._node.getBoundingClientRect();
-        this.x = e.clientX - offset.left;
-        this.y = e.clientY - offset.top;
+        this.x = (e.clientX - offset.left) / this._canvas._zoom;
+        this.y = (e.clientY - offset.top) / this._canvas._zoom;
 
         if (this._canvas.snap) {
             var gs = ns.Consts.CanvasGridSize;

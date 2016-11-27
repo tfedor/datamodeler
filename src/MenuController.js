@@ -64,6 +64,11 @@ DBSDM.Menu = {
 
         canvas: [
             ["Snap to grid", "snap", "th"],
+            ["Zoom", [
+                ["In", "zoom-in", "search-plus"],
+                ["Reset", "zoom-reset", "search"],
+                ["Out", "zoom-out", "search-minus"]
+            ], "search"],
             ["Export", "export", "external-link-square"]
         ]
     },
