@@ -12,6 +12,12 @@ div.dbsdmCanvas > svg {
     font-size:15px;
 }
 
+div.dbsdmCanvas.fullscreen {
+    background-color:white;
+    width:100%;
+    height:100%;
+}
+
 use.e-cp-nw { cursor: nwse-resize; }
 use.e-cp-n  { cursor: ns-resize; }
 use.e-cp-ne { cursor: nesw-resize; }
@@ -104,6 +110,9 @@ input.editableSvgText {
     display:block;
 }
 
+#dbsdmContextMenu li.disabled, #dbsdmContextMenu li.disabled i {
+    color: #ababab;
+}
 
 /** turn off text selectino */
 div.dbsdmCanvas > svg, #dbsdmContextMenu {
@@ -170,29 +179,3 @@ g.leg:hover polyline.line {
 
 use.cp, use.anchor { cursor:move; }
 
-
-
-
-/*svg.attr rect {display:none;}
-svg.attr:hover rect {display:block;}*/
-
-
-
-/*polyline:hover {stroke:red;}*/
-/*.relg:hover polyline{stroke:red;}*/
-
-
-/*
-.rsz {display:none;}
-svg:hover > .rsz {display: block;}
-
-.option { text-decoration: underline; cursor:pointer; }
-.option:hover { fill: red; }
-
-.anchor { visibility:hidden; }
-
-
-.hidden { display:none; }
-*/
-/*g.relation .cp { visibility: hidden; }
-g.relation.over .cp { visibility: visible; }*/

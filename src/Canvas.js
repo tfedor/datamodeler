@@ -68,6 +68,7 @@ DBSDM.Canvas = (function() {
         //this.svg.addEventListener("dragleave", function() { console.log("dragleave"); } );
         document.body.addEventListener("drop", function(e) { ns.File.upload(e, that); }, false);
 
+        // TODO window elements to global diagram component
         window.addEventListener('keypress',function(e){
             if (ns.Control.Entity.activeEntity) {
                 ns.Control.Entity.activeEntity.onKeyPress(e);
@@ -77,6 +78,14 @@ DBSDM.Canvas = (function() {
             ns.Menu.hide();
             if (ns.Control.Entity.activeEntity) {
                 ns.Control.Entity.activeEntity.deactivate();
+            }
+        });
+        ns.Fullscreen.setEvents(function(e) {
+            var el = ns.Fullscreen.fullscreenElement();
+            if (el) {
+                el.classList.add("fullscreen");
+            } else {
+                document.querySelector(".fullscreen").classList.remove("fullscreen");
             }
         });
     };
@@ -188,6 +197,16 @@ DBSDM.Canvas = (function() {
     Canvas.prototype.zoomReset = function() {
         this._zoom = 1;
         this._updateViewbox();
+    };
+
+    // fullscreen
+    Canvas.prototype.fullscreenElement = function() {
+
+    };
+
+    Canvas.prototype.fullscreen = function() {
+        if (!ns.Fullscreen.enabled()) { return; }
+        ns.Fullscreen.switch(this._container);
     };
 
     // entities
@@ -375,6 +394,7 @@ DBSDM.Canvas = (function() {
             case "zoom-out": this.zoomOut(); break;
             case "reset-view": this.resetView(); break;
             case "image": saveSvgAsPng(this.svg, "diagram.png"); break;
+            case "fullscreen": this.fullscreen(); break;
         }
     };
 

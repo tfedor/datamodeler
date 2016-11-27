@@ -1,6 +1,8 @@
 var DBSDM = DBSDM || {};
 
-DBSDM.Menu = {
+DBSDM.Menu = (function(){
+    var ns = DBSDM;
+    var self = {};
 
     /**
      * Menu is defined in sections, each section can be independently hidden or shown, based on when user invokes menu
@@ -13,7 +15,7 @@ DBSDM.Menu = {
      *                   (basically section without name)
      * [string] icon:    Name of icon used from FontAwesome set, without fa- prefix. Can be null or omitted if no icon
      */
-    definition: {
+    var definition = {
         attribute: [
             ["Primary", "primary", "key"],
             ["Unique", "unique"],
@@ -70,22 +72,23 @@ DBSDM.Menu = {
                 ["Out", "zoom-out", "search-minus"]
             ], "search"],
             ["Reset view", "reset-view", "arrows-alt"],
+            ["Fullscreen", "fullscreen", "desktop"],
             ["Export", "export", "external-link-square"],
             ["Save as image", "image", "file-image-o"]
         ]
-    },
+    };
 
-    _dom: {
+    self._dom = {
         menu: null,
         sections: {}
-    },
-    _handlers: {
+    };
+    self._handlers = {
         attached: {},
         active: {}
-    },
-    _params: {},
+    };
+    self._params = {};
 
-    build: function() {
+    self.build = function() {
         function createIconElement(icon) {
             var dom = document.createElement("i");
             dom.className = "fa fa-" + icon;
@@ -132,9 +135,9 @@ DBSDM.Menu = {
         var dom = document.createElement("div");
         dom.id = "dbsdmContextMenu";
 
-        for (var section in this.definition) {
-            if (!this.definition.hasOwnProperty(section)) { continue; }
-            var sectionDom = createMenu(this.definition[section]);
+        for (var section in definition) {
+            if (!definition.hasOwnProperty(section)) { continue; }
+            var sectionDom = createMenu(definition[section]);
             sectionDom.dataset.handler = section;
             dom.appendChild(sectionDom);
 
@@ -146,23 +149,27 @@ DBSDM.Menu = {
 
         dom.onmousedown = function(e) { e.stopPropagation(); };
         dom.onclick = function(e) { DBSDM.Menu.onClick(e) };
-    },
+
+        if (!ns.Fullscreen.enabled()) {
+            dom.querySelector("li[data-action=fullscreen]").classList.add("disabled");
+        }
+    };
 
     /**
      * Attach object handler for part of menu, which will be also displayed
      * */
-    attach: function(handler, section, params) {
+    self.attach = function(handler, section, params) {
         if (!this._dom.sections.hasOwnProperty(section) || this._handlers.attached.hasOwnProperty(section)) { return; }
         this._handlers.attached[section] = handler;
         this._dom.sections[section].style.display = "none";
         this._params[section] = params || null;
-    },
+    };
 
-    hasAttachedHandlers: function() {
+    self.hasAttachedHandlers = function() {
         return Object.keys(this._handlers.attached).length != 0;
-    },
+    };
 
-    show: function(e) {
+    self.show = function(e) {
         if (!this.hasAttachedHandlers()) { // check, whether new handlers were attached since last show
             this.hide();
             return;
@@ -194,14 +201,26 @@ DBSDM.Menu = {
         this._dom.menu.style.display = "block";
 
         e.preventDefault();
-    },
 
-    hide: function() {
+        // attach to container of current canvas, for fullscreen
+        var parent = e.target.parentNode;
+        while(parent && !parent.classList.contains("dbsdmCanvas")) {
+            parent = parent.parentNode;
+        }
+        if (parent.classList.contains("fullscreen")) {
+            parent.appendChild(this._dom.menu);
+        }
+    };
+
+    self.hide = function() {
         this._dom.menu.style.display = "none";
-    },
+        if (this._dom.menu.parentNode != document.body) {
+            document.body.appendChild(this._dom.menu);
+        }
+    };
 
     /** Event Handlers */
-    onClick: function(e) {
+    self.onClick = function(e) {
         var node = e.target;
 
         var action;
@@ -218,5 +237,7 @@ DBSDM.Menu = {
             this._handlers.active[handler].handleMenu(action, this._params[handler]);
             this.hide();
         }
-    }
-};
+    };
+
+    return self;
+}());
