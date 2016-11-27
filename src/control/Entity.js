@@ -585,5 +585,11 @@ DBSDM.Control.Entity = (function(){
         this._ignoredInput = {x:0, y:0};
     };
 
+    Entity.prototype.onKeyPress = function(e) {
+        switch(e.keyCode) {
+            case 46: this.delete(); break;
+        }
+    };
+
     return Entity;
 })();

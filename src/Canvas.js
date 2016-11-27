@@ -64,6 +64,12 @@ DBSDM.Canvas = (function() {
         this.svg.addEventListener("dragover", function(e) { e.preventDefault(); } );
         //this.svg.addEventListener("dragleave", function() { console.log("dragleave"); } );
         document.body.addEventListener("drop", function(e) { ns.File.upload(e, that); }, false);
+
+        window.addEventListener('keypress',function(e){
+            if (ns.Control.Entity.activeEntity) {
+                ns.Control.Entity.activeEntity.onKeyPress(e);
+            }
+        });
     };
 
     // shared elements for all canvas
