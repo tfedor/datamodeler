@@ -366,6 +366,7 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.handleMenu = function(action) {
+        console.log("menu");
         switch(action) {
             case "snap": this._switchSnap(); break;
             case "export": this.export(); break;
@@ -373,6 +374,7 @@ DBSDM.Canvas = (function() {
             case "zoom-reset": this.zoomReset(); break;
             case "zoom-out": this.zoomOut(); break;
             case "reset-view": this.resetView(); break;
+            case "image": saveSvgAsPng(this.svg, "diagram.png"); break;
         }
     };
 

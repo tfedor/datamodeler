@@ -70,7 +70,8 @@ DBSDM.Menu = {
                 ["Out", "zoom-out", "search-minus"]
             ], "search"],
             ["Reset view", "reset-view", "arrows-alt"],
-            ["Export", "export", "external-link-square"]
+            ["Export", "export", "external-link-square"],
+            ["Save as image", "image", "file-image-o"]
         ]
     },
 
@@ -143,6 +144,7 @@ DBSDM.Menu = {
         document.body.appendChild(dom);
         this._dom.menu = dom;
 
+        dom.onmousedown = function(e) { e.stopPropagation(); };
         dom.onclick = function(e) { DBSDM.Menu.onClick(e) };
     },
 
