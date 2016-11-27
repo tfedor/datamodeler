@@ -65,10 +65,15 @@ DBSDM.Mouse = (function(){
         this.x = (e.clientX - offset.left) / this._canvas._zoom;
         this.y = (e.clientY - offset.top) / this._canvas._zoom;
 
-        if (this._canvas.snap) {
-            var gs = ns.Consts.CanvasGridSize;
-            this.x = Math.ceil(this.x/gs)*gs;
-            this.y = Math.ceil(this.y/gs)*gs;
+        if (this.button == 0) {
+            this.x += this._canvas._offset.x;
+            this.y += this._canvas._offset.y;
+
+            if (this._canvas.snap) {
+                var gs = ns.Consts.CanvasGridSize;
+                this.x = Math.ceil(this.x/gs)*gs;
+                this.y = Math.ceil(this.y/gs)*gs;
+            }
         }
     };
 

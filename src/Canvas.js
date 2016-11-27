@@ -131,6 +131,8 @@ DBSDM.Canvas = (function() {
         this.snap = !this.snap;
         if (this.snap) {
             this._grid = ns.Element.el("rect", {
+                x: this._offset.x,
+                y: this._offset.y,
                 width: "100%",
                 height: "100%",
                 fill: "url("+this.getSharedElementId("grid")+")"
