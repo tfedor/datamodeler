@@ -73,6 +73,12 @@ DBSDM.Canvas = (function() {
                 ns.Control.Entity.activeEntity.onKeyPress(e);
             }
         });
+        window.addEventListener("mousedown", function(e) {
+            ns.Menu.hide();
+            if (ns.Control.Entity.activeEntity) {
+                ns.Control.Entity.activeEntity.deactivate();
+            }
+        });
     };
 
     // shared elements for all canvas
