@@ -6,9 +6,11 @@ var DBSDM = DBSDM || {};
  * Object is attached either on mouse down, or programatically.
  */
 DBSDM.Mouse = (function(){
+    var ns = DBSDM;
 
-    function Mouse(canvasNode) {
-        this._node = canvasNode; // dom element coordinates are related to
+    function Mouse(canvas) {
+        this._canvas = canvas;
+        this._node = canvas.svg; // dom element coordinates are related to
 
         this._targetObject = null; // object at which the event was fired
         this._attachedObject = null;
@@ -60,6 +62,12 @@ DBSDM.Mouse = (function(){
         var offset = this._node.getBoundingClientRect();
         this.x = e.clientX - offset.left;
         this.y = e.clientY - offset.top;
+
+        if (this._canvas.snap) {
+            var gs = ns.Consts.CanvasGridSize;
+            this.x = Math.ceil(this.x/gs)*gs;
+            this.y = Math.ceil(this.y/gs)*gs;
+        }
     };
 
     Mouse.prototype.isDown = function() {

@@ -60,6 +60,11 @@ DBSDM.Menu = {
             ["Straighten", "straighten", "compress"],
             ["Send to Back", "toback", "level-down"],
             ["Delete Relation", "delete"]
+        ],
+
+        canvas: [
+            ["Snap to grid", "snap", "th"],
+            ["Export", "export", "external-link-square"]
         ]
     },
 
@@ -145,8 +150,12 @@ DBSDM.Menu = {
         this._params[section] = params || null;
     },
 
+    hasAttachedHandlers: function() {
+        return Object.keys(this._handlers.attached).length != 0;
+    },
+
     show: function(e) {
-        if (this._handlers.attached.length == 0) { // check, whether new handlers were attached since last show
+        if (!this.hasAttachedHandlers()) { // check, whether new handlers were attached since last show
             this.hide();
             return;
         }

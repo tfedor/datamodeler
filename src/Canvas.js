@@ -14,6 +14,9 @@ DBSDM.Canvas = (function() {
         this.svg = null;
         this._defs = null;
 
+        this.snap = false;
+        this._grid = null;
+
         /**
          * Mouse controller
          */
@@ -40,7 +43,10 @@ DBSDM.Canvas = (function() {
             document.body.appendChild(this._container);
         }
 
-        this.Mouse = new DBSDM.Mouse(this.svg);
+        this.Mouse = new DBSDM.Mouse(this);
+
+        //
+        this._createSharedElements();
 
         // set up callbacks
         var that = this;
@@ -48,7 +54,12 @@ DBSDM.Canvas = (function() {
         this.svg.addEventListener("mousemove", function(e) { that.Mouse.move(e); });
         this.svg.addEventListener("mouseup",   function(e) { that.Mouse.up(e); });
 
-        this.svg.addEventListener("contextmenu", function(e) { DBSDM.Menu.show(e); });
+        this.svg.addEventListener("contextmenu", function(e) {
+            if (!ns.Menu.hasAttachedHandlers()) {
+                ns.Menu.attach(that, "canvas");
+            }
+            ns.Menu.show(e);
+        });
 
         this.svg.addEventListener("dragover", function(e) { e.preventDefault(); } );
         //this.svg.addEventListener("dragleave", function() { console.log("dragleave"); } );
@@ -94,6 +105,31 @@ DBSDM.Canvas = (function() {
     Canvas.prototype.getSharedHTMLElement = function(name) {
         if (!this.hasSharedHTMLElement(name)) { return null; }
         return document.getElementById(this._sharedElementName(name));
+    };
+
+    // shared elements
+    Canvas.prototype._createSharedElements = function() {
+        var gs = ns.Consts.CanvasGridSize;
+        var pattern = ns.Element.el("pattern", {x:0, y:0, width: gs, height: gs, _patternUnits: "userSpaceOnUse", _patternContentUnits: "userSpaceOnUse"});
+        pattern.appendChild(ns.Element.el("line", {x1:0.5, y1:0.5, x2:gs+.5, y2:0.5, stroke: "#f2f2f2"}));
+        pattern.appendChild(ns.Element.el("line", {x1:0.5, y1:0.5, x2:0.5, y2:gs+.5, stroke: "#f2f2f2"}));
+        this.createSharedElement("grid", pattern);
+    };
+
+    // canvas
+
+    Canvas.prototype._switchSnap = function() {
+        this.snap = !this.snap;
+        if (this.snap) {
+            this._grid = ns.Element.el("rect", {
+                width: "100%",
+                height: "100%",
+                fill: "url("+this.getSharedElementId("grid")+")"
+            });
+            this.svg.insertBefore(this._grid, this._defs.nextSibling);
+        } else {
+            this.svg.removeChild(this._grid);
+        }
     };
 
     // entities
@@ -263,6 +299,13 @@ DBSDM.Canvas = (function() {
         ent.create();
 
         this.Mouse.attachObject(ent);
+    };
+
+    Canvas.prototype.handleMenu = function(action) {
+        switch(action) {
+            case "snap": this._switchSnap(); break;
+            case "export": this.export(); break;
+        }
     };
 
     return Canvas;

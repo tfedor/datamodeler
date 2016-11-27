@@ -20,7 +20,11 @@ DBSDM.Element = (function() {
             var value = attributes[name];
 
             // convert attributeName ("object style") to attribute-name ("dom style")
-            name = name.replace(/([a-z])([A-Z])/, "$1-$2").toLowerCase();
+            if (name[0] == "_") {
+                name = name.substr(1);
+            } else {
+                name = name.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+            }
 
             var ns = null;
             if (name == "href") {
