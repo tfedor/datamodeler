@@ -69,6 +69,7 @@ DBSDM.Menu = {
                 ["Reset", "zoom-reset", "search"],
                 ["Out", "zoom-out", "search-minus"]
             ], "search"],
+            ["Reset view", "reset-view", "arrows-alt"],
             ["Export", "export", "external-link-square"]
         ]
     },

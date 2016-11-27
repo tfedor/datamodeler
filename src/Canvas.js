@@ -163,6 +163,11 @@ DBSDM.Canvas = (function() {
         this._offset.y -= ry;
         this._updateViewbox();
     };
+    Canvas.prototype.resetView = function() {
+        this._offset.x = 0;
+        this._offset.y = 0;
+        this._updateViewbox();
+    };
 
     Canvas.prototype.zoomIn = function() {
         this._zoom = Math.min(2, this._zoom + 0.1);
@@ -359,6 +364,7 @@ DBSDM.Canvas = (function() {
             case "zoom-in": this.zoomIn(); break;
             case "zoom-reset": this.zoomReset(); break;
             case "zoom-out": this.zoomOut(); break;
+            case "reset-view": this.resetView(); break;
         }
     };
 
