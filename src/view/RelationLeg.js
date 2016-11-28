@@ -10,8 +10,6 @@ DBSDM.View.RelationLeg = (function(){
         this._model = model;
         this._control = control;
 
-        this._createSharedElements();
-
         // dom
         this._g = null;
         this._anchor = null;
@@ -24,54 +22,6 @@ DBSDM.View.RelationLeg = (function(){
         this._cardinality = null;
         this._identifying = null;
     }
-
-    RelationLeg.prototype._createSharedElements = function() {
-        if (this._canvas.hasSharedElement("Relation.AnchorBase")) { return; }
-
-        this._canvas.createSharedElement("Relation.AnchorControl",
-            ns.Element.rect(-9.5,-14.5, 18,15, {
-                fill: "none",
-                stroke: "none"
-            })
-        );
-
-        this._canvas.createSharedElement("Relation.AnchorBase",
-            ns.Element.el("polyline", {
-                points: "0.5,-1.5, 0.5,-11.5",
-                fill: 'none',
-                stroke:'black',
-                strokeWidth: 1
-            })
-        );
-
-        this._canvas.createSharedElement("Relation.AnchorMany",
-            ns.Element.el("polyline", {
-                points: "-7.5,-1.5, 0.5,-11.5, 7.5,-1.5",
-                fill: 'none',
-                stroke:'black',
-                strokeWidth: 1
-            })
-        );
-
-        this._canvas.createSharedElement("Relation.AnchorIdentifying",
-            ns.Element.el("polyline", {
-                points: "-7.5,-11.5, 7.5,-11.5",
-                fill: 'none',
-                stroke:'black',
-                strokeWidth: 1
-            })
-        );
-
-        this._canvas.createSharedElement("Relation.CP",
-            ns.Element.rect(0, 0, 6, 6, {
-                fill: "none",
-                strokeWidth: 1,
-                stroke: "black",
-                shapeRendering: "crispEdges",
-                transform: "translate(-3,-3)"
-            })
-        );
-    };
 
     RelationLeg.prototype.draw = function() {
         this._g = ns.Element.g();
@@ -130,8 +80,8 @@ DBSDM.View.RelationLeg = (function(){
 
     RelationLeg.prototype._buildAnchor = function() {
         this._anchor = ns.Element.g(
-            this._canvas.getSharedElement('Relation.AnchorControl', {class: "anchor"}),
-            this._canvas.getSharedElement('Relation.AnchorBase')
+            ns.Diagram.getSharedElement('Relation.AnchorControl', {class: "anchor"}),
+            ns.Diagram.getSharedElement('Relation.AnchorBase')
         );
         this.updateAnchorType();
 
@@ -141,7 +91,7 @@ DBSDM.View.RelationLeg = (function(){
     RelationLeg.prototype.updateAnchorType = function() {
         if (this._model.getCardinality() == Enum.Cardinality.MANY) {
             if (this._cardinality == null) {
-                this._cardinality = this._anchor.appendChild(this._canvas.getSharedElement('Relation.AnchorMany'));
+                this._cardinality = this._anchor.appendChild(ns.Diagram.getSharedElement('Relation.AnchorMany'));
             }
         } else {
             if (this._cardinality != null) {
@@ -152,7 +102,7 @@ DBSDM.View.RelationLeg = (function(){
 
         if (this._model.isIdentifying()) {
             if (this._identifying == null) {
-                this._identifying = this._anchor.appendChild(this._canvas.getSharedElement('Relation.AnchorIdentifying'));
+                this._identifying = this._anchor.appendChild(ns.Diagram.getSharedElement('Relation.AnchorIdentifying'));
             }
         } else {
             if (this._identifying != null) {
@@ -228,7 +178,7 @@ DBSDM.View.RelationLeg = (function(){
 
     RelationLeg.prototype.buildControlPoint = function(index, p) {
         var cp = this._g.appendChild(
-            this._canvas.getSharedElement("Relation.CP", {
+            ns.Diagram.getSharedElement("Relation.CP", {
                 x: p.x, y: p.y,
                 class: "cp"
             })

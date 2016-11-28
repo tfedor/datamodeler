@@ -17,33 +17,6 @@ DBSDM.View.Attribute = (function(){
         this._nullable = null;
     }
 
-    Attribute.prototype._createSharedElements = function() {
-        if (this._canvas.hasSharedElement('Attr.Bg')) { return; }
-
-        var gradient = ns.Element.el("linearGradient", { x1: 0, y1: 0, x2: 0, y2: 1 });
-        gradient.appendChild(
-            ns.Element.el("stop", {
-                "stop-color": "#ffffff",
-                "offset": "0%"
-            })
-        );
-        gradient.appendChild(
-            ns.Element.el("stop", {
-                "stop-color": "#eaeaea",
-                "offset": "100%"
-            })
-        );
-        this._canvas.createSharedElement("Attr.BgGradient", gradient );
-
-        this._canvas.createSharedElement("Attr.Bg",
-            ns.Element.rect(0, 0, "100%", "100%", {
-                stroke: "#5271FF",
-                strokeWidth: 1,
-                fill: "url(" + this._canvas.getSharedElementId("Attr.BgGradient") + ")"
-            })
-        );
-    };
-
     /***/
 
     Attribute.prototype._getIndex = function() {
@@ -74,8 +47,6 @@ DBSDM.View.Attribute = (function(){
      * Finish creation of entity, create other elements and attach control
      * */
     Attribute.prototype.create = function(control, parentDom) {
-        this._createSharedElements();
-
         this._svg = ns.Element.el("svg", {
             class: "attr",
             x: 0, y: this._getY(),
@@ -84,7 +55,7 @@ DBSDM.View.Attribute = (function(){
 
         // add background
         this._svg.appendChild(
-            this._canvas.getSharedElement("Attr.Bg", { class: "attr-bg" })
+            ns.Diagram.getSharedElement("Attr.Bg", { class: "attr-bg" })
         );
 
         // create text elements

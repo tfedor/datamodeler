@@ -9,30 +9,13 @@ DBSDM.View.Relation = (function(){
         this._model = model;
         this._control = control;
 
-        this._createSharedElements();
-
         // DOM
         this._g = null;
         this._middle = null;
     }
 
-    Relation.prototype._createSharedElements = function() {
-        if (this._canvas.hasSharedElement("Relation.MiddlePoint")) { return; }
-
-        this._canvas.createSharedElement("Relation.MiddlePoint",
-            ns.Element.rect(0, 0, 6, 6, {
-                fill: "black",
-                strokeWidth: 1,
-                stroke: "black",
-                shapeRendering: "crispEdges",
-                transform: "translate(-3,-3)",
-                pointerEvents: "visible"
-            })
-        );
-    };
-
     Relation.prototype.draw = function(sourceLegDomFragment, targetLegDomFragment) {
-        this._middle = this._canvas.getSharedElement("Relation.MiddlePoint", { class: "cp middle" });
+        this._middle = ns.Diagram.getSharedElement("Relation.MiddlePoint", { class: "cp middle" });
 
         this._g = ns.Element.g(
             sourceLegDomFragment,

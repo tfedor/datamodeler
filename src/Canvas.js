@@ -12,7 +12,6 @@ DBSDM.Canvas = (function() {
 
         this._container = null;
         this.svg = null;
-        this._defs = null;
 
         this.snap = false;
         this._grid = null;
@@ -38,7 +37,6 @@ DBSDM.Canvas = (function() {
         this._container.className = "dbsdmCanvas";
 
         this.svg = this._container.appendChild(ns.Element.el("svg"));
-        this._defs = this.svg.appendChild(ns.Element.el("defs"));
 
         if (document.currentScript) {
             document.currentScript.parentNode.insertBefore(this._container, document.currentScript);
@@ -46,10 +44,15 @@ DBSDM.Canvas = (function() {
             document.body.appendChild(this._container);
         }
 
-        this.Mouse = new DBSDM.Mouse(this);
+        this.Mouse = new ns.Mouse(this);
 
-        //
-        this._createSharedElements();
+        // create grid pattern for this canvas
+        var defs = this.svg.appendChild(ns.Element.el("defs"));
+        var gs = ns.Consts.CanvasGridSize;
+        var pattern = ns.Element.el("pattern", {id: this._sharedElementName("grid"), x:0, y:0, width: gs, height: gs, _patternUnits: "userSpaceOnUse", _patternContentUnits: "userSpaceOnUse"});
+        pattern.appendChild(ns.Element.el("line", {x1:0.5, y1:0.5, x2:gs+.5, y2:0.5, stroke: "#f2f2f2"}));
+        pattern.appendChild(ns.Element.el("line", {x1:0.5, y1:0.5, x2:0.5, y2:gs+.5, stroke: "#f2f2f2"}));
+        defs.appendChild(pattern);
 
         // set up callbacks
         var that = this;
@@ -67,27 +70,6 @@ DBSDM.Canvas = (function() {
         this.svg.addEventListener("dragover", function(e) { e.preventDefault(); } );
         //this.svg.addEventListener("dragleave", function() { console.log("dragleave"); } );
         document.body.addEventListener("drop", function(e) { ns.File.upload(e, that); }, false);
-
-        // TODO window elements to global diagram component
-        window.addEventListener('keypress',function(e){
-            if (ns.Control.Entity.activeEntity) {
-                ns.Control.Entity.activeEntity.onKeyPress(e);
-            }
-        });
-        window.addEventListener("mousedown", function(e) {
-            ns.Menu.hide();
-            if (ns.Control.Entity.activeEntity) {
-                ns.Control.Entity.activeEntity.deactivate();
-            }
-        });
-        ns.Fullscreen.setEvents(function(e) {
-            var el = ns.Fullscreen.fullscreenElement();
-            if (el) {
-                el.classList.add("fullscreen");
-            } else {
-                document.querySelector(".fullscreen").classList.remove("fullscreen");
-            }
-        });
     };
 
     // shared elements for all canvas
@@ -97,26 +79,6 @@ DBSDM.Canvas = (function() {
         return this.id + "." + name;
     };
 
-    Canvas.prototype.hasSharedElement = function(name) {
-        return document.getElementById(this._sharedElementName(name)) != null;
-    };
-
-    Canvas.prototype.createSharedElement = function(name, element) {
-        ns.Element.attr(element, { id: this._sharedElementName(name) });
-        this._defs.appendChild(element);
-    };
-
-    Canvas.prototype.getSharedElement = function(name, attrs) {
-        if (!this.hasSharedElement(name)) { return null; }
-        return ns.Element.use(this._sharedElementName(name), attrs);
-    };
-
-    Canvas.prototype.getSharedElementId = function(name) {
-        if (!this.hasSharedElement(name)) { return null; }
-        return "#" + this._sharedElementName(name);
-    };
-
-    // html elements
     Canvas.prototype.hasSharedHTMLElement = function(name) {
         return document.getElementById(this._sharedElementName(name)) != null;
     };
@@ -131,15 +93,6 @@ DBSDM.Canvas = (function() {
         return document.getElementById(this._sharedElementName(name));
     };
 
-    // shared elements
-    Canvas.prototype._createSharedElements = function() {
-        var gs = ns.Consts.CanvasGridSize;
-        var pattern = ns.Element.el("pattern", {x:0, y:0, width: gs, height: gs, _patternUnits: "userSpaceOnUse", _patternContentUnits: "userSpaceOnUse"});
-        pattern.appendChild(ns.Element.el("line", {x1:0.5, y1:0.5, x2:gs+.5, y2:0.5, stroke: "#f2f2f2"}));
-        pattern.appendChild(ns.Element.el("line", {x1:0.5, y1:0.5, x2:0.5, y2:gs+.5, stroke: "#f2f2f2"}));
-        this.createSharedElement("grid", pattern);
-    };
-
     // canvas
 
     Canvas.prototype._switchSnap = function() {
@@ -150,9 +103,9 @@ DBSDM.Canvas = (function() {
                 y: this._offset.y,
                 width: "100%",
                 height: "100%",
-                fill: "url("+this.getSharedElementId("grid")+")"
+                fill: "url(#"+this._sharedElementName("grid")+")"
             });
-            this.svg.insertBefore(this._grid, this._defs.nextSibling);
+            this.svg.insertBefore(this._grid, this.svg.firstChild);
         } else {
             this.svg.removeChild(this._grid);
             this._grid = null;
