@@ -22,6 +22,10 @@ DBSDM.Control.Entity = (function(){
         this._neededSize = {width:0,height:0}; // size needed to encompass all content with it's current size
 
         this._force = new ns.Geometry.Vector();
+
+        if (Entity.activeEntity) {
+            Entity.activeEntity.deactivate();
+        }
     }
 
     Entity.prototype.getDom = function() {
@@ -336,7 +340,7 @@ DBSDM.Control.Entity = (function(){
 
     // Relations
     Entity.prototype._createRelation = function(sourceCardinality, targetCardinality) {
-        var control = new ns.Control.Relation(canvas, this, null, sourceCardinality, targetCardinality);
+        var control = new ns.Control.Relation(this._canvas, this, null, sourceCardinality, targetCardinality);
         this._canvas.Mouse.attachObject(control);
     };
 
