@@ -216,6 +216,7 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.export = function() {
+        if (!ns.Diagram.allowFile) { return; }
         var entityModels = [];
         var relationModels = [];
 
@@ -253,6 +254,7 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.import = function(data) {
+        if (!ns.Diagram.allowFile) { return; }
 
         // create models from data
         var entityModels = [];

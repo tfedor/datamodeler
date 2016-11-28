@@ -1,12 +1,16 @@
 var DBSDM = DBSDM || {};
 
 DBSDM.File = (function() {
+    var ns = DBSDM;
+
     var self = {};
 
     /**
      * http://stackoverflow.com/a/30832210/4705537
      */
     self.download = function(data, filename, type) {
+        if (!ns.Diagram.allowFile) { return; }
+
         var a = document.createElement("a"),
             file = new Blob([data], {type: type});
         if (window.navigator.msSaveOrOpenBlob) // IE10+
@@ -25,6 +29,8 @@ DBSDM.File = (function() {
     };
 
     self.upload = function(e, canvas) {
+        if (!ns.Diagram.allowFile) { return; }
+
         e.stopPropagation();
         e.preventDefault();
 

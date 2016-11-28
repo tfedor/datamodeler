@@ -11,7 +11,10 @@ DBSDM.Diagram = (function() {
     self.allowEdit = true;
     self.allowFile = true;
 
-    self.init = function(){
+    self.init = function(allowEdit, allowFile){
+        self.allowEdit = (allowEdit == undefined ? false : allowEdit);
+        self.allowFile = (allowFile == undefined ? false : allowFile);
+
         ns.Menu.build();
 
         // create shared hidden svg for defs

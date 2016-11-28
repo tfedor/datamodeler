@@ -116,6 +116,7 @@ input.editableSvgText {
 
 #dbsdmContextMenu li.disabled, #dbsdmContextMenu li.disabled i {
     color: #ababab;
+    cursor: default !important;
 }
 
 /** turn off text selectino */

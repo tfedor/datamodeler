@@ -150,8 +150,13 @@ DBSDM.Menu = (function(){
         dom.onmousedown = function(e) { e.stopPropagation(); };
         dom.onclick = function(e) { DBSDM.Menu.onClick(e) };
 
+        // turn off unavailable menu options
         if (!ns.Fullscreen.enabled()) {
             dom.querySelector("li[data-action=fullscreen]").classList.add("disabled");
+        }
+        if (!ns.Diagram.allowFile) {
+            dom.querySelector("li[data-action=export]").classList.add("disabled");
+            dom.querySelector("li[data-action=image]").classList.add("disabled");
         }
     };
 
@@ -227,7 +232,7 @@ DBSDM.Menu = (function(){
         while (node && node.dataset && !(action = node.dataset.action)) {
             node = node.parentNode;
         }
-        if (!action) { return; }
+        if (!action || node.classList.contains("disabled")) { return; }
 
         var handler;
         while (node && node.dataset && !(handler = node.dataset.handler)) {
