@@ -207,14 +207,6 @@ DBSDM.Canvas = (function() {
         return a.toString().localeCompare(b.toString());
     };
 
-    Canvas.prototype.save = function() {
-
-    };
-
-    Canvas.prototype.load = function() {
-
-    };
-
     Canvas.prototype.export = function() {
         if (!ns.Diagram.allowFile) { return; }
         var entityModels = [];
@@ -254,8 +246,6 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.import = function(data) {
-        if (!ns.Diagram.allowFile) { return; }
-
         // create models from data
         var entityModels = [];
         var relationModels = [];
@@ -340,7 +330,6 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.handleMenu = function(action) {
-        console.log("menu");
         switch(action) {
             case "snap": this._switchSnap(); break;
             case "export": this.export(); break;
