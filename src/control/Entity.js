@@ -280,6 +280,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.delete = function() {
+        if (!ns.Diagram.allowEdit) { return; }
         this._canvas.removeEntity(this);
 
         for (var i=0; i<this._children.length; i++) {
@@ -347,8 +348,16 @@ DBSDM.Control.Entity = (function(){
         this._neededSize.height = size.height;
     };
 
+    //
+    Entity.prototype._createAttribute = function() {
+        if (!ns.Diagram.allowEdit) { return; }
+        this._attributeList.createAttribute();
+        this.encompassContent();
+    };
+
     // Relations
     Entity.prototype._createRelation = function(sourceCardinality, targetCardinality) {
+        if (!ns.Diagram.allowEdit) { return; }
         var control = new ns.Control.Relation(this._canvas, this, null, sourceCardinality, targetCardinality);
         this._canvas.Mouse.attachObject(control);
     };
@@ -402,6 +411,8 @@ DBSDM.Control.Entity = (function(){
 
     // ISA
     Entity.prototype._isa = function(parent) {
+        if (!ns.Diagram.allowEdit) { return; }
+
         if (this._parent == parent) { return; }
         if (this._parent != null) {
             this._parent.removeChild(this);
@@ -531,16 +542,17 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype.handleMenu = function(action) {
         switch(action) {
             case "delete": this.delete(); break;
-            case "attr":
-                this._attributeList.createAttribute();
-                this.encompassContent();
-                break;
+            case "attr": this._createAttribute(); break;
             case "rel-nm": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.MANY); break;
             case "rel-n1": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.ONE);  break;
             case "rel-1n": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break;
             case "rel-11": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.ONE);  break;
             case "fit": this.fitToContents(); break;
-            case "isa": this._canvas.Mouse.attachObject(this); break;
+            case "isa":
+                if (ns.Diagram.allowEdit) {
+                    this._canvas.Mouse.attachObject(this);
+                }
+                break;
         }
     };
 

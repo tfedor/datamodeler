@@ -56,6 +56,7 @@ DBSDM.Control.Attribute = (function(){
 
     // Event Handlers
     Attribute.prototype.onMouseDown = function(e, mouse) {
+        if (!ns.Diagram.allowEdit) { return; }
         this._dragOffset = e.clientY - this._view.getEdges().top;
 
         this._dragStartPosition = this._list.getPosition(this._model);
@@ -65,6 +66,7 @@ DBSDM.Control.Attribute = (function(){
     };
 
     Attribute.prototype.onMouseMove = function(e, mouse) {
+        if (!ns.Diagram.allowEdit) { return; }
         var delta = Math.floor((mouse.dy + this._dragOffset) / 18);
         var position = this._dragStartPosition + delta;
 

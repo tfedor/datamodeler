@@ -128,6 +128,14 @@ div.dbsdmCanvas > svg, #dbsdmContextMenu {
     user-select: none;
 }
 
+/** SVG TEXT */
+svg text, svg tspan {
+    cursor: default;
+}
+svg text.editable, svg tspan.editable {
+    cursor: text;
+}
+
 /** ENTITY */
 text.entity-name {
     fill: blue;
@@ -135,30 +143,31 @@ text.entity-name {
 }
 
 /** ATTRIBUTE */
-svg.attr {
-    cursor: grab;
-    cursor: -webkit-grab;
-}
-svg.attr.dragged, svg.attr.dragged * {
-    cursor: grabbing;
-    cursor: -webkit-grabbing;
-}
-
 svg.attr text {
     font-size: 0.65em;
     dominant-baseline: central;
-    cursor: text;
+    cursor: default;
 }
 tspan.attr-index, tspan.attr-nullable {
     font-size: 1.2em;
     font-family: "Courier New", monospace;
-    cursor: grab;
 }
 tspan.attr-index {
     fill: blue;
 }
 tspan.attr-nullable {
     fill: red;
+}
+
+svg.attr.draggable,
+svg.attr.draggable tspan.attr-index,
+svg.attr.draggable tspan.attr-nullable {
+    cursor: grab;
+    cursor: -webkit-grab;
+}
+svg.attr.dragged, svg.attr.dragged * {
+    cursor: grabbing;
+    cursor: -webkit-grabbing;
 }
 
 use.attr-bg { visibility: hidden; }

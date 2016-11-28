@@ -318,10 +318,12 @@ DBSDM.Canvas = (function() {
 
     Canvas.prototype.onMouseDown = function(e, mouse) {
         if (mouse.button != 0) { return; }
-        var ent = new ns.Control.Entity(this, new ns.Model.Entity("Entity_" + (this._entities.length + 1)));
-        ent.create();
+        if (ns.Diagram.allowEdit) {
+            var ent = new ns.Control.Entity(this, new ns.Model.Entity("Entity_" + (this._entities.length + 1)));
+            ent.create();
 
-        this.Mouse.attachObject(ent);
+            this.Mouse.attachObject(ent);
+        }
     };
 
     Canvas.prototype.onMouseMove = function(e, mouse) {

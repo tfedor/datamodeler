@@ -286,7 +286,11 @@ DBSDM.Control.Relation = (function() {
             case "reset":      this._model.resetMiddlePoint(); break;
             case "straighten": this.straighten(); break;
             case "toback":     this._view.toBack(); break;
-            case "delete":     this.clear(); return;
+            case "delete":
+                if (ns.Diagram.allowEdit) {
+                    this.clear();
+                }
+                return;
         }
         this.redraw();
     };

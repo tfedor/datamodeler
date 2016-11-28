@@ -53,6 +53,11 @@ DBSDM.View.Attribute = (function(){
             width: "100%", height: height
         });
 
+        if (ns.Diagram.allowEdit) {
+            this._svg.classList.add("draggable");
+            this._svg.classList.add("editable");
+        }
+
         // add background
         this._svg.appendChild(
             ns.Diagram.getSharedElement("Attr.Bg", { class: "attr-bg" })

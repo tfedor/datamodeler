@@ -14,17 +14,20 @@ DBSDM.Menu = (function(){
      *                   or submenu definition, which is array of arrays exactly like section itself
      *                   (basically section without name)
      * [string] icon:    Name of icon used from FontAwesome set, without fa- prefix. Can be null or omitted if no icon
+     * [string] access:  Access right of Diagram needed to allow this operation, e.g. "allowFile" or "allowEdit".
+     *                   Can be null or omitted if no special rights are required.
+     *                   If parent menu have access right, it applies to all items in submenu
      */
     var definition = {
         attribute: [
-            ["Primary", "primary", "key"],
-            ["Unique", "unique"],
-            ["Nullable", "nullable"],
-            ["Delete Attribute", "delete", "ban"]
+            ["Primary", "primary", "key", "allowEdit"],
+            ["Unique", "unique", null, "allowEdit"],
+            ["Nullable", "nullable", null, "allowEdit"],
+            ["Delete Attribute", "delete", "ban", "allowEdit"]
         ],
 
         entity: [
-            ["Add Attribute", "attr", "list"],
+            ["Add Attribute", "attr", "list", "allowEdit"],
             [
                 "Add Relation",
                 [
@@ -33,11 +36,11 @@ DBSDM.Menu = (function(){
                     ["1:N", "rel-1n"],
                     ["1:1", "rel-11"]
                 ],
-                "link"
+                "link", "allowEdit"
             ],
-            ["Is a...", "isa"],
+            ["Is a...", "isa", null, "allowEdit"],
             ["Fit to contents", "fit"],
-            ["Delete Entity", "delete", "ban"]
+            ["Delete Entity", "delete", "ban", "allowEdit"]
         ],
 
         relationMiddle: [
@@ -52,16 +55,17 @@ DBSDM.Menu = (function(){
                 [
                     ["One", "one"],
                     ["Many", "many"]
-                ]
+                ],
+                null, "allowEdit"
             ],
-            ["Identifying", "identifying", "square-o"], // TODO icon
-            ["Required", "required", "check-square-o"], // TODO icon
+            ["Identifying", "identifying", "square-o", "allowEdit"], // TODO icon
+            ["Required", "required", "check-square-o", "allowEdit"], // TODO icon
             ["Toggle Name", "name"]
         ],
         relation: [
             ["Straighten", "straighten", "compress"],
             ["Send to Back", "toback", "level-down"],
-            ["Delete Relation", "delete"]
+            ["Delete Relation", "delete", null, "allowEdit"]
         ],
 
         canvas: [
@@ -73,8 +77,8 @@ DBSDM.Menu = (function(){
             ], "search"],
             ["Reset view", "reset-view", "arrows-alt"],
             ["Fullscreen", "fullscreen", "desktop"],
-            ["Export", "export", "external-link-square"],
-            ["Save as image", "image", "file-image-o"]
+            ["Export", "export", "external-link-square", "allowFile"],
+            ["Save as image", "image", "file-image-o", "allowFile"]
         ]
     };
 
@@ -107,7 +111,7 @@ DBSDM.Menu = (function(){
             return dom;
         }
 
-        function createMenu(menu) {
+        function createMenu(menu, parentEnabled) {
             var dom = document.createElement("ul");
             for (var i in menu) {
                 if (!menu.hasOwnProperty(i)) { continue; }
@@ -115,14 +119,18 @@ DBSDM.Menu = (function(){
                 var title = menu[i][0];
                 var options = menu[i][1]; // options or action
                 var icon = menu[i][2] || null;
+                var enabled = (menu[i][3] ? self.checkPermission(menu[i][3]) : parentEnabled);
 
                 //
                 var itemDom = document.createElement("li");
                 if ((typeof options == "object")) {
                     itemDom.appendChild(createIconElement("caret-right"));
-                    itemDom.appendChild(createMenu(options));
+                    itemDom.appendChild(createMenu(options, enabled));
                 } else {
                     itemDom.dataset.action = options;
+                }
+                if (!enabled) {
+                    itemDom.classList.add("disabled");
                 }
                 itemDom.appendChild(createIcon(icon));
                 itemDom.appendChild(document.createTextNode(title));
@@ -137,7 +145,7 @@ DBSDM.Menu = (function(){
 
         for (var section in definition) {
             if (!definition.hasOwnProperty(section)) { continue; }
-            var sectionDom = createMenu(definition[section]);
+            var sectionDom = createMenu(definition[section], true);
             sectionDom.dataset.handler = section;
             dom.appendChild(sectionDom);
 
@@ -154,10 +162,10 @@ DBSDM.Menu = (function(){
         if (!ns.Fullscreen.enabled()) {
             dom.querySelector("li[data-action=fullscreen]").classList.add("disabled");
         }
-        if (!ns.Diagram.allowFile) {
-            dom.querySelector("li[data-action=export]").classList.add("disabled");
-            dom.querySelector("li[data-action=image]").classList.add("disabled");
-        }
+    };
+
+    self.checkPermission = function(permission) {
+        return ns.Diagram[permission];
     };
 
     /**

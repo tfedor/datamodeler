@@ -167,11 +167,17 @@ DBSDM.Control.RelationLeg = (function() {
                     return;
                 }
                 break;
+            case "name":
+                this._view.toggleName();
+                break;
+        }
+
+        if (!ns.Diagram.allowEdit) { return; }
+        switch(action) {
             case "one":         this._model.setCardinality( Enum.Cardinality.ONE );         break;
             case "many":        this._model.setCardinality( Enum.Cardinality.MANY );        break;
             case "identifying": this._model.setIdentifying( !this._model.isIdentifying() ); break;
             case "required":    this._model.setOptional   ( !this._model.isOptional()    ); break;
-            case "name":        this._view.toggleName(); break;
         }
 
         this._view.updateType();

@@ -33,8 +33,12 @@ DBSDM.View.EditableText = (function(){
 
         // set input handlers
         var that = this;
-        this._text.addEventListener("mousedown", function(e) { e.stopPropagation(); }); // won't work in Chrome for Relation names otherwise
-        this._text.addEventListener("click", function(e) { that._showInput(); e.stopPropagation(); });
+        if (ns.Diagram.allowEdit) {
+            this._text.classList.add("editable");
+
+            this._text.addEventListener("mousedown", function(e) { e.stopPropagation(); }); // won't work in Chrome for Relation names otherwise
+            this._text.addEventListener("click", function(e) { that._showInput(); e.stopPropagation(); });
+        }
     }
 
     EditableText.prototype._createSharedElements = function() {
@@ -94,6 +98,7 @@ DBSDM.View.EditableText = (function(){
     };
 
     EditableText.prototype._showInput = function() {
+        if (!ns.Diagram.allowEdit) { return; }
         ns.Menu.hide();
         
         this._input.style.display = "block";
