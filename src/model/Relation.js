@@ -32,7 +32,7 @@ DBSDM.Model.Relation = (function(){
     };
 
     Relation.prototype.hasManualPoints = function() {
-        return !(this._source.pointsManual || this._target.pointsManual);
+        return this._source.pointsManual || this._target.pointsManual;
     };
 
     // middle point

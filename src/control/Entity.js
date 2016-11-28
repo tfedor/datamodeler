@@ -151,8 +151,17 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.notifyDrag = function(x, y) {
-        for (var i=0; i<this._relationLegList.length; i++) {
+        var relCount = this._relationLegList.length;
+
+        // first, translate all anchors appropriatelly
+        for (var i=0; i<relCount; i++) {
             this._relationLegList[i].onEntityDrag(x, y);
+        }
+
+        // when all relation legs are translated, manage whole relation:
+        // try to find better anchor positions, straigthen and redraw
+        for (i=0; i<relCount; i++) {
+            this._relationLegList[i].getRelation().onEntityDrag(x, y);
         }
 
         for (var c=0; c<this._children.length; c++) {

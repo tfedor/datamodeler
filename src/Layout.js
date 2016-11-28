@@ -3,13 +3,13 @@ var DBSDM = DBSDM || {};
 DBSDM.Layout = (function() {
     var ns = DBSDM;
 
-    var iterations = 1000;
+    var iterations = 100;
     var optimal = 100;
     var attractionScale = 0.25;
     var straightenScale = 0.1;
     var repulsionScale = 25;
     var repulsionDistanceScale = 2; // of optimal length
-    var applyScale = 0.4;
+    var applyScale = 1;
     var origin = {
         x: 10,
         y: 10
@@ -24,11 +24,20 @@ DBSDM.Layout = (function() {
         this._entities = entities;
         this._relations = relations;
 
+        applyScale = 1;
+
         this._fit();
         for (var i=0; i<iterations; i++) {
             this._computeRelationsStrenghts();
             this._computeEntitiesRepulsions();
             this._applyForces();
+
+            /*
+            // annealing?
+            if (i > iterations/2) {
+                applyScale -= (1 - 0.1) / (iterations/2);
+            }
+            */
         }
         this._moveToOrigin();
     };
@@ -109,7 +118,7 @@ DBSDM.Layout = (function() {
         var vector = (new ns.Geometry.Vector()).fromPoints(local, origin);
         for (i=0; i<count; i++) {
             entities[i].addForce(vector);
-            entities[i].applyForce();
+            entities[i].applyForce(1);
         }
     };
 

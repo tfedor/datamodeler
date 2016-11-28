@@ -231,7 +231,7 @@ DBSDM.Control.Relation = (function() {
 
     // handles non-recursive relations
     Relation.prototype.onEntityDrag = function(dx, dy) {
-        if (this._model.hasManualPoints()) {
+        if (!this._model.hasManualPoints()) {
             this._model.resetAnchors();
         }
         this.centerMiddlePoint();

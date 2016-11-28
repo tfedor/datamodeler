@@ -110,7 +110,6 @@ DBSDM.Control.RelationLeg = (function() {
             this._relation.translate(dx*0.5, dy*0.5);
         } else {
             this.translateAnchor(dx, dy);
-            this._relation.onEntityDrag();
         }
     };
 
