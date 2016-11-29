@@ -112,7 +112,7 @@ DBSDM.Canvas = (function() {
         }
     };
 
-    Canvas.prototype._updateViewbox = function() {
+    Canvas.prototype.updateViewbox = function() {
         var rect = this.svg.getBoundingClientRect();
         var width = rect.width;
         var height = rect.height;
@@ -131,35 +131,31 @@ DBSDM.Canvas = (function() {
     Canvas.prototype._scroll = function(rx, ry) {
         this._offset.x -= rx;
         this._offset.y -= ry;
-        this._updateViewbox();
+        this.updateViewbox();
     };
     Canvas.prototype.resetView = function() {
         this._offset.x = 0;
         this._offset.y = 0;
-        this._updateViewbox();
+        this.updateViewbox();
     };
 
     Canvas.prototype.zoomIn = function() {
         this._zoom = Math.min(2, this._zoom + 0.1);
-        this._updateViewbox();
+        this.updateViewbox();
     };
     Canvas.prototype.zoomOut = function() {
         this._zoom = Math.max(0.1, this._zoom - 0.1);
-        this._updateViewbox();
+        this.updateViewbox();
     };
     Canvas.prototype.zoomReset = function() {
         this._zoom = 1;
-        this._updateViewbox();
+        this.updateViewbox();
     };
 
     // fullscreen
-    Canvas.prototype.fullscreenElement = function() {
-
-    };
-
     Canvas.prototype.fullscreen = function() {
         if (!ns.Fullscreen.enabled()) { return; }
-        ns.Fullscreen.switch(this._container);
+        ns.Fullscreen.switch(this._container, this);
     };
 
     // entities

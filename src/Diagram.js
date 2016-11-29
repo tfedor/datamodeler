@@ -45,6 +45,9 @@ DBSDM.Diagram = (function() {
             } else {
                 document.querySelector(".fullscreen").classList.remove("fullscreen");
             }
+            if (ns.Fullscreen.lastCanvas) {
+                ns.Fullscreen.lastCanvas.updateViewbox();
+            }
         });
     };
 

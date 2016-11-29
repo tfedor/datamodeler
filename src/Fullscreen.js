@@ -3,6 +3,8 @@ var DBSDM = DBSDM || {};
 DBSDM.Fullscreen = (function() {
     var self = {};
 
+    self.lastCanvas = null;
+
     self.enabled = function() {
         if ("fullscreenEnabled" in document) { return document.fullscreeEnabled; }
         if ("webkitFullscreenEnabled" in document) { return document.webkitFullscreenEnabled; }
@@ -33,7 +35,8 @@ DBSDM.Fullscreen = (function() {
         if ("msExitFullscreen" in document) { document.msExitFullscreen(); }
     };
 
-    self.switch = function(element) {
+    self.switch = function(element, canvas) {
+        self.lastCanvas = canvas;
         if (self.fullscreenElement() != element) {
             self.request(element);
         } else {
