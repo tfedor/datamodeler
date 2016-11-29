@@ -94,7 +94,7 @@ DBSDM.Control.Entity = (function(){
         var x,y;
         var transform = this._model.getTransform();
         if (this._parent != null) {
-            var padding = 10; // TODO
+            var padding = ns.Consts.EntityPadding;
 
             var parentTransform = this._parent._model.getTransform();
             x = Math.min(
@@ -125,6 +125,7 @@ DBSDM.Control.Entity = (function(){
         };
 
         this._model.setPosition(x, y);
+        this.notifyDrag(delta.x, delta.y);
         return delta;
     };
 
@@ -312,7 +313,7 @@ DBSDM.Control.Entity = (function(){
         // children entities
         var count = this._children.length;
         if (count != 0) {
-            var childrenWidth = (2+count-1) * 10; // TODO entity padding + in between margin;
+            var childrenWidth = (2+count-1) * ns.Consts.EntityPadding;
             var childrenHeight = 0;
             for (var i=0; i<count; i++) {
                 var ent = this._children[i].getMinimalSize();
@@ -339,8 +340,8 @@ DBSDM.Control.Entity = (function(){
         if (count != 0) {
             for (var i=0; i<count; i++) {
                 var child = this._children[i]._model.getTransform();
-                size.width = Math.max(size.width, child.x + child.width + 10); // TODO padding
-                size.height = Math.max(size.height, child.y + child.height + 10); // TODO padding
+                size.width = Math.max(size.width, child.x + child.width + ns.Consts.EntityPadding);
+                size.height = Math.max(size.height, child.y + child.height + ns.Consts.EntityPadding);
             }
         }
 
@@ -466,8 +467,8 @@ DBSDM.Control.Entity = (function(){
         var childTransform = child._model.getTransform();
         var transform = this._model.getTransform();
 
-        var neededWidth  = childTransform.width + 2*10; // TODO padding
-        var neededHeight = childTransform.height + 2*10 ;// TODO padding
+        var neededWidth  = childTransform.width + 2*ns.Consts.EntityPadding;
+        var neededHeight = childTransform.height + 2*ns.Consts.EntityPadding;
 
         this._model.setSize(
             (transform.width  < neededWidth  ? neededWidth  : null),
@@ -485,8 +486,8 @@ DBSDM.Control.Entity = (function(){
 
         //
         if (this._children.length != 0) {
-            var offsetTop = this._view.getMinimalSize().height + this._attributeList.getMinimalSize().height - 10; // TODO padding
-            var offsetLeft = 10; // TODO padding
+            var offsetTop = this._view.getMinimalSize().height + this._attributeList.getMinimalSize().height;
+            var offsetLeft = ns.Consts.EntityPadding;
 
             for (var i=0; i<this._children.length; i++) {
                 var child = this._children[i].getMinimalSize();
@@ -495,7 +496,7 @@ DBSDM.Control.Entity = (function(){
                 this._children[i]._setPosition(offsetLeft, offsetTop);
                 this._children[i]._view.redraw();
 
-                offsetLeft += 10 + child.width; // TODO padding
+                offsetLeft += ns.Consts.EntityPadding + child.width;
             }
         }
 

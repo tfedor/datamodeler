@@ -27,8 +27,8 @@ DBSDM.View.Entity = (function(){
     Entity.prototype.getMinimalSize = function() {
         var rect = this._name.getBoundingClientRect();
         return {
-            width: rect.width + 10, // TODO padding constant
-            height: rect.height + 15 // TODO padding constant
+            width: rect.width + ns.Consts.EntityPadding,
+            height: rect.height + ns.Consts.EntityPadding + ns.Consts.EntityExtraHeight
         };
     };
 
