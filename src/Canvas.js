@@ -199,12 +199,45 @@ DBSDM.Canvas = (function() {
     };
 
     // save/load, export/import
-    Canvas.prototype._sortEntityModels = function(a, b) {
-        return a.getName().localeCompare(b.getName());
+    Canvas.prototype._sortAttributes = function(a, b) {
+        var cmp = b.primary - a.primary;
+        if (cmp != 0) { return cmp; }
+
+        cmp = b.unique - a.unique;
+        if (cmp != 0) { return cmp; }
+
+        cmp = a.nullable - b.nullable;
+        if (cmp != 0) { return cmp; }
+
+        cmp = a.name.localeCompare(b.name);
+        return cmp;
+    };
+    Canvas.prototype._sortEntities = function(a, b) {
+        return a.name.localeCompare(b.name);
+    };
+    Canvas.prototype._sortRelationLegs = function(a, b) {
+        return JSON.stringify(a).localeCompare(JSON.stringify(b).entity);
+    };
+    Canvas.prototype._sortRelations = function(a, b) {
+        return JSON.stringify(a).localeCompare(JSON.stringify(b).entity);
     };
 
-    Canvas.prototype._sortRelationModels = function(a, b) {
-        return a.toString().localeCompare(b.toString());
+    Canvas.prototype._sortData = function(data) {
+        var count,i;
+
+        // entities
+        count = data.entities.length;
+        for (i=0; i<count; i++) {
+            data.entities[i].attr.sort(this._sortAttributes);
+        }
+        data.entities.sort(this._sortEntities);
+
+        // relations
+        count = data.relations.length;
+        for (i=0; i<count; i++) {
+            data.relations[i].sort(this._sortRelationLegs);
+        }
+        data.relations.sort(this._sortRelations);
     };
 
     Canvas.prototype.export = function() {
@@ -222,10 +255,6 @@ DBSDM.Canvas = (function() {
             relationModels.push(this._relations[i].getModel());
         }
 
-        // sort by names
-        entityModels.sort(this._sortEntityModels);
-        relationModels.sort(this._sortRelationModels);
-
         // get resulting object
         var result = {
             entities: [],
@@ -242,10 +271,16 @@ DBSDM.Canvas = (function() {
             result.relations.push(relationModels[i].getExportData());
         }
 
+        this._sortData(result);
+
         ns.File.download(JSON.stringify(result, null, 2), "model-data.json", "application/json");
     };
 
     Canvas.prototype.import = function(data) {
+
+        this.clear();
+        this._sortData(data);
+
         // create models from data
         var entityModels = [];
         var relationModels = [];
