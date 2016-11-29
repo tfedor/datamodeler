@@ -51,10 +51,7 @@ DBSDM.Fullscreen = (function() {
             if (onerror)  { document.onwebkitfullscreenerror  = onerror; }
         }
         if ("onmozfullscreenchange" in document) {
-            console.log("a");
-            if (onchange) {
-                console.log("b");
-                document.onmozfullscreenchange = onchange; }
+            if (onchange) { document.onmozfullscreenchange = onchange; }
             if (onerror)  { document.onmozfullscreenerror  = onerror; }
         }
         if ("onmsfullscreenchange" in document) {

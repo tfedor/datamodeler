@@ -69,7 +69,7 @@ DBSDM.Canvas = (function() {
 
         this.svg.addEventListener("dragover", function(e) { e.preventDefault(); } );
         //this.svg.addEventListener("dragleave", function() { console.log("dragleave"); } );
-        document.body.addEventListener("drop", function(e) { ns.File.upload(e, that); }, false);
+        this.svg.addEventListener("drop", function(e) { ns.File.upload(e, that); }, false);
     };
 
     // shared elements for all canvas
