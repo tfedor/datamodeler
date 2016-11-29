@@ -5,6 +5,10 @@ DBSDM.Fullscreen = (function() {
 
     self.lastCanvas = null;
 
+    self.inFullscreen = function() {
+        return (self.fullscreenElement() != null);
+    };
+
     self.enabled = function() {
         if ("fullscreenEnabled" in document) { return document.fullscreeEnabled; }
         if ("webkitFullscreenEnabled" in document) { return document.webkitFullscreenEnabled; }

@@ -7,11 +7,12 @@ body,input {
 }
 
 div.dbsdmCanvas {
-    width:80%;height:800px;border:1px solid red;margin:50px;
+    width:80%;height:800px;border:1px solid black;
+    margin:50px;
     font-size: 1em;
 }
 div.dbsdmCanvas > svg {
-    width:100%;height:100%;border:1px solid blue;
+    width:100%;height:100%;
     pointer-events: all;
     font-size:15px;
 }

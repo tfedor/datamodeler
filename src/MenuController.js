@@ -206,8 +206,13 @@ DBSDM.Menu = (function(){
         }
 
         var doc = document.documentElement;
-        var left = e.clientX + (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0);
-        var top =  e.clientY + (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
+        var left = e.clientX;
+        var top =  e.clientY;
+
+        if (!ns.Fullscreen.inFullscreen()) {
+            left += (window.pageXOffset || doc.scrollLeft) - (doc.clientLeft || 0);
+            top += (window.pageYOffset || doc.scrollTop)  - (doc.clientTop || 0);
+        }
 
         this._dom.menu.style.left = left+"px";
         this._dom.menu.style.top = top+"px";
