@@ -7,6 +7,7 @@
     <link rel="stylesheet" type="text/css" href="styles/styles.css">
     <link rel="stylesheet" href="libs/font-awesome-4.6.3/css/font-awesome.min.css">
     <script src="libs/saveSvgAsPng-gh-pages/saveSvgAsPng.js"></script>
+    <script src="libs/jszip/dist/jszip.min.js"></script>
 
     <script type="application/javascript" src="src/Enums.js"></script>
     <script type="application/javascript" src="src/Consts.js"></script>
@@ -42,16 +43,7 @@
     <script type="application/javascript" src="src/Vector.js"></script>
     <script type="application/javascript" src="src/File.js"></script>
     <script type="application/javascript" src="src/Fullscreen.js"></script>
-
     <script type="application/javascript" src="src/MenuController.js"></script>
-
-    <!--
-        <script type="application/javascript" src="src/Entity.js"></script>
-        <script type="application/javascript" src="src/EditableText.js"></script>
-        <script type="application/javascript" src="src/Attribute.js"></script>
-        <script type="application/javascript" src="src/RelationControl.js"></script>
-        <script type="application/javascript" src="src/RelationLeg.js"></script>
-        -->
 </head>
 <body>
 
@@ -72,13 +64,13 @@
     <a href="javascript:canvas.zoomReset();void(0);">reset</a>
     <script>
 
-        DBSDM.Diagram.init(false, false);
+        DBSDM.Diagram.init(true, true);
 
         var canvas = new DBSDM.Canvas();
         canvas.create();
 
         var json = JSON.parse('{"entities": [{"name": "DRUH","parent": null,"attr": [{"name": "id_druhu","primary": true,"unique": false,"nullable": false},{"name": "nazev","primary": false,"unique": false,"nullable": false}]},{"name": "KRMIC","parent": null,"attr": [{"name": "id_krmic","primary": true,"unique": false,"nullable": false},{"name": "adresa","primary": false,"unique": false,"nullable": false},{"name": "jmeno","primary": false,"unique": false,"nullable": false}]},{"name": "LEKAR","parent": null,"attr": [{"name": "id_lekare","primary": true,"unique": false,"nullable": false},{"name": "jmeno","primary": false,"unique": false,"nullable": false}]},{"name": "OBJEKT","parent": null,"attr": [{"name": "id_objektu","primary": true,"unique": false,"nullable": false}]},{"name": "PROHLIDKA","parent": null,"attr": [{"name": "datum","primary": true,"unique": false,"nullable": false}]},{"name": "ZVIRE","parent": null,"attr": [{"name": "id_zvirete","primary": true,"unique": false,"nullable": false},{"name": "dat_narozeni","primary": false,"unique": false,"nullable": false},{"name": "jmeno","primary": false,"unique": false,"nullable": false},{"name": "zeme_puvodu","primary": false,"unique": false,"nullable": false}]}],"relations": [[{"entity": "DRUH","identifying": false,"optional": true,"cardinality": 1},{"entity": "ZVIRE","identifying": true,"optional": false,"cardinality": 0}],[{"entity": "KRMIC","identifying": false,"optional": false,"cardinality": 1},{"entity": "OBJEKT","identifying": false,"optional": false,"cardinality": 0}],[{"entity": "LEKAR","identifying": false,"optional": true,"cardinality": 1},{"entity": "PROHLIDKA","identifying": false,"optional": false,"cardinality": 0}],[{"entity": "OBJEKT","identifying": false,"optional": true,"cardinality": 0},{"entity": "ZVIRE","identifying": false,"optional": false,"cardinality": 1}],[{"entity": "PROHLIDKA","identifying": true,"optional": false,"cardinality": 0},{"entity": "ZVIRE","identifying": false,"optional": true,"cardinality": 1}]]}');
-        for (var i=0; i<2; i++) {
+        for (var i=0; i<0; i++) {
             var c = new DBSDM.Canvas();
             c.create();
             c.import(json);
