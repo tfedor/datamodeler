@@ -236,8 +236,7 @@ DBSDM.Canvas = (function() {
         data.relations.sort(this._sortRelations);
     };
 
-    Canvas.prototype.export = function() {
-        if (!ns.Diagram.allowFile) { return; }
+    Canvas.prototype.export = function(promptDownload, prettify) {
         var entityModels = [];
         var relationModels = [];
 
@@ -269,7 +268,17 @@ DBSDM.Canvas = (function() {
 
         this._sortData(result);
 
-        ns.File.download(JSON.stringify(result, null, 2), "model-data.json", "application/json");
+        var jsonData;
+        if (prettify) {
+            jsonData = JSON.stringify(result, null, 2);
+        } else {
+            jsonData = JSON.stringify(result);
+        }
+
+        if (ns.Diagram.allowFile && promptDownload) {
+            ns.File.download(jsonData, "model-data.json", "application/json");
+        }
+        return jsonData;
     };
 
     Canvas.prototype.import = function(data) {
@@ -365,7 +374,7 @@ DBSDM.Canvas = (function() {
     Canvas.prototype.handleMenu = function(action) {
         switch(action) {
             case "snap": this._switchSnap(); break;
-            case "export": this.export(); break;
+            case "export": this.export(true, true); break;
             case "zoom-in": this.zoomIn(); break;
             case "zoom-reset": this.zoomReset(); break;
             case "zoom-out": this.zoomOut(); break;

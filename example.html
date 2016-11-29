@@ -33,6 +33,10 @@
         var canvas2 = new DBSDM.Canvas();
         canvas2.create();
         canvas2.import(json);
+
+        var promptDownload = false;
+        var prettify = false;
+        console.log(canvas2.export(promptDownload, prettify));
     </script>
 
 </body>
