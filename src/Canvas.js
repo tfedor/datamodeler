@@ -155,7 +155,7 @@ DBSDM.Canvas = (function() {
     // fullscreen
     Canvas.prototype.fullscreen = function() {
         if (!ns.Fullscreen.enabled()) { return; }
-        ns.Fullscreen.switch(this._container, this);
+        ns.Fullscreen.toggle(this._container, this);
     };
 
     // entities

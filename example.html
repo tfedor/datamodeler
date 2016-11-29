@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DBSDM</title>
+    <link rel="stylesheet" type="text/css" href="styles/reset.css">
+    <link rel="stylesheet" type="text/css" href="styles/styles.css">
+    <link rel="stylesheet" href="libs/font-awesome-4.6.3/css/font-awesome.min.css">
+    <script src="libs/saveSvgAsPng-gh-pages/saveSvgAsPng.js"></script>
+    <script src="libs/jszip/dist/jszip.min.js"></script>
+    <script type="application/javascript" src="dist/dbsdm.js"></script>
+</head>
+<body>
+
+    <script>
+        /**
+         * Initialize diagram, has to be run first
+         */
+        var allowEdit = true; // allow edits
+        var allowFile = true; // allow export, import and save as image
+        DBSDM.Diagram.init(allowEdit, allowFile);
+
+        /**
+         * Create empty canvas
+         */
+        var canvas1 = new DBSDM.Canvas();
+        canvas1.create();
+
+        /**
+         * Create canvas and import saved diagram
+         */
+        var json = JSON.parse('{"entities": [{"name": "DRUH","parent": null,"attr": [{"name": "id_druhu","primary": true,"unique": false,"nullable": false},{"name": "nazev","primary": false,"unique": false,"nullable": false}]},{"name": "KRMIC","parent": null,"attr": [{"name": "id_krmic","primary": true,"unique": false,"nullable": false},{"name": "adresa","primary": false,"unique": false,"nullable": false},{"name": "jmeno","primary": false,"unique": false,"nullable": false}]},{"name": "LEKAR","parent": null,"attr": [{"name": "id_lekare","primary": true,"unique": false,"nullable": false},{"name": "jmeno","primary": false,"unique": false,"nullable": false}]},{"name": "OBJEKT","parent": null,"attr": [{"name": "id_objektu","primary": true,"unique": false,"nullable": false}]},{"name": "PROHLIDKA","parent": null,"attr": [{"name": "datum","primary": true,"unique": false,"nullable": false}]},{"name": "ZVIRE","parent": null,"attr": [{"name": "id_zvirete","primary": true,"unique": false,"nullable": false},{"name": "dat_narozeni","primary": false,"unique": false,"nullable": false},{"name": "jmeno","primary": false,"unique": false,"nullable": false},{"name": "zeme_puvodu","primary": false,"unique": false,"nullable": false}]}],"relations": [[{"entity": "DRUH","identifying": false,"optional": true,"cardinality": 1},{"entity": "ZVIRE","identifying": true,"optional": false,"cardinality": 0}],[{"entity": "KRMIC","identifying": false,"optional": false,"cardinality": 1},{"entity": "OBJEKT","identifying": false,"optional": false,"cardinality": 0}],[{"entity": "LEKAR","identifying": false,"optional": true,"cardinality": 1},{"entity": "PROHLIDKA","identifying": false,"optional": false,"cardinality": 0}],[{"entity": "OBJEKT","identifying": false,"optional": true,"cardinality": 0},{"entity": "ZVIRE","identifying": false,"optional": false,"cardinality": 1}],[{"entity": "PROHLIDKA","identifying": true,"optional": false,"cardinality": 0},{"entity": "ZVIRE","identifying": false,"optional": true,"cardinality": 1}]]}');
+        var canvas2 = new DBSDM.Canvas();
+        canvas2.create();
+        canvas2.import(json);
+    </script>
+
+</body>
+</html>

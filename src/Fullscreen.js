@@ -39,7 +39,7 @@ DBSDM.Fullscreen = (function() {
         if ("msExitFullscreen" in document) { document.msExitFullscreen(); }
     };
 
-    self.switch = function(element, canvas) {
+    self.toggle = function(element, canvas) {
         self.lastCanvas = canvas;
         if (self.fullscreenElement() != element) {
             self.request(element);
