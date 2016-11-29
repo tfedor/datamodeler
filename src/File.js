@@ -43,7 +43,7 @@ DBSDM.File = (function() {
             if (file.type == "application/x-zip-compressed") {
                 self._processZip(canvas, file);
             } else if (file.type == "application/json") {
-                self._processJson(canvas, jsonfile);
+                self._processJson(canvas, file);
             } else {
                 // TODO
                 console.log("Unsupported file");
@@ -61,7 +61,7 @@ DBSDM.File = (function() {
         reader.onerror = function(e) {
             // TODO error handling
         };
-        reader.readAsText(file);
+        reader.readAsText(jsonfile);
     };
 
     self._processZip = function(canvas, zipfile) {

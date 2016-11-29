@@ -53,6 +53,7 @@
     <a href="javascript:saveEntityModels();void(0);">save</a>
     <a href="javascript:sort();void(0);">sort</a>
     <a href="javascript:im();void(0);">import</a>
+    <a href="javascript:im2();void(0);">import2</a>
     <a href="javascript:ex();void(0);">export</a>
 
     <a href="javascript:canvas.Layout._moveToOrigin();void(0);">origin</a>
@@ -70,7 +71,8 @@
         canvas.create();
 
         var json = JSON.parse('{"entities": [{"name": "DRUH","parent": null,"attr": [{"name": "id_druhu","primary": true,"unique": false,"nullable": false},{"name": "nazev","primary": false,"unique": false,"nullable": false}]},{"name": "KRMIC","parent": null,"attr": [{"name": "id_krmic","primary": true,"unique": false,"nullable": false},{"name": "adresa","primary": false,"unique": false,"nullable": false},{"name": "jmeno","primary": false,"unique": false,"nullable": false}]},{"name": "LEKAR","parent": null,"attr": [{"name": "id_lekare","primary": true,"unique": false,"nullable": false},{"name": "jmeno","primary": false,"unique": false,"nullable": false}]},{"name": "OBJEKT","parent": null,"attr": [{"name": "id_objektu","primary": true,"unique": false,"nullable": false}]},{"name": "PROHLIDKA","parent": null,"attr": [{"name": "datum","primary": true,"unique": false,"nullable": false}]},{"name": "ZVIRE","parent": null,"attr": [{"name": "id_zvirete","primary": true,"unique": false,"nullable": false},{"name": "dat_narozeni","primary": false,"unique": false,"nullable": false},{"name": "jmeno","primary": false,"unique": false,"nullable": false},{"name": "zeme_puvodu","primary": false,"unique": false,"nullable": false}]}],"relations": [[{"entity": "DRUH","identifying": false,"optional": true,"cardinality": 1},{"entity": "ZVIRE","identifying": true,"optional": false,"cardinality": 0}],[{"entity": "KRMIC","identifying": false,"optional": false,"cardinality": 1},{"entity": "OBJEKT","identifying": false,"optional": false,"cardinality": 0}],[{"entity": "LEKAR","identifying": false,"optional": true,"cardinality": 1},{"entity": "PROHLIDKA","identifying": false,"optional": false,"cardinality": 0}],[{"entity": "OBJEKT","identifying": false,"optional": true,"cardinality": 0},{"entity": "ZVIRE","identifying": false,"optional": false,"cardinality": 1}],[{"entity": "PROHLIDKA","identifying": true,"optional": false,"cardinality": 0},{"entity": "ZVIRE","identifying": false,"optional": true,"cardinality": 1}]]}');
-        for (var i=0; i<0; i++) {
+        var json2 = JSON.parse('{"entities": [{"name": "Entity_1","parent": null,"attr": [{"name": "Attribute_11","primary": true,"unique": false,"nullable": false},{"name": "Attribute_22","primary": true,"unique": false,"nullable": false},{"name": "Attribute_33","primary": false,"unique": false,"nullable": false},{"name": "Attribute_44","primary": false,"unique": false,"nullable": true}]},{"name": "Entity_2","parent": null,"attr": [{"name": "Attribute_1","primary": false,"unique": true,"nullable": false},{"name": "Attribute_2","primary": false,"unique": true,"nullable": false},{"name": "Attribute_3","primary": false,"unique": false,"nullable": true},{"name": "Attribute_4","primary": false,"unique": false,"nullable": true}]}],"relations": [[{"entity": "Entity_1","identifying": false,"optional": true,"cardinality": 0},{"entity": "Entity_2","identifying": false,"optional": false,"cardinality": 1}],[{"entity": "Entity_2","identifying": false,"optional": false,"cardinality": 1},{"entity": "Entity_3","identifying": false,"optional": false,"cardinality": 0}]]}');
+        for (var i=0; i<2; i++) {
             var c = new DBSDM.Canvas();
             c.create();
             c.import(json);
@@ -104,6 +106,9 @@
 
         function im() {
             canvas.import(json);
+        }
+        function im2() {
+            canvas.import(json2);
         }
         function ex() {
             canvas.export();

@@ -234,7 +234,7 @@ DBSDM.Canvas = (function() {
 
         count = entityModels.length;
         for (i=0; i<count; i++) {
-            result.entities.push(entityModels[i].getExportData());
+            result.entities = result.entities.concat(entityModels[i].getExportData());
         }
 
         count = relationModels.length;

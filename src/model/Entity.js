@@ -203,11 +203,15 @@ DBSDM.Model.Entity = (function(){
     };
 
     Entity.prototype.getExportData = function() {
-        return {
+        var data = [{
             name: this._name,
             parent: (this._parent == null ? null : this._parent.getName()), // only name of the parent, not the parent object!
             attr: this._attributes.getExportData()
-        };
+        }];
+        for (var i=0; i<this._children.length; i++) {
+            data = data.concat(this._children[i].getExportData());
+        }
+        return data;
     };
 
     Entity.prototype.import = function(data) {
