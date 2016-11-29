@@ -54,6 +54,14 @@ DBSDM.Control.Attribute = (function(){
         }
     };
 
+    Attribute.prototype.getMenuState = function() {
+        return {
+            //primary: this._model.isPrimary(),
+            unique: this._model.isUnique(),
+            nullable: this._model.isNullable()
+        }
+    };
+
     // Event Handlers
     Attribute.prototype.onMouseDown = function(e, mouse) {
         if (!ns.Diagram.allowEdit) { return; }

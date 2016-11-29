@@ -184,5 +184,15 @@ DBSDM.Control.RelationLeg = (function() {
         this._view.updateAnchorType();
     };
 
+    RelationLeg.prototype.getMenuState = function() {
+        return {
+            one: this._model.getCardinality() == Enum.Cardinality.ONE,
+            many: this._model.getCardinality() == Enum.Cardinality.MANY,
+            identifying: this._model.isIdentifying(),
+            required: !this._model.isOptional(),
+            name: (this._view._name != null)
+        }
+    };
+
     return RelationLeg;
 })();

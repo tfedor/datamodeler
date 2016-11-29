@@ -21,8 +21,8 @@ DBSDM.Menu = (function(){
     var definition = {
         attribute: [
             ["Primary", "primary", "key", "allowEdit"],
-            ["Unique", "unique", null, "allowEdit"],
-            ["Nullable", "nullable", null, "allowEdit"],
+            ["Unique", "unique", ["check-square-o", "square-o"], "allowEdit"],
+            ["Nullable", "nullable", ["check-square-o", "square-o"], "allowEdit"],
             ["Delete Attribute", "delete", "ban", "allowEdit"]
         ],
 
@@ -53,19 +53,19 @@ DBSDM.Menu = (function(){
             [
                 "Cardinality",
                 [
-                    ["One", "one"],
-                    ["Many", "many"]
+                    ["One", "one", ["check-circle", "circle"]],
+                    ["Many", "many", ["check-circle", "circle"]]
                 ],
                 null, "allowEdit"
             ],
-            ["Identifying", "identifying", "square-o", "allowEdit"], // TODO icon
-            ["Required", "required", "check-square-o", "allowEdit"], // TODO icon
-            ["Toggle Name", "name"]
+            ["Identifying", "identifying", ["check-square-o", "square-o"], "allowEdit"], // TODO icon
+            ["Required", "required", ["check-square-o", "square-o"], "allowEdit"], // TODO icon
+            ["Toggle Name", "name", ["check-square-o", "square-o"]]
         ],
         relation: [
             ["Straighten", "straighten", "compress"],
             ["Send to Back", "toback", "level-down"],
-            ["Delete Relation", "delete", null, "allowEdit"]
+            ["Delete Relation", "delete", "ban", "allowEdit"]
         ],
 
         canvas: [
@@ -95,7 +95,14 @@ DBSDM.Menu = (function(){
     self.build = function() {
         function createIconElement(icon) {
             var dom = document.createElement("i");
-            dom.className = "fa fa-" + icon;
+
+            if (typeof icon == "object") {
+                dom.className = "fa fa-" + icon[0];
+                dom.dataset.on = "fa-"+icon[0];
+                dom.dataset.off = "fa-"+icon[1];
+            } else {
+                dom.className = "fa fa-" + icon;
+            }
             return dom;
         }
 
@@ -168,6 +175,32 @@ DBSDM.Menu = (function(){
         return ns.Diagram[permission];
     };
 
+    self._updateMenuState = function(section) {
+        var handler = this._handlers.active[section];
+
+        if (handler.getMenuState) {
+            var dom = this._dom.sections[section];
+            var state = handler.getMenuState();
+console.log(state);
+            for (var key in state) {
+                if (!state.hasOwnProperty(key)) { return; }
+
+                var item = dom.querySelector("li[data-action="+key+"] i.fa");
+                console.log(item);
+                if (item && item.dataset.on && item.dataset.off) {
+                    item.classList.remove(item.dataset.off);
+                    item.classList.remove(item.dataset.on);
+console.log(key, state[key]);
+                    if (state[key]) {
+                        item.classList.add(item.dataset.on);
+                    } else {
+                        item.classList.add(item.dataset.off);
+                    }
+                }
+            }
+        }
+    };
+
     /**
      * Attach object handler for part of menu, which will be also displayed
      * */
@@ -196,6 +229,8 @@ DBSDM.Menu = (function(){
             if (this._dom.sections.hasOwnProperty(section) && this._handlers.active.hasOwnProperty(section)) {
                 this._dom.sections[section].style.display = "block";
                 show = true;
+
+                this._updateMenuState(section);
             } else {
                 this._dom.sections[section].style.display = "none";
             }
