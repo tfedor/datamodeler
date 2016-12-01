@@ -4112,8 +4112,8 @@ DBSDM.View.EditableText = (function(){
 
         var cont = this._canvas._container.getBoundingClientRect();
         this._input.style.textAlign = align;
-        this._input.style.left   = (x - cont.x) + "px";
-        this._input.style.top    = (y - cont.y) + "px";
+        this._input.style.left   = (x - cont.left) + "px";
+        this._input.style.top    = (y - cont.top) + "px";
     };
 
     EditableText.prototype._showInput = function() {
