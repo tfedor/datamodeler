@@ -10,6 +10,7 @@ div.dbsdmCanvas {
     width:80%;height:800px;border:1px solid black;
     margin:50px;
     font-size: 1em;
+    position:relative;
 }
 div.dbsdmCanvas > svg {
     width:100%;height:100%;

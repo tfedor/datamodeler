@@ -75,9 +75,6 @@ DBSDM.View.EditableText = (function(){
     /** Input handling */
 
     EditableText.prototype._setInputPosition = function() {
-        var scrollX = (document.documentElement.scrollLeft || document.body.scrollLeft);
-        var scrollY = (document.documentElement.scrollTop || document.body.scrollTop);
-
         this._span.innerHTML = this._input.value;
         var textWidth = this._span.getBoundingClientRect().width;
         this._input.style.width = textWidth + "px";
@@ -92,9 +89,10 @@ DBSDM.View.EditableText = (function(){
             x = Math.floor((svgRect.left + svgRect.right - textWidth)/2 + 3);
         }
 
+        var cont = this._canvas._container.getBoundingClientRect();
         this._input.style.textAlign = align;
-        this._input.style.left   = (x + scrollX) + "px";
-        this._input.style.top    = (y + scrollY) + "px";
+        this._input.style.left   = (x - cont.x) + "px";
+        this._input.style.top    = (y - cont.y) + "px";
     };
 
     EditableText.prototype._showInput = function() {
