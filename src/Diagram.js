@@ -11,9 +11,10 @@ DBSDM.Diagram = (function() {
     self.allowEdit = true;
     self.allowFile = true;
 
-    self.init = function(allowEdit, allowFile){
+    self.init = function(allowEdit, allowFile, confirmLeave){
         self.allowEdit = (allowEdit == undefined ? false : allowEdit);
         self.allowFile = (allowFile == undefined ? false : allowFile);
+        confirmLeave = (confirmLeave == undefined ? false : confirmLeave);
 
         ns.Menu.build();
 
@@ -27,6 +28,14 @@ DBSDM.Diagram = (function() {
         this._createRelationLegElements();
 
         // global events
+        if (confirmLeave) {
+            window.onbeforeunload = function(e) {
+                var dialog = "Are you sure you want to leave? Your model may not have been saved.";
+                e.returnValue = dialog;
+                return dialog;
+            };
+        }
+
         window.addEventListener('keypress',function(e){
             if (ns.Control.Entity.activeEntity) {
                 ns.Control.Entity.activeEntity.onKeyPress(e);
