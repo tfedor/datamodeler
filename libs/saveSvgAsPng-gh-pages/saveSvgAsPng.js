@@ -293,7 +293,8 @@
         document.body.removeChild(saveLink);
       }
       else {
-        window.open(uri, '_temp', 'menubar=no,toolbar=no,status=no');
+        DBSDM.File.download(uri, name, "image/png"); // hotfix for safari
+        //window.open(uri, '_temp', 'menubar=no,toolbar=no,status=no');
       }
     }
   }
