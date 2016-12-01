@@ -232,12 +232,14 @@ DBSDM.Control.Entity = (function(){
         this.computeNeededSize();
         var transform = this._model.getTransform();
 
-        this._model.setSize(
-            (transform.width < this._neededSize.width ? this._neededSize.width : null),
-            (transform.height < this._neededSize.height ? this._neededSize.height : null)
-        );
+        var width = (transform.width < this._neededSize.width ? this._neededSize.width : null);
+        var height = (transform.height < this._neededSize.height ? this._neededSize.height : null);
 
-        this._view.redraw();
+        if (width != null || height != null) {
+            this._model.setSize(width, height);
+            this._view.redraw();
+            this._notifyResize();
+        }
     };
 
     Entity.prototype._notifyResize = function() {
@@ -480,6 +482,12 @@ DBSDM.Control.Entity = (function(){
         this.computeNeededSize();
     };
 
+    Entity.prototype._initIsa = function() {
+        if (ns.Diagram.allowEdit) {
+            this._canvas.Mouse.attachObject(this);
+        }
+    };
+
     Entity.prototype.fitToContents = function() {
         var size = this.getMinimalSize();
         this._model.setSize(size.width, size.height);
@@ -549,11 +557,7 @@ DBSDM.Control.Entity = (function(){
             case "rel-1n": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break;
             case "rel-11": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.ONE);  break;
             case "fit": this.fitToContents(); break;
-            case "isa":
-                if (ns.Diagram.allowEdit) {
-                    this._canvas.Mouse.attachObject(this);
-                }
-                break;
+            case "isa": this._initIsa(); break;
         }
     };
 
@@ -613,7 +617,13 @@ DBSDM.Control.Entity = (function(){
 
     Entity.prototype.onKeyPress = function(e) {
         switch(e.keyCode) {
-            case 46: this.delete(); break;
+            case 46: this.delete(); break; // del
+        }
+        switch(e.key.toLowerCase()) {
+            case "a": this._createAttribute(); break; // "a"
+            case "r": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break; // "r"
+            case "f": this.fitToContents(); break; // "f"
+            case "i": this._initIsa(); break; // "i"
         }
     };
 
