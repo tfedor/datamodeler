@@ -28,3 +28,5 @@ Dir.glob("src/*/*").each do |file|
 end
 
 File.write "dist/dbsdm.js", result
+
+`uglifyjs dist/dbsdm.js -o dist/dbsdm.min.js -c hoist_vars=true,hoist_funs=true,dead_code=false`

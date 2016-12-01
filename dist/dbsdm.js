@@ -2208,12 +2208,14 @@ DBSDM.Control.Entity = (function(){
         this.computeNeededSize();
         var transform = this._model.getTransform();
 
-        this._model.setSize(
-            (transform.width < this._neededSize.width ? this._neededSize.width : null),
-            (transform.height < this._neededSize.height ? this._neededSize.height : null)
-        );
+        var width = (transform.width < this._neededSize.width ? this._neededSize.width : null);
+        var height = (transform.height < this._neededSize.height ? this._neededSize.height : null);
 
-        this._view.redraw();
+        if (width != null || height != null) {
+            this._model.setSize(width, height);
+            this._view.redraw();
+            this._notifyResize();
+        }
     };
 
     Entity.prototype._notifyResize = function() {
@@ -2456,6 +2458,12 @@ DBSDM.Control.Entity = (function(){
         this.computeNeededSize();
     };
 
+    Entity.prototype._initIsa = function() {
+        if (ns.Diagram.allowEdit) {
+            this._canvas.Mouse.attachObject(this);
+        }
+    };
+
     Entity.prototype.fitToContents = function() {
         var size = this.getMinimalSize();
         this._model.setSize(size.width, size.height);
@@ -2525,11 +2533,7 @@ DBSDM.Control.Entity = (function(){
             case "rel-1n": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break;
             case "rel-11": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.ONE);  break;
             case "fit": this.fitToContents(); break;
-            case "isa":
-                if (ns.Diagram.allowEdit) {
-                    this._canvas.Mouse.attachObject(this);
-                }
-                break;
+            case "isa": this._initIsa(); break;
         }
     };
 
@@ -2589,7 +2593,13 @@ DBSDM.Control.Entity = (function(){
 
     Entity.prototype.onKeyPress = function(e) {
         switch(e.keyCode) {
-            case 46: this.delete(); break;
+            case 46: this.delete(); break; // del
+        }
+        switch(e.key.toLowerCase()) {
+            case "a": this._createAttribute(); break; // "a"
+            case "r": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break; // "r"
+            case "f": this.fitToContents(); break; // "f"
+            case "i": this._initIsa(); break; // "i"
         }
     };
 
@@ -4077,9 +4087,6 @@ DBSDM.View.EditableText = (function(){
     /** Input handling */
 
     EditableText.prototype._setInputPosition = function() {
-        var scrollX = (document.documentElement.scrollLeft || document.body.scrollLeft);
-        var scrollY = (document.documentElement.scrollTop || document.body.scrollTop);
-
         this._span.innerHTML = this._input.value;
         var textWidth = this._span.getBoundingClientRect().width;
         this._input.style.width = textWidth + "px";
@@ -4094,16 +4101,15 @@ DBSDM.View.EditableText = (function(){
             x = Math.floor((svgRect.left + svgRect.right - textWidth)/2 + 3);
         }
 
+        var cont = this._canvas._container.getBoundingClientRect();
         this._input.style.textAlign = align;
-        this._input.style.left   = (x + scrollX) + "px";
-        this._input.style.top    = (y + scrollY) + "px";
+        this._input.style.left   = (x - cont.x) + "px";
+        this._input.style.top    = (y - cont.y) + "px";
     };
 
     EditableText.prototype._showInput = function() {
         if (!ns.Diagram.allowEdit) { return; }
         ns.Menu.hide();
-        
-        this._input.style.display = "block";
 
         var fontSize = window.getComputedStyle(this._text, null).getPropertyValue("font-size");
         if (fontSize) {
@@ -4117,11 +4123,11 @@ DBSDM.View.EditableText = (function(){
         this._leftOffset = this._text.getBoundingClientRect().width - this._text.getComputedTextLength(); // fix for Chrome not handling boundClientRect of tspans correctly
 
         this._setInputPosition();
+        this._input.style.display = "block";
 
-        // hack to get caret to the end of the input
-        this._input.value = "";
+        // select all contents
         this._input.focus();
-        this._input.value = value;
+        this._input.setSelectionRange(0, value.length);
 
         this._text.style.visibility = "hidden";
 
