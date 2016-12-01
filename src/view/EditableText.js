@@ -98,8 +98,6 @@ DBSDM.View.EditableText = (function(){
     EditableText.prototype._showInput = function() {
         if (!ns.Diagram.allowEdit) { return; }
         ns.Menu.hide();
-        
-        this._input.style.display = "block";
 
         var fontSize = window.getComputedStyle(this._text, null).getPropertyValue("font-size");
         if (fontSize) {
@@ -113,11 +111,11 @@ DBSDM.View.EditableText = (function(){
         this._leftOffset = this._text.getBoundingClientRect().width - this._text.getComputedTextLength(); // fix for Chrome not handling boundClientRect of tspans correctly
 
         this._setInputPosition();
+        this._input.style.display = "block";
 
-        // hack to get caret to the end of the input
-        this._input.value = "";
+        // select all contents
         this._input.focus();
-        this._input.value = value;
+        this._input.setSelectionRange(0, value.length);
 
         this._text.style.visibility = "hidden";
 
