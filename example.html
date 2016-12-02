@@ -16,9 +16,12 @@
         /**
          * Initialize diagram, has to be run first
          */
-        var allowEdit = true; // allow edits
-        var allowFile = true; // allow export, import and save as image
-        DBSDM.Diagram.init(allowEdit, allowFile);
+        DBSDM.Diagram.init({
+            allowEdit: true,
+            allowFile: true,
+            confirmLeave: true,
+            showTutorial: true
+        });
 
         /**
          * Create empty canvas

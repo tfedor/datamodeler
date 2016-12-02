@@ -35,6 +35,7 @@
 
     <script type="application/javascript" src="src/Random.js"></script>
     <script type="application/javascript" src="src/Diagram.js"></script>
+    <script type="application/javascript" src="src/UI.js"></script>
     <script type="application/javascript" src="src/Canvas.js"></script>
     <script type="application/javascript" src="src/Layout.js"></script>
     <script type="application/javascript" src="src/Mouse.js"></script>
@@ -46,6 +47,7 @@
     <script type="application/javascript" src="src/MenuController.js"></script>
 </head>
 <body>
+
 
     <a href="javascript:toString();void(0);">to string</a>
     <a href="javascript:clear();void(0);">clear</a>
@@ -63,9 +65,12 @@
     <a href="javascript:canvas.zoomIn();void(0);">in</a>
     <a href="javascript:canvas.zoomOut();void(0);">out</a>
     <a href="javascript:canvas.zoomReset();void(0);">reset</a>
+
     <script>
 
-        DBSDM.Diagram.init(true, true, false);
+        DBSDM.Diagram.init({
+            showTutorial: true
+        });
 
         var canvas = new DBSDM.Canvas();
         canvas.create();

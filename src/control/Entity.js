@@ -55,6 +55,8 @@ DBSDM.Control.Entity = (function(){
         this._view.create(this);
         this._canvas.addEntity(this);
         this._new = false;
+
+        this._canvas.ui.acceptTutorialAction("Entity");
     };
 
     /** Draw from current model data (after import) */
@@ -273,6 +275,8 @@ DBSDM.Control.Entity = (function(){
         Entity.activeEntity = this;
 
         this._view.showControls();
+
+        this._canvas.ui.acceptTutorialAction("Select");
     };
 
     Entity.prototype.deactivate = function() {

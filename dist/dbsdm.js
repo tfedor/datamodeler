@@ -24,7 +24,6 @@ DBSDM.Canvas = (function() {
          * Mouse controller
          */
         this.Mouse = null;
-
         this.Layout = new ns.Layout();
 
         this.menu = {};
@@ -37,6 +36,7 @@ DBSDM.Canvas = (function() {
         this._container = document.createElement("div");
         this._container.className = "dbsdmCanvas";
 
+        this.ui = new ns.UI(this._container);
         this.svg = this._container.appendChild(ns.Element.el("svg"));
 
         if (document.currentScript) {
@@ -62,6 +62,8 @@ DBSDM.Canvas = (function() {
         this.svg.addEventListener("mouseup",   function(e) { that.Mouse.up(e); });
 
         this.svg.addEventListener("contextmenu", function(e) {
+            that.ui.acceptTutorialAction("Menu");
+
             if (!ns.Menu.hasAttachedHandlers()) {
                 ns.Menu.attach(that, "canvas");
             }
@@ -71,6 +73,9 @@ DBSDM.Canvas = (function() {
         this.svg.addEventListener("dragover", function(e) { e.preventDefault(); } );
         //this.svg.addEventListener("dragleave", function() { console.log("dragleave"); } );
         this.svg.addEventListener("drop", function(e) { ns.File.upload(e, that); }, false);
+
+        // tutorial
+        this.ui.advanceTutorial();
     };
 
     // shared elements for all canvas
@@ -133,6 +138,8 @@ DBSDM.Canvas = (function() {
         this._offset.x -= rx;
         this._offset.y -= ry;
         this.updateViewbox();
+
+        this.ui.acceptTutorialAction("Scroll");
     };
     Canvas.prototype.resetView = function() {
         this._offset.x = 0;
@@ -392,9 +399,12 @@ DBSDM.Canvas = (function() {
 DBSDM.Consts = {
     SnappingLimit: 5,
     CanvasGridSize: 15,
+
     EntityStrokeWidth: 1,
     EntityPadding: 10,
-    EntityExtraHeight: 5
+    EntityExtraHeight: 5,
+
+    UIMessageTransition: 0.4
 };
 /** src/Diagram.js */
 
@@ -406,13 +416,18 @@ DBSDM.Diagram = (function() {
     var ns = DBSDM;
     var self = {};
 
+    /** Should only be read */
     self.allowEdit = true;
     self.allowFile = true;
+    self.showTutorial = true;
 
-    self.init = function(allowEdit, allowFile, confirmLeave){
-        self.allowEdit = (allowEdit == undefined ? false : allowEdit);
-        self.allowFile = (allowFile == undefined ? false : allowFile);
-        confirmLeave = (confirmLeave == undefined ? false : confirmLeave);
+    self.init = function(options){
+        options = options || {};
+        if (typeof options.allowEdit == "boolean") { self.allowEdit = options.allowEdit; }
+        if (typeof options.allowFile == "boolean") { self.allowFile = options.allowFile; }
+        if (typeof options.showTutorial == "boolean") { self.showTutorial = options.showTutorial; }
+        var confirmLeave = false;
+        if (typeof options.confirmLeave == "boolean") { confirmLeave = options.confirmLeave; }
 
         ns.Menu.build();
 
@@ -1754,7 +1769,139 @@ DBSDM.Random = {
         str += DBSDM.Random.string(length - 1);
         return str;
     }
-};/** src/Vector.js */
+};/** src/UI.js */
+
+/**
+ * Canvas controller
+ * Creates canvas which is used to manipulate other elements
+ */
+DBSDM.UI = (function() {
+    var ns = DBSDM;
+
+    var tutorial = {
+        Entity: "Start by <strong>drawing</strong> an entity or <strong>dragging</strong> an exported json or SQLDeveloper zip file into canvas",
+        Select: "<strong>Click</strong> on <i>Entity</i> to select it",
+        Menu: "<strong>Right click</strong> on <i>any element</i> of the canvas to get more options",
+        Scroll: "Click and drag <strong>middle mouse button</strong> to move the layout"
+    };
+
+    function UI(container) {
+        this._ui = document.createElement("div");
+        this._ui.className = "ui";
+
+        this._message = document.createElement("div");
+        this._message.className = "message";
+        this._message.style.transitionDuration = ns.Consts.UIMessageTransition+"s";
+
+        this._ui.appendChild(this._message);
+        container.appendChild(this._ui);
+
+        this._shown = false;
+        this._timer = false;
+
+        // setup tutorial
+        this._tutorialCurrent = null;
+        if (ns.Diagram.showTutorial) {
+            this.inTutorial = true;
+            this._tutorialLeft = ["Entity", "Menu", "Select", "Scroll"]
+        } else {
+            this.inTutorial = false;
+            this._tutorialLeft = [];
+        }
+
+        // events
+        var that = this;
+        this._message.addEventListener("click", function(e) { that.hideMessage(); });
+    }
+
+    UI.prototype.advanceTutorial = function() {
+        if (!this.inTutorial) { return; }
+
+        if (this._tutorialLeft.length == 0) {
+            this.inTutorial = false;
+            this._tutorialCurrent = null;
+            this.hideMessage();
+        } else {
+            var action = this._tutorialLeft.shift();
+            this._tutorialCurrent = action;
+            this.hint(tutorial[action]);
+        }
+    };
+    /**
+     * In case action is made before tutorial message is shown, don't show the message again
+     */
+    UI.prototype.acceptTutorialAction = function(action) {
+        if (!this.inTutorial) { return; }
+
+        var index = this._tutorialLeft.lastIndexOf(action);
+        if (index != -1) {
+            this._tutorialLeft.splice(index, 1);
+        }
+
+        if (this._tutorialCurrent == action) {
+            this.advanceTutorial();
+        }
+    };
+
+    UI.prototype.hint = function(message, time, callback) {
+        this._showMessage("hint", message, time, callback);
+    };
+    UI.prototype.error = function(message, time, callback) {
+        this._showMessage("error", message, time, callback);
+    };
+    UI.prototype.success = function(message, time, callback) {
+        this._showMessage("success", message, time, callback);
+    };
+
+    UI.prototype._showMessage = function(className, message, time, callback) {
+        window.clearTimeout(this._timer);
+
+        if (this._shown) {
+            var that = this;
+            this.hideMessage(function() { that._showMessage(className, message, time, callback)});
+            return;
+        }
+
+        this._message.classList.remove("success");
+        this._message.classList.remove("error");
+        this._message.classList.remove("hint");
+
+        var icon = "";
+        switch(className) {
+            case "hint":    icon = "bell"; break;
+            case "error":   icon = "exclamation-triangle"; break;
+            case "success": icon = "check"; break;
+        }
+
+        this._shown = true;
+        this._message.classList.add(className);
+        this._message.style.marginTop = 0;
+        this._message.innerHTML = '<i class="fa fa-'+ icon +'"></i>'+message;
+        this._timeMessage(time, callback);
+    };
+
+    UI.prototype.hideMessage = function(callback) {
+        this._shown = false;
+        var bounds = this._message.getBoundingClientRect();
+        this._message.style.marginTop = "-" + (bounds.height+5) + "px";
+
+        if (callback) {
+            this._timer = window.setTimeout(callback, ns.Consts.UIMessageTransition*1000);
+        }
+    };
+
+    UI.prototype._timeMessage = function(time, callback) {
+        if (!time) { return; }
+        if (!callback) {
+            var that = this;
+            callback = function() { that.hideMessage(); }
+        }
+        this._timer = window.setTimeout(callback, time*1000);
+    };
+
+    return UI;
+})();
+/** src/Vector.js */
 DBSDM.Geometry = DBSDM.Geometry || {};
 
 DBSDM.Geometry.Vector = (function() {
@@ -2040,6 +2187,8 @@ DBSDM.Control.Entity = (function(){
         this._view.create(this);
         this._canvas.addEntity(this);
         this._new = false;
+
+        this._canvas.ui.acceptTutorialAction("Entity");
     };
 
     /** Draw from current model data (after import) */
@@ -2258,6 +2407,8 @@ DBSDM.Control.Entity = (function(){
         Entity.activeEntity = this;
 
         this._view.showControls();
+
+        this._canvas.ui.acceptTutorialAction("Select");
     };
 
     Entity.prototype.deactivate = function() {

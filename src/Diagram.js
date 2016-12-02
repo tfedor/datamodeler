@@ -8,13 +8,18 @@ DBSDM.Diagram = (function() {
     var ns = DBSDM;
     var self = {};
 
+    /** Should only be read */
     self.allowEdit = true;
     self.allowFile = true;
+    self.showTutorial = true;
 
-    self.init = function(allowEdit, allowFile, confirmLeave){
-        self.allowEdit = (allowEdit == undefined ? false : allowEdit);
-        self.allowFile = (allowFile == undefined ? false : allowFile);
-        confirmLeave = (confirmLeave == undefined ? false : confirmLeave);
+    self.init = function(options){
+        options = options || {};
+        if (typeof options.allowEdit == "boolean") { self.allowEdit = options.allowEdit; }
+        if (typeof options.allowFile == "boolean") { self.allowFile = options.allowFile; }
+        if (typeof options.showTutorial == "boolean") { self.showTutorial = options.showTutorial; }
+        var confirmLeave = false;
+        if (typeof options.confirmLeave == "boolean") { confirmLeave = options.confirmLeave; }
 
         ns.Menu.build();
 

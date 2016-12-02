@@ -23,7 +23,6 @@ DBSDM.Canvas = (function() {
          * Mouse controller
          */
         this.Mouse = null;
-
         this.Layout = new ns.Layout();
 
         this.menu = {};
@@ -36,6 +35,7 @@ DBSDM.Canvas = (function() {
         this._container = document.createElement("div");
         this._container.className = "dbsdmCanvas";
 
+        this.ui = new ns.UI(this._container);
         this.svg = this._container.appendChild(ns.Element.el("svg"));
 
         if (document.currentScript) {
@@ -61,6 +61,8 @@ DBSDM.Canvas = (function() {
         this.svg.addEventListener("mouseup",   function(e) { that.Mouse.up(e); });
 
         this.svg.addEventListener("contextmenu", function(e) {
+            that.ui.acceptTutorialAction("Menu");
+
             if (!ns.Menu.hasAttachedHandlers()) {
                 ns.Menu.attach(that, "canvas");
             }
@@ -70,6 +72,9 @@ DBSDM.Canvas = (function() {
         this.svg.addEventListener("dragover", function(e) { e.preventDefault(); } );
         //this.svg.addEventListener("dragleave", function() { console.log("dragleave"); } );
         this.svg.addEventListener("drop", function(e) { ns.File.upload(e, that); }, false);
+
+        // tutorial
+        this.ui.advanceTutorial();
     };
 
     // shared elements for all canvas
@@ -132,6 +137,8 @@ DBSDM.Canvas = (function() {
         this._offset.x -= rx;
         this._offset.y -= ry;
         this.updateViewbox();
+
+        this.ui.acceptTutorialAction("Scroll");
     };
     Canvas.prototype.resetView = function() {
         this._offset.x = 0;
