@@ -8,5 +8,6 @@ DBSDM.Consts = {
     EntityPadding: 10,
     EntityExtraHeight: 5,
 
-    UIMessageTransition: 0.4
+    UIMessageTransition: 0.4,
+    UIDefaultSuccessDuration: 2
 };

@@ -45,8 +45,8 @@ DBSDM.File = (function() {
             } else if (file.type == "application/json") {
                 self._processJson(canvas, file);
             } else {
-                // TODO
-                console.log("Unsupported file");
+                canvas.ui.error("File couldn't be imported: unsupported file type. Import either json with exported data or SQLDeveloper zip");
+                console.log(e);
             }
         }
     };
@@ -55,11 +55,18 @@ DBSDM.File = (function() {
         var reader = new FileReader();
         reader.onload = function(e) {
             var result = e.target.result;
-            var data = JSON.parse(result);
-            canvas.import(data);
+            try {
+                var data = JSON.parse(result);
+                canvas.import(data);
+                canvas.ui.success("File was imported", ns.Consts.UIDefaultSuccessDuration);
+            } catch(e) {
+                canvas.ui.error("File couldn't be parsed properly - are you sure it has correct format?");
+                console.log(e);
+            }
         };
         reader.onerror = function(e) {
-            // TODO error handling
+            canvas.ui.error("File couldn't be uploaded, please try again");
+            console.log(e);
         };
         reader.readAsText(jsonfile);
     };
@@ -237,7 +244,13 @@ DBSDM.File = (function() {
                         relations: relationsMap
                     };
 
-                    canvas.import(data);
+                    try {
+                        canvas.import(data);
+                        canvas.ui.success("File was imported", ns.Consts.UIDefaultSuccessDuration);
+                    } catch(e) {
+                        canvas.ui.error("File couldn't be imported: check you are importing zip with exported SQL Developer model");
+                        console.log(e);
+                    }
                 });
             });
     };

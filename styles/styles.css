@@ -41,6 +41,7 @@ div.dbsdmCanvas div.ui {
 div.dbsdmCanvas div.message {
     background:#e0e0e0;
     padding:1.8em;
+    margin-top:-4em; /* initial position, exactly padding*2 + 3px shadow */
     text-align:center;
     border-bottom:1px solid black;
     transition:margin ease;
@@ -49,12 +50,11 @@ div.dbsdmCanvas div.message {
     left:0;right:0;
     pointer-events: visible;
     cursor: pointer;
-    display: none;;
     z-index:999;
 }
-div.dbsdmCanvas div.message.hint    { display:block; background:#ffcc00; }
-div.dbsdmCanvas div.message.error   { display:block; background:#b62727; color:white; }
-div.dbsdmCanvas div.message.success { display:block; background:#71b627; }
+div.dbsdmCanvas div.message.hint    { background:#ffcc00; }
+div.dbsdmCanvas div.message.error   { background:#b62727; color:white; }
+div.dbsdmCanvas div.message.success { background:#71b627; }
 div.dbsdmCanvas div.message strong {
     font-weight:bold;
 }
