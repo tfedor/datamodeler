@@ -186,7 +186,6 @@ DBSDM.Menu = (function(){
                 if (!state.hasOwnProperty(key)) { return; }
 
                 var item = dom.querySelector("li[data-action="+key+"] i.fa");
-                console.log(item);
                 if (item && item.dataset.on && item.dataset.off) {
                     item.classList.remove(item.dataset.off);
                     item.classList.remove(item.dataset.on);

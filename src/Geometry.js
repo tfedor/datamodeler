@@ -78,7 +78,6 @@ DBSDM.Geometry = (function() {
     self.triangleIsObtuse = function(A, B, C) {
         var t = self.triangleSides(A, B, C);
         var a = t[0], b = t[1], c = t[2];
-        console.log(t, a*a + b*b, c*c);
         return a*a + b*b < c*c;
     };
 

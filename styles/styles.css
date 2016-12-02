@@ -31,8 +31,8 @@ div.dbsdmCanvas.fullscreen {
 /** UI */
 div.dbsdmCanvas div.ui {
     position:absolute;
-    left:0;right:0;
-    top:0;bottom:0;
+    left:0;right:0;top:0;
+    overflow:visible;
     color:black;
     pointer-events:none;
 }
@@ -67,15 +67,19 @@ div.dbsdmCanvas div.message i.fa {
     font-style:normal;
 }
 
-/** UI Zoom */
-
-div.dbsdmCanvas div.zoom {
+div.dbsdmCanvas div.ledge {
     position:absolute;
     top:0;right:0;
-    margin:0.5em;
     font-size:1.1em;
     color:#d1d1d1;
     pointer-events:visible;
+}
+
+/** UI Zoom */
+
+div.dbsdmCanvas div.zoom {
+    display:inline-block;
+    margin:0.5em;
 }
 div.dbsdmCanvas a {
     margin: 0 0.25em 0 0;
@@ -87,6 +91,38 @@ div.dbsdmCanvas a:hover {
 div.dbsdmCanvas div.zoom a.reset {
     font-size:0.8em;
     text-decoration:none;
+}
+
+/** Help */
+div.dbsdmCanvas a.helperIcon {
+    display:inline-block;
+    margin:0.5em;
+}
+div.dbsdmCanvas div.help {
+    margin: 0.5em;
+    padding:0.5em;
+    background-color:rgba(255,255,255,0.8);
+    font-size: 0.9em;
+    border:1px solid black;
+    border-radius: 7px;
+    box-shadow: 0 1px 3px 0 rgba(0,0,0,0.5);
+    position:absolute;
+    right:0;top:2.1em;
+}
+
+div.dbsdmCanvas table {
+    line-height:1.2;
+    margin:0.4em 0 1.2em;
+}
+div.dbsdmCanvas table:last-of-type {
+    margin-bottom:0;
+}
+div.dbsdmCanvas td:first-child {
+    padding-right:1em;
+    font-weight:bold;
+}
+div.dbsdmCanvas td {
+    font-size:0.9em;
 }
 
 /***/

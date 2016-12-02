@@ -43,7 +43,6 @@ DBSDM.View.Relation = (function(){
     };
 
     Relation.prototype.toBack = function() {
-        console.log(this._g.parentNode);
         var first = this._g.parentNode.querySelector("g.rel");
         if (first == this._g) { return; }
         this._canvas.svg.insertBefore(this._g, first);

@@ -23,8 +23,15 @@ DBSDM.UI = (function() {
         this._message = this._ui.appendChild(this._createMessage());
 
         this._zoom = null;
-        this._ui.appendChild(this._createZoomControls());
+        this._help = null;
 
+        var ledge = document.createElement("div");
+        ledge.className = "ledge";
+
+        ledge.appendChild(this._createZoomControls());
+        ledge.appendChild(this._createHelp());
+
+        this._ui.appendChild(ledge);
         container.appendChild(this._ui);
 
         this._shown = false;
@@ -80,6 +87,17 @@ DBSDM.UI = (function() {
         zoom.appendChild(a);
 
         return zoom; // return last reset, need to update it on zoom
+    };
+
+    UI.prototype._createHelp = function() {
+        var a = document.createElement("a");
+        a.className = "helperIcon";
+        a.innerHTML = "<i class='fa fa-info-circle'></i>";
+
+        var that = this;
+        a.addEventListener("click", function() { that._toggleHelp(); });
+
+        return a;
     };
 
     // zoom
@@ -172,6 +190,51 @@ DBSDM.UI = (function() {
             callback = function() { that.hideMessage(); }
         }
         this._timer = window.setTimeout(callback, time*1000);
+    };
+
+    // help
+    UI.prototype._toggleHelp = function() {
+        if (this._help) {
+            this._help.remove();
+            this._help = null;
+            return;
+        }
+
+        var data = {
+            "Shortcuts on selected Entity": [
+                ["DEL", "Delete Entity"],
+                ["a", "Add new Attribute"],
+                ["r", "Create new 1:N relation"],
+                ["f", "Fit to contents"],
+                ["i", "Initiate ISA creation"]
+            ],
+            "When editing Attribute": [
+                ["TAB", "Select next"],
+                ["SHIFT + TAB", "Select previous"],
+                ["[Leave empty]", "Delete Attribute"]
+            ]
+        };
+
+        var div = document.createElement("div");
+        div.className = "help";
+
+        var content = "";
+        for (var headline in data) {
+            if (!data.hasOwnProperty(headline)) { continue; }
+            content += headline + "<table>";
+
+            for (var i=0; i<data[headline].length; i++) {
+                content += "<tr>"
+                        + "<td>"+data[headline][i][0]+"</td>"
+                        + "<td>"+data[headline][i][1]+"</td>"
+                    + "</tr>";
+            }
+
+            content += "</table>";
+        }
+        div.innerHTML = content;
+
+        this._help = this._ui.appendChild(div);
     };
 
     return UI;
