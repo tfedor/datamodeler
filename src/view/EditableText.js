@@ -160,7 +160,7 @@ DBSDM.View.EditableText = (function(){
     EditableText.prototype._next = function(e) {
         if (!this._nextHandler) { return; }
         this._confirm();
-        this._nextHandler();
+        this._nextHandler(e.shiftKey);
         e.preventDefault();
     };
 

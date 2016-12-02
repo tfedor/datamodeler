@@ -65,6 +65,7 @@ DBSDM.Control.AttributeList = (function(){
 
     AttributeList.prototype.select = function(index) {
         if (index < this._controls.length) {
+            index = (index < 0 ? 0 : index);
             this._controls[index].select()
         } else {
             this.createAttribute();

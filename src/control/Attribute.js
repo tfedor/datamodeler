@@ -33,8 +33,9 @@ DBSDM.Control.Attribute = (function(){
         return this._view.getMinimalSize();
     };
 
-    Attribute.prototype.selectNext = function() {
-        this._list.select(this.getPosition() + 1);
+    Attribute.prototype.selectNext = function(prev) {
+        var dir = (prev ? -1 : 1);
+        this._list.select(this.getPosition() + dir);
     };
 
     Attribute.prototype.select = function() {
