@@ -16,9 +16,8 @@ DBSDM.Control.Attribute = (function(){
         this._dragCurrentPosition = null;
     }
 
-    Attribute.prototype._delete = function() {
+    Attribute.prototype.delete = function() {
         this._list.removeAttribute(this._model, this);
-        this._view.destroy();
     };
 
     Attribute.prototype.getPosition = function() {
@@ -33,9 +32,9 @@ DBSDM.Control.Attribute = (function(){
         return this._view.getMinimalSize();
     };
 
-    Attribute.prototype.selectNext = function(prev) {
-        var dir = (prev ? -1 : 1);
-        this._list.select(this.getPosition() + dir);
+    /** Select another attribute for edit at given index */
+    Attribute.prototype.selectAt = function(index, create) {
+        this._list.select(index, create);
     };
 
     Attribute.prototype.select = function() {
@@ -58,7 +57,8 @@ DBSDM.Control.Attribute = (function(){
                 this._view.redrawNullable();
                 break;
             case "delete":
-                this._delete();
+                this.delete();
+                this._view.destroy();
                 break;
         }
     };

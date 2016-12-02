@@ -76,8 +76,6 @@ DBSDM.View.EditableText = (function(){
     };
     EditableText.prototype._setValue = function() {
         var value = this._input.value;
-        if (value == "") { return; }
-
         this._text.innerHTML = value;
         this._setHandler(value);
     };
@@ -148,8 +146,15 @@ DBSDM.View.EditableText = (function(){
     /** Key press handling */
 
     EditableText.prototype._confirm = function() {
-        this._setValue();
-        this._hideInput();
+        if (this._input.value == "") {
+            if (this._emptyHandler) {
+                this._hideInput();
+                this._emptyHandler();
+            }
+        } else {
+            this._setValue();
+            this._hideInput();
+        }
     };
 
     EditableText.prototype._cancel = function() {

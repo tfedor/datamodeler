@@ -2023,9 +2023,8 @@ DBSDM.Control.Attribute = (function(){
         this._dragCurrentPosition = null;
     }
 
-    Attribute.prototype._delete = function() {
+    Attribute.prototype.delete = function() {
         this._list.removeAttribute(this._model, this);
-        this._view.destroy();
     };
 
     Attribute.prototype.getPosition = function() {
@@ -2040,8 +2039,9 @@ DBSDM.Control.Attribute = (function(){
         return this._view.getMinimalSize();
     };
 
-    Attribute.prototype.selectNext = function() {
-        this._list.select(this.getPosition() + 1);
+    /** Select another attribute for edit at given index */
+    Attribute.prototype.selectAt = function(index, create) {
+        this._list.select(index, create);
     };
 
     Attribute.prototype.select = function() {
@@ -2064,7 +2064,8 @@ DBSDM.Control.Attribute = (function(){
                 this._view.redrawNullable();
                 break;
             case "delete":
-                this._delete();
+                this.delete();
+                this._view.destroy();
                 break;
         }
     };
@@ -2169,9 +2170,14 @@ DBSDM.Control.AttributeList = (function(){
         return position;
     };
 
-    AttributeList.prototype.select = function(index) {
-        if (index < this._controls.length) {
-            this._controls[index].select()
+    AttributeList.prototype.select = function(index, create) {
+        create = (typeof create == "boolean" ? create : true);
+        var count = this._controls.length;
+        if (index < count || !create) {
+            if (count != 0) {
+                index = Math.max(0, Math.min(count-1, index));
+                this._controls[index].select();
+            }
         } else {
             this.createAttribute();
         }
@@ -4199,7 +4205,16 @@ DBSDM.View.Attribute = (function(){
             "tspan"
         );
         var that = this;
-        this._nameInput.setNextHandler(function(){ that._control.selectNext(); });
+        this._nameInput.setNextHandler(function(prev){
+            var dir = (prev ? -1 : 1);
+            that._control.selectAt(that._control.getPosition() + dir, true);
+        });
+        this._nameInput.setEmptyHandler(function() {
+            var position = that._control.getPosition();
+            that._control.delete();
+            that._control.selectAt(position, false);
+            that.destroy();
+        });
 
         this._text.appendChild(this._nameInput.getTextDom());
 
@@ -4323,8 +4338,6 @@ DBSDM.View.EditableText = (function(){
     };
     EditableText.prototype._setValue = function() {
         var value = this._input.value;
-        if (value == "") { return; }
-
         this._text.innerHTML = value;
         this._setHandler(value);
     };
@@ -4395,8 +4408,15 @@ DBSDM.View.EditableText = (function(){
     /** Key press handling */
 
     EditableText.prototype._confirm = function() {
-        this._setValue();
-        this._hideInput();
+        if (this._input.value == "") {
+            if (this._emptyHandler) {
+                this._hideInput();
+                this._emptyHandler();
+            }
+        } else {
+            this._setValue();
+            this._hideInput();
+        }
     };
 
     EditableText.prototype._cancel = function() {
@@ -4407,7 +4427,7 @@ DBSDM.View.EditableText = (function(){
     EditableText.prototype._next = function(e) {
         if (!this._nextHandler) { return; }
         this._confirm();
-        this._nextHandler();
+        this._nextHandler(e.shiftKey);
         e.preventDefault();
     };
 

@@ -63,10 +63,14 @@ DBSDM.Control.AttributeList = (function(){
         return position;
     };
 
-    AttributeList.prototype.select = function(index) {
-        if (index < this._controls.length) {
-            index = (index < 0 ? 0 : index);
-            this._controls[index].select()
+    AttributeList.prototype.select = function(index, create) {
+        create = (typeof create == "boolean" ? create : true);
+        var count = this._controls.length;
+        if (index < count || !create) {
+            if (count != 0) {
+                index = Math.max(0, Math.min(count-1, index));
+                this._controls[index].select();
+            }
         } else {
             this.createAttribute();
         }

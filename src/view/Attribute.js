@@ -83,7 +83,16 @@ DBSDM.View.Attribute = (function(){
             "tspan"
         );
         var that = this;
-        this._nameInput.setNextHandler(function(prev){ that._control.selectNext(prev); });
+        this._nameInput.setNextHandler(function(prev){
+            var dir = (prev ? -1 : 1);
+            that._control.selectAt(that._control.getPosition() + dir, true);
+        });
+        this._nameInput.setEmptyHandler(function() {
+            var position = that._control.getPosition();
+            that._control.delete();
+            that._control.selectAt(position, false);
+            that.destroy();
+        });
 
         this._text.appendChild(this._nameInput.getTextDom());
 
