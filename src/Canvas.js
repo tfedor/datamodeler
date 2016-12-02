@@ -35,7 +35,7 @@ DBSDM.Canvas = (function() {
         this._container = document.createElement("div");
         this._container.className = "dbsdmCanvas";
 
-        this.ui = new ns.UI(this._container);
+        this.ui = new ns.UI(this._container, this);
         this.svg = this._container.appendChild(ns.Element.el("svg"));
 
         if (document.currentScript) {
@@ -149,14 +149,17 @@ DBSDM.Canvas = (function() {
     Canvas.prototype.zoomIn = function() {
         this._zoom = Math.min(2, this._zoom + 0.1);
         this.updateViewbox();
+        this.ui.updateZoomLevels(this._zoom);
     };
     Canvas.prototype.zoomOut = function() {
         this._zoom = Math.max(0.1, this._zoom - 0.1);
         this.updateViewbox();
+        this.ui.updateZoomLevels(this._zoom);
     };
     Canvas.prototype.zoomReset = function() {
         this._zoom = 1;
         this.updateViewbox();
+        this.ui.updateZoomLevels(this._zoom);
     };
 
     // fullscreen

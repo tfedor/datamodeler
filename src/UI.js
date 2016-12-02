@@ -14,15 +14,17 @@ DBSDM.UI = (function() {
         Scroll: "Click and drag <strong>middle mouse button</strong> to move the layout"
     };
 
-    function UI(container) {
+    function UI(container, canvas) {
+        this._canvas = canvas;
+
         this._ui = document.createElement("div");
         this._ui.className = "ui";
 
-        this._message = document.createElement("div");
-        this._message.className = "message";
-        this._message.style.transitionDuration = ns.Consts.UIMessageTransition+"s";
+        this._message = this._ui.appendChild(this._createMessage());
 
-        this._ui.appendChild(this._message);
+        this._zoom = null;
+        this._ui.appendChild(this._createZoomControls());
+
         container.appendChild(this._ui);
 
         this._shown = false;
@@ -42,6 +44,50 @@ DBSDM.UI = (function() {
         var that = this;
         this._message.addEventListener("click", function(e) { that.hideMessage(); });
     }
+
+    UI.prototype._createMessage = function() {
+        var message = document.createElement("div");
+        message.className = "message";
+        message.style.transitionDuration = ns.Consts.UIMessageTransition+"s";
+        return message;
+    };
+
+    UI.prototype._createZoomControls = function() {
+        var zoom = document.createElement("div");
+        zoom.className = "zoom";
+
+        var canvas = this._canvas;
+        var a;
+
+        // zoom in
+        a = document.createElement("a");
+        a.innerHTML = "<i class='fa fa-search-plus'></i>";
+        a.addEventListener("click", function() { canvas.zoomIn(); });
+        zoom.appendChild(a);
+
+        // reset
+        a = document.createElement("a");
+        a.className = "reset";
+        a.innerHTML = "100%";
+        a.addEventListener("click", function() { canvas.zoomReset(); });
+        this._zoom = a;
+        zoom.appendChild(a);
+
+        // zoom out
+        a = document.createElement("a");
+        a.innerHTML = "<i class='fa fa-search-minus'></i>";
+        a.addEventListener("click", function() { canvas.zoomOut(); });
+        zoom.appendChild(a);
+
+        return zoom; // return last reset, need to update it on zoom
+    };
+
+    // zoom
+    UI.prototype.updateZoomLevels = function(zoom) {
+        this._zoom.innerHTML = Math.round(zoom*100) + "%";
+    };
+
+    // tutorial
 
     UI.prototype.advanceTutorial = function() {
         if (!this.inTutorial) { return; }

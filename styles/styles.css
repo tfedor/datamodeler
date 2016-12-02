@@ -25,6 +25,7 @@ div.dbsdmCanvas.fullscreen {
     height:100%;
 }
 
+/** UI */
 div.dbsdmCanvas div.ui {
     position:absolute;
     left:0;right:0;
@@ -32,6 +33,8 @@ div.dbsdmCanvas div.ui {
     color:black;
     pointer-events:none;
 }
+
+/** UI Message */
 div.dbsdmCanvas div.message {
     background:#e0e0e0;
     padding:1.8em;
@@ -43,7 +46,8 @@ div.dbsdmCanvas div.message {
     left:0;right:0;
     pointer-events: visible;
     cursor: pointer;
-    display: none;
+    display: none;;
+    z-index:999;
 }
 div.dbsdmCanvas div.message.hint    { display:block; background:#ffcc00; }
 div.dbsdmCanvas div.message.error   { display:block; background:#b62727; color:white; }
@@ -60,6 +64,29 @@ div.dbsdmCanvas div.message i.fa {
     font-style:normal;
 }
 
+/** UI Zoom */
+
+div.dbsdmCanvas div.zoom {
+    position:absolute;
+    top:0;right:0;
+    margin:0.5em;
+    font-size:1.1em;
+    color:#d1d1d1;
+    pointer-events:visible;
+}
+div.dbsdmCanvas a {
+    margin: 0 0.25em 0 0;
+    cursor:pointer;
+}
+div.dbsdmCanvas a:hover {
+    color:#565656;
+}
+div.dbsdmCanvas div.zoom a.reset {
+    font-size:0.8em;
+    text-decoration:none;
+}
+
+/***/
 use.e-cp-nw { cursor: nwse-resize; }
 use.e-cp-n  { cursor: ns-resize; }
 use.e-cp-ne { cursor: nesw-resize; }
