@@ -618,6 +618,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.onKeyPress = function(e) {
+        if (ns.View.EditableText.shown) { return; }
         switch(e.keyCode) {
             case 46: this.delete(); break; // del
         }

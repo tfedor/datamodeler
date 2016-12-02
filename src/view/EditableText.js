@@ -43,6 +43,8 @@ DBSDM.View.EditableText = (function(){
         }
     }
 
+    EditableText.shown = false;
+
     EditableText.prototype._createSharedElements = function() {
         if (this._canvas.hasSharedHTMLElement('EditableText.Input')) { return; }
 
@@ -127,6 +129,8 @@ DBSDM.View.EditableText = (function(){
 
         this._text.style.visibility = "hidden";
 
+        EditableText.shown = true;
+
         //
         var that = this;
         this._input.onkeydown = function(e) { that._keyDownHandler(e); };
@@ -137,6 +141,8 @@ DBSDM.View.EditableText = (function(){
     EditableText.prototype._hideInput = function() {
         this._input.style.display = "none";
         this._text.style.visibility = "visible";
+
+        EditableText.shown = false;
     };
 
     EditableText.prototype.onMouseUp = function(e, mouse) {
