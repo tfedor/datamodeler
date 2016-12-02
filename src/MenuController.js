@@ -78,7 +78,8 @@ DBSDM.Menu = (function(){
             ["Reset view", "reset-view", "arrows-alt"],
             ["Fullscreen", "fullscreen", "desktop"],
             ["Export", "export", "external-link-square", "allowFile"],
-            ["Save as image", "image", "file-image-o", "allowFile"]
+            ["Save as image", "image", "file-image-o", "allowFile"],
+            ["Clear", "clear", "eraser", "allowEdit"]
         ]
     };
 

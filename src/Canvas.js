@@ -391,6 +391,11 @@ DBSDM.Canvas = (function() {
             case "reset-view": this.resetView(); break;
             case "image": saveSvgAsPng(this.svg, "diagram.png"); break;
             case "fullscreen": this.fullscreen(); break;
+            case "clear":
+                if (ns.Diagram.allowEdit && window.confirm("Are you sure you want to clear the model?")) {
+                    this.clear();
+                }
+                break;
         }
     };
 
