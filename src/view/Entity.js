@@ -10,6 +10,7 @@ DBSDM.View.Entity = (function(){
         this._control = control;
 
         this._dom = null;
+        this._bg = null;
         this._name = null;
         this._attrContainer = null;
 
@@ -44,7 +45,7 @@ DBSDM.View.Entity = (function(){
         this._dom = ns.Element.el("svg", transform);
         this._dom.style.overflow = "visible";
 
-        this._dom.appendChild(ns.Diagram.getSharedElement("Entity.Bg"));
+        this._bg = this._dom.appendChild(ns.Diagram.getSharedElement("Entity.Bg"));
         this._canvas.svg.appendChild(this._dom);
     };
 
@@ -101,6 +102,13 @@ DBSDM.View.Entity = (function(){
 
     Entity.prototype.hideControls = function() {
         this._controls.remove();
+    };
+
+    Entity.prototype.select = function() {
+        ns.Element.attr(this._bg, {href: "#Entity.Bg.Selected"});
+    };
+    Entity.prototype.deselect = function() {
+        ns.Element.attr(this._bg, {href: "#Entity.Bg"});
     };
 
     return Entity;

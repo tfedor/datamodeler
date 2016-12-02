@@ -512,6 +512,15 @@ DBSDM.Diagram = (function() {
             })
         );
 
+        self.createSharedElement("Entity.Bg.Selected",
+            ns.Element.rect(0, 0, "100%", "100%", {
+                rx: 10, ry: 10,
+                fill: "#EFFFA4",
+                stroke: "#ffa800",
+                strokeWidth: ns.Consts.EntityStrokeWidth
+            })
+        );
+
         self.createSharedElement("Entity.ControlRectangle",
             ns.Element.rect(0, 0, "100%", "100%", {
                 fill: "none",
@@ -1458,7 +1467,7 @@ DBSDM.Menu = (function(){
         if (handler.getMenuState) {
             var dom = this._dom.sections[section];
             var state = handler.getMenuState();
-console.log(state);
+
             for (var key in state) {
                 if (!state.hasOwnProperty(key)) { return; }
 
@@ -1467,7 +1476,7 @@ console.log(state);
                 if (item && item.dataset.on && item.dataset.off) {
                     item.classList.remove(item.dataset.off);
                     item.classList.remove(item.dataset.on);
-console.log(key, state[key]);
+
                     if (state[key]) {
                         item.classList.add(item.dataset.on);
                     } else {
@@ -2624,6 +2633,9 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype._isa = function(parent) {
         if (!ns.Diagram.allowEdit) { return; }
 
+        this._canvas.svg.classList.remove("isaMode");
+        this._view.deselect();
+
         if (this._parent == parent) { return; }
         if (this._parent != null) {
             this._parent.removeChild(this);
@@ -2693,6 +2705,8 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype._initIsa = function() {
         if (ns.Diagram.allowEdit) {
             this._canvas.Mouse.attachObject(this);
+            this._view.select();
+            this._canvas.svg.classList.add("isaMode");
         }
     };
 
@@ -4472,6 +4486,7 @@ DBSDM.View.Entity = (function(){
         this._control = control;
 
         this._dom = null;
+        this._bg = null;
         this._name = null;
         this._attrContainer = null;
 
@@ -4506,7 +4521,7 @@ DBSDM.View.Entity = (function(){
         this._dom = ns.Element.el("svg", transform);
         this._dom.style.overflow = "visible";
 
-        this._dom.appendChild(ns.Diagram.getSharedElement("Entity.Bg"));
+        this._bg = this._dom.appendChild(ns.Diagram.getSharedElement("Entity.Bg"));
         this._canvas.svg.appendChild(this._dom);
     };
 
@@ -4563,6 +4578,13 @@ DBSDM.View.Entity = (function(){
 
     Entity.prototype.hideControls = function() {
         this._controls.remove();
+    };
+
+    Entity.prototype.select = function() {
+        ns.Element.attr(this._bg, {href: "#Entity.Bg.Selected"});
+    };
+    Entity.prototype.deselect = function() {
+        ns.Element.attr(this._bg, {href: "#Entity.Bg"});
     };
 
     return Entity;

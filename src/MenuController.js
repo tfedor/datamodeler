@@ -181,7 +181,7 @@ DBSDM.Menu = (function(){
         if (handler.getMenuState) {
             var dom = this._dom.sections[section];
             var state = handler.getMenuState();
-console.log(state);
+
             for (var key in state) {
                 if (!state.hasOwnProperty(key)) { return; }
 
@@ -190,7 +190,7 @@ console.log(state);
                 if (item && item.dataset.on && item.dataset.off) {
                     item.classList.remove(item.dataset.off);
                     item.classList.remove(item.dataset.on);
-console.log(key, state[key]);
+
                     if (state[key]) {
                         item.classList.add(item.dataset.on);
                     } else {

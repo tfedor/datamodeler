@@ -18,6 +18,9 @@ div.dbsdmCanvas > svg {
     pointer-events: all;
     font-size:15px;
 }
+div.dbsdmCanvas > svg.isaMode {
+    cursor: alias;
+}
 
 div.dbsdmCanvas.fullscreen {
     background-color:white;
@@ -184,7 +187,7 @@ input.editableSvgText {
     cursor: default !important;
 }
 
-/** turn off text selectino */
+/** turn off text selection */
 div.dbsdmCanvas > svg, #dbsdmContextMenu {
     -webkit-touch-callout: none; /* iOS Safari */
     -webkit-user-select: none;   /* Chrome/Safari/Opera */

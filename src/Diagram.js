@@ -101,6 +101,15 @@ DBSDM.Diagram = (function() {
             })
         );
 
+        self.createSharedElement("Entity.Bg.Selected",
+            ns.Element.rect(0, 0, "100%", "100%", {
+                rx: 10, ry: 10,
+                fill: "#EFFFA4",
+                stroke: "#ffa800",
+                strokeWidth: ns.Consts.EntityStrokeWidth
+            })
+        );
+
         self.createSharedElement("Entity.ControlRectangle",
             ns.Element.rect(0, 0, "100%", "100%", {
                 fill: "none",

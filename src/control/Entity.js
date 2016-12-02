@@ -418,6 +418,9 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype._isa = function(parent) {
         if (!ns.Diagram.allowEdit) { return; }
 
+        this._canvas.svg.classList.remove("isaMode");
+        this._view.deselect();
+
         if (this._parent == parent) { return; }
         if (this._parent != null) {
             this._parent.removeChild(this);
@@ -487,6 +490,8 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype._initIsa = function() {
         if (ns.Diagram.allowEdit) {
             this._canvas.Mouse.attachObject(this);
+            this._view.select();
+            this._canvas.svg.classList.add("isaMode");
         }
     };
 
