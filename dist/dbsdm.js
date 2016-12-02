@@ -2824,6 +2824,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.onKeyPress = function(e) {
+        if (ns.View.EditableText.shown) { return; }
         switch(e.keyCode) {
             case 46: this.delete(); break; // del
         }
@@ -4305,6 +4306,8 @@ DBSDM.View.EditableText = (function(){
         }
     }
 
+    EditableText.shown = false;
+
     EditableText.prototype._createSharedElements = function() {
         if (this._canvas.hasSharedHTMLElement('EditableText.Input')) { return; }
 
@@ -4389,6 +4392,8 @@ DBSDM.View.EditableText = (function(){
 
         this._text.style.visibility = "hidden";
 
+        EditableText.shown = true;
+
         //
         var that = this;
         this._input.onkeydown = function(e) { that._keyDownHandler(e); };
@@ -4399,6 +4404,8 @@ DBSDM.View.EditableText = (function(){
     EditableText.prototype._hideInput = function() {
         this._input.style.display = "none";
         this._text.style.visibility = "visible";
+
+        EditableText.shown = false;
     };
 
     EditableText.prototype.onMouseUp = function(e, mouse) {
@@ -4412,6 +4419,8 @@ DBSDM.View.EditableText = (function(){
             if (this._emptyHandler) {
                 this._hideInput();
                 this._emptyHandler();
+            } else {
+                this._cancel();
             }
         } else {
             this._setValue();

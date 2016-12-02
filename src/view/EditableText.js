@@ -156,6 +156,8 @@ DBSDM.View.EditableText = (function(){
             if (this._emptyHandler) {
                 this._hideInput();
                 this._emptyHandler();
+            } else {
+                this._cancel();
             }
         } else {
             this._setValue();
