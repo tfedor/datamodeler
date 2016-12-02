@@ -293,7 +293,19 @@
         document.body.removeChild(saveLink);
       }
       else {
-        DBSDM.File.download(uri, name, "image/png"); // hotfix for safari
+
+        // attemp to hotfix safari
+        var a = document.createElement("a"),
+            file = uriToBlob(uri),
+            url = URL.createObjectURL(file);
+        a.href = url;
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function() {
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+        }, 0);
         //window.open(uri, '_temp', 'menubar=no,toolbar=no,status=no');
       }
     }
