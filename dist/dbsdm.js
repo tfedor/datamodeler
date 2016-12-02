@@ -390,7 +390,12 @@ DBSDM.Canvas = (function() {
             case "zoom-reset": this.zoomReset(); break;
             case "zoom-out": this.zoomOut(); break;
             case "reset-view": this.resetView(); break;
-            case "image": saveSvgAsPng(this.svg, "diagram.png"); break;
+            case "image":
+                var cloneDefs = ns.Diagram._defs.cloneNode(true);
+                this.svg.insertBefore(cloneDefs, this.svg.firstChild);
+                saveSvgAsPng(this.svg, "diagram.png");
+                cloneDefs.remove();
+                break;
             case "fullscreen": this.fullscreen(); break;
             case "clear":
                 if (ns.Diagram.allowEdit && window.confirm("Are you sure you want to clear the model?")) {
