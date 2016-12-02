@@ -36,7 +36,7 @@ DBSDM.Canvas = (function() {
         this._container = document.createElement("div");
         this._container.className = "dbsdmCanvas";
 
-        this.ui = new ns.UI(this._container);
+        this.ui = new ns.UI(this._container, this);
         this.svg = this._container.appendChild(ns.Element.el("svg"));
 
         if (document.currentScript) {
@@ -150,14 +150,17 @@ DBSDM.Canvas = (function() {
     Canvas.prototype.zoomIn = function() {
         this._zoom = Math.min(2, this._zoom + 0.1);
         this.updateViewbox();
+        this.ui.updateZoomLevels(this._zoom);
     };
     Canvas.prototype.zoomOut = function() {
         this._zoom = Math.max(0.1, this._zoom - 0.1);
         this.updateViewbox();
+        this.ui.updateZoomLevels(this._zoom);
     };
     Canvas.prototype.zoomReset = function() {
         this._zoom = 1;
         this.updateViewbox();
+        this.ui.updateZoomLevels(this._zoom);
     };
 
     // fullscreen
@@ -1785,15 +1788,17 @@ DBSDM.UI = (function() {
         Scroll: "Click and drag <strong>middle mouse button</strong> to move the layout"
     };
 
-    function UI(container) {
+    function UI(container, canvas) {
+        this._canvas = canvas;
+
         this._ui = document.createElement("div");
         this._ui.className = "ui";
 
-        this._message = document.createElement("div");
-        this._message.className = "message";
-        this._message.style.transitionDuration = ns.Consts.UIMessageTransition+"s";
+        this._message = this._ui.appendChild(this._createMessage());
 
-        this._ui.appendChild(this._message);
+        this._zoom = null;
+        this._ui.appendChild(this._createZoomControls());
+
         container.appendChild(this._ui);
 
         this._shown = false;
@@ -1813,6 +1818,50 @@ DBSDM.UI = (function() {
         var that = this;
         this._message.addEventListener("click", function(e) { that.hideMessage(); });
     }
+
+    UI.prototype._createMessage = function() {
+        var message = document.createElement("div");
+        message.className = "message";
+        message.style.transitionDuration = ns.Consts.UIMessageTransition+"s";
+        return message;
+    };
+
+    UI.prototype._createZoomControls = function() {
+        var zoom = document.createElement("div");
+        zoom.className = "zoom";
+
+        var canvas = this._canvas;
+        var a;
+
+        // zoom in
+        a = document.createElement("a");
+        a.innerHTML = "<i class='fa fa-search-plus'></i>";
+        a.addEventListener("click", function() { canvas.zoomIn(); });
+        zoom.appendChild(a);
+
+        // reset
+        a = document.createElement("a");
+        a.className = "reset";
+        a.innerHTML = "100%";
+        a.addEventListener("click", function() { canvas.zoomReset(); });
+        this._zoom = a;
+        zoom.appendChild(a);
+
+        // zoom out
+        a = document.createElement("a");
+        a.innerHTML = "<i class='fa fa-search-minus'></i>";
+        a.addEventListener("click", function() { canvas.zoomOut(); });
+        zoom.appendChild(a);
+
+        return zoom; // return last reset, need to update it on zoom
+    };
+
+    // zoom
+    UI.prototype.updateZoomLevels = function(zoom) {
+        this._zoom.innerHTML = Math.round(zoom*100) + "%";
+    };
+
+    // tutorial
 
     UI.prototype.advanceTutorial = function() {
         if (!this.inTutorial) { return; }
@@ -1991,6 +2040,14 @@ DBSDM.Control.Attribute = (function(){
         return this._view.getMinimalSize();
     };
 
+    Attribute.prototype.selectNext = function() {
+        this._list.select(this.getPosition() + 1);
+    };
+
+    Attribute.prototype.select = function() {
+        this._view.showInput();
+    };
+
     // Menu Handlers
     Attribute.prototype.handleMenu = function(action) {
         switch(action) {
@@ -2062,16 +2119,19 @@ DBSDM.Control.AttributeList = (function(){
     }
 
     AttributeList.prototype.createAttribute = function() {
+        if (!ns.Diagram.allowEdit) { return; }
         var attrModel = new ns.Model.Attribute();
         this._model.add(attrModel);
 
-        this._createAttributeControl(attrModel);
+        var control = this._createAttributeControl(attrModel);
+        this._entityControl.encompassContent();
+        control.select();
     };
 
     AttributeList.prototype._createAttributeControl = function(attributeModel) {
-        this._controls.push(
-            new ns.Control.Attribute(this, attributeModel, this._canvas, this._entityControl)
-        );
+        var control = new ns.Control.Attribute(this, attributeModel, this._canvas, this._entityControl);
+        this._controls.push(control);
+        return control
     };
 
     /** Draw current model (after import) */
@@ -2107,6 +2167,14 @@ DBSDM.Control.AttributeList = (function(){
         this._model.setPosition(attrModel, position);
         this._updatePositions();
         return position;
+    };
+
+    AttributeList.prototype.select = function(index) {
+        if (index < this._controls.length) {
+            this._controls[index].select()
+        } else {
+            this.createAttribute();
+        }
     };
 
     AttributeList.prototype._updatePositions = function() {
@@ -2489,9 +2557,7 @@ DBSDM.Control.Entity = (function(){
 
     //
     Entity.prototype._createAttribute = function() {
-        if (!ns.Diagram.allowEdit) { return; }
         this._attributeList.createAttribute();
-        this.encompassContent();
     };
 
     // Relations
@@ -4065,6 +4131,8 @@ DBSDM.View.Attribute = (function(){
         this._text = null;
         this._index = null;
         this._nullable = null;
+
+        this._nameInput = null;
     }
 
     /***/
@@ -4123,14 +4191,17 @@ DBSDM.View.Attribute = (function(){
         this._nullable.textContent = this._getNullable();
 
         var model = this._model;
-        var nameInput = new DBSDM.View.EditableText(this._canvas,
+        this._nameInput = new DBSDM.View.EditableText(this._canvas,
             null, null,
             { dominantBaseline: "central", dx: "4" },
             function() { return model.getName(); },
             function(value) { model.setName(value); },
             "tspan"
         );
-        this._text.appendChild(nameInput.getTextDom());
+        var that = this;
+        this._nameInput.setNextHandler(function(){ that._control.selectNext(); });
+
+        this._text.appendChild(this._nameInput.getTextDom());
 
         this._svg.appendChild(this._text);
         parentDom.appendChild(this._svg);
@@ -4138,6 +4209,10 @@ DBSDM.View.Attribute = (function(){
         var mouse = this._canvas.Mouse;
         this._svg.addEventListener("mousedown", function(e) { mouse.down(e, control); });
         this._svg.addEventListener("contextmenu", function(e) { ns.Menu.attach(control, "attribute"); });
+    };
+
+    Attribute.prototype.showInput = function() {
+        this._nameInput.showInput();
     };
 
     Attribute.prototype.redrawIndex = function() {
@@ -4188,6 +4263,8 @@ DBSDM.View.EditableText = (function(){
         // handlers
         this._getHandler = getHandler;
         this._setHandler = setHandler;
+        this._nextHandler = null;
+        this._emptyHandler = null;
 
         // dom
         this._createSharedElements();
@@ -4209,7 +4286,7 @@ DBSDM.View.EditableText = (function(){
             this._text.classList.add("editable");
 
             this._text.addEventListener("mousedown", function(e) { e.stopPropagation(); }); // won't work in Chrome for Relation names otherwise
-            this._text.addEventListener("click", function(e) { that._showInput(); e.stopPropagation(); });
+            this._text.addEventListener("click", function(e) { that.showInput(); e.stopPropagation(); });
         }
     }
 
@@ -4229,6 +4306,14 @@ DBSDM.View.EditableText = (function(){
 
     EditableText.prototype.getTextDom = function() {
         return this._text;
+    };
+
+    EditableText.prototype.setNextHandler = function(callback) {
+        this._nextHandler = callback;
+    };
+
+    EditableText.prototype.setEmptyHandler = function(callback) {
+        this._emptyHandler = callback;
     };
 
     /** Value handling */
@@ -4267,7 +4352,7 @@ DBSDM.View.EditableText = (function(){
         this._input.style.top    = (y - cont.top) + "px";
     };
 
-    EditableText.prototype._showInput = function() {
+    EditableText.prototype.showInput = function() {
         if (!ns.Diagram.allowEdit) { return; }
         ns.Menu.hide();
 
@@ -4293,6 +4378,7 @@ DBSDM.View.EditableText = (function(){
 
         //
         var that = this;
+        this._input.onkeydown = function(e) { that._keyDownHandler(e); };
         this._input.onkeyup = function(e) { that._keyHandler(e); };
         this._input.onblur  = function(e) { that._confirm(e); };
     };
@@ -4303,7 +4389,7 @@ DBSDM.View.EditableText = (function(){
     };
 
     EditableText.prototype.onMouseUp = function(e, mouse) {
-        this._showInput();
+        this.showInput();
     };
 
     /** Key press handling */
@@ -4314,8 +4400,21 @@ DBSDM.View.EditableText = (function(){
     };
 
     EditableText.prototype._cancel = function() {
-        this.value = this._getValue(); // set old value, so the blur event won't update it
+        this._input.value = this._getValue(); // set old value, so the blur event won't update it
         this._hideInput();
+    };
+
+    EditableText.prototype._next = function(e) {
+        if (!this._nextHandler) { return; }
+        this._confirm();
+        this._nextHandler();
+        e.preventDefault();
+    };
+
+    EditableText.prototype._keyDownHandler = function(e) {
+        if (e.keyCode == 9) {
+            this._next(e);
+        }
     };
 
     EditableText.prototype._keyHandler = function(e) {
@@ -4323,6 +4422,8 @@ DBSDM.View.EditableText = (function(){
             this._confirm();
         } else if (e.keyCode == 27) { // esc
             this._cancel();
+        } else if (e.keyCode == 9) {
+            // handled on key down
         } else {
             this._setInputPosition();
         }

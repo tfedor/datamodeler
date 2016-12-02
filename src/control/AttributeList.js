@@ -13,16 +13,19 @@ DBSDM.Control.AttributeList = (function(){
     }
 
     AttributeList.prototype.createAttribute = function() {
+        if (!ns.Diagram.allowEdit) { return; }
         var attrModel = new ns.Model.Attribute();
         this._model.add(attrModel);
 
-        this._createAttributeControl(attrModel);
+        var control = this._createAttributeControl(attrModel);
+        this._entityControl.encompassContent();
+        control.select();
     };
 
     AttributeList.prototype._createAttributeControl = function(attributeModel) {
-        this._controls.push(
-            new ns.Control.Attribute(this, attributeModel, this._canvas, this._entityControl)
-        );
+        var control = new ns.Control.Attribute(this, attributeModel, this._canvas, this._entityControl);
+        this._controls.push(control);
+        return control
     };
 
     /** Draw current model (after import) */
@@ -58,6 +61,14 @@ DBSDM.Control.AttributeList = (function(){
         this._model.setPosition(attrModel, position);
         this._updatePositions();
         return position;
+    };
+
+    AttributeList.prototype.select = function(index) {
+        if (index < this._controls.length) {
+            this._controls[index].select()
+        } else {
+            this.createAttribute();
+        }
     };
 
     AttributeList.prototype._updatePositions = function() {

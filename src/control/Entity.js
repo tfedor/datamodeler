@@ -357,9 +357,7 @@ DBSDM.Control.Entity = (function(){
 
     //
     Entity.prototype._createAttribute = function() {
-        if (!ns.Diagram.allowEdit) { return; }
         this._attributeList.createAttribute();
-        this.encompassContent();
     };
 
     // Relations

@@ -15,6 +15,8 @@ DBSDM.View.Attribute = (function(){
         this._text = null;
         this._index = null;
         this._nullable = null;
+
+        this._nameInput = null;
     }
 
     /***/
@@ -73,14 +75,17 @@ DBSDM.View.Attribute = (function(){
         this._nullable.textContent = this._getNullable();
 
         var model = this._model;
-        var nameInput = new DBSDM.View.EditableText(this._canvas,
+        this._nameInput = new DBSDM.View.EditableText(this._canvas,
             null, null,
             { dominantBaseline: "central", dx: "4" },
             function() { return model.getName(); },
             function(value) { model.setName(value); },
             "tspan"
         );
-        this._text.appendChild(nameInput.getTextDom());
+        var that = this;
+        this._nameInput.setNextHandler(function(){ that._control.selectNext(); });
+
+        this._text.appendChild(this._nameInput.getTextDom());
 
         this._svg.appendChild(this._text);
         parentDom.appendChild(this._svg);
@@ -88,6 +93,10 @@ DBSDM.View.Attribute = (function(){
         var mouse = this._canvas.Mouse;
         this._svg.addEventListener("mousedown", function(e) { mouse.down(e, control); });
         this._svg.addEventListener("contextmenu", function(e) { ns.Menu.attach(control, "attribute"); });
+    };
+
+    Attribute.prototype.showInput = function() {
+        this._nameInput.showInput();
     };
 
     Attribute.prototype.redrawIndex = function() {

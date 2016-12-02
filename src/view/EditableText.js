@@ -16,6 +16,8 @@ DBSDM.View.EditableText = (function(){
         // handlers
         this._getHandler = getHandler;
         this._setHandler = setHandler;
+        this._nextHandler = null;
+        this._emptyHandler = null;
 
         // dom
         this._createSharedElements();
@@ -37,7 +39,7 @@ DBSDM.View.EditableText = (function(){
             this._text.classList.add("editable");
 
             this._text.addEventListener("mousedown", function(e) { e.stopPropagation(); }); // won't work in Chrome for Relation names otherwise
-            this._text.addEventListener("click", function(e) { that._showInput(); e.stopPropagation(); });
+            this._text.addEventListener("click", function(e) { that.showInput(); e.stopPropagation(); });
         }
     }
 
@@ -57,6 +59,14 @@ DBSDM.View.EditableText = (function(){
 
     EditableText.prototype.getTextDom = function() {
         return this._text;
+    };
+
+    EditableText.prototype.setNextHandler = function(callback) {
+        this._nextHandler = callback;
+    };
+
+    EditableText.prototype.setEmptyHandler = function(callback) {
+        this._emptyHandler = callback;
     };
 
     /** Value handling */
@@ -95,7 +105,7 @@ DBSDM.View.EditableText = (function(){
         this._input.style.top    = (y - cont.top) + "px";
     };
 
-    EditableText.prototype._showInput = function() {
+    EditableText.prototype.showInput = function() {
         if (!ns.Diagram.allowEdit) { return; }
         ns.Menu.hide();
 
@@ -121,6 +131,7 @@ DBSDM.View.EditableText = (function(){
 
         //
         var that = this;
+        this._input.onkeydown = function(e) { that._keyDownHandler(e); };
         this._input.onkeyup = function(e) { that._keyHandler(e); };
         this._input.onblur  = function(e) { that._confirm(e); };
     };
@@ -131,7 +142,7 @@ DBSDM.View.EditableText = (function(){
     };
 
     EditableText.prototype.onMouseUp = function(e, mouse) {
-        this._showInput();
+        this.showInput();
     };
 
     /** Key press handling */
@@ -142,8 +153,21 @@ DBSDM.View.EditableText = (function(){
     };
 
     EditableText.prototype._cancel = function() {
-        this.value = this._getValue(); // set old value, so the blur event won't update it
+        this._input.value = this._getValue(); // set old value, so the blur event won't update it
         this._hideInput();
+    };
+
+    EditableText.prototype._next = function(e) {
+        if (!this._nextHandler) { return; }
+        this._confirm();
+        this._nextHandler();
+        e.preventDefault();
+    };
+
+    EditableText.prototype._keyDownHandler = function(e) {
+        if (e.keyCode == 9) {
+            this._next(e);
+        }
     };
 
     EditableText.prototype._keyHandler = function(e) {
@@ -151,6 +175,8 @@ DBSDM.View.EditableText = (function(){
             this._confirm();
         } else if (e.keyCode == 27) { // esc
             this._cancel();
+        } else if (e.keyCode == 9) {
+            // handled on key down
         } else {
             this._setInputPosition();
         }
