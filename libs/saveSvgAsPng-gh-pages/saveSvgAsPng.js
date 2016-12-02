@@ -81,24 +81,23 @@
         for (var j = 0, match; j < rules.length; j++, match = null) {
           var rule = rules[j];
           if (typeof(rule.style) != "undefined") {
-            var selectorText;
+            var selector;
 
             try {
-              selectorText = rule.selectorText;
+              selector = selectorRemap ? selectorRemap(rule.selectorText) : rule.selectorText;
             } catch(err) {
               console.warn('The following CSS rule has an invalid selector: "' + rule + '"', err);
             }
 
             try {
-              if (selectorText) {
-                match = el.querySelector(selectorText);
+              if (selector) {
+                match = el.querySelector(selector);
               }
             } catch(err) {
-              console.warn('Invalid CSS selector "' + selectorText + '"', err);
+              console.warn('Invalid CSS selector "' + selector + '"', err);
             }
 
             if (match) {
-              var selector = selectorRemap ? selectorRemap(rule.selectorText) : rule.selectorText;
               var cssText = modifyStyle ? modifyStyle(rule.style.cssText) : rule.style.cssText;
               css += selector + " { " + cssText + " }\n";
             } else if(rule.cssText.match(/^@font-face/)) {

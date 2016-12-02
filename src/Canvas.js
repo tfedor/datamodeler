@@ -364,6 +364,21 @@ DBSDM.Canvas = (function() {
         this.sort();
     };
 
+    Canvas.prototype.saveAsImage = function() {
+        var cloneDefs = ns.Diagram._defs.cloneNode(true);
+        this.svg.insertBefore(cloneDefs, this.svg.firstChild);
+        saveSvgAsPng(this.svg, "diagram.png", {
+            left: this._offset.x,
+            top: this._offset.y,
+            selectorRemap: function(selector) {
+                selector = selector.replace(/^div\.dbsdmCanvas > svg(\W|$)/, "svg");
+                selector = selector.replace(/^div\.dbsdmCanvas\s/, "");
+                return selector;
+            }
+        });
+        cloneDefs.remove();
+    };
+
     // event handlers
 
     Canvas.prototype.onMouseDown = function(e, mouse) {
@@ -389,12 +404,7 @@ DBSDM.Canvas = (function() {
             case "zoom-reset": this.zoomReset(); break;
             case "zoom-out": this.zoomOut(); break;
             case "reset-view": this.resetView(); break;
-            case "image":
-                var cloneDefs = ns.Diagram._defs.cloneNode(true);
-                this.svg.insertBefore(cloneDefs, this.svg.firstChild);
-                saveSvgAsPng(this.svg, "diagram.png");
-                cloneDefs.remove();
-                break;
+            case "image": this.saveAsImage(); break;
             case "fullscreen": this.fullscreen(); break;
             case "clear":
                 if (ns.Diagram.allowEdit && window.confirm("Are you sure you want to clear the model?")) {
