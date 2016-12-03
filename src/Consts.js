@@ -6,6 +6,7 @@ DBSDM.Consts = {
 
     EntityStrokeWidth: 1,
     EntityPadding: 10,
+    EntityEdgePadding: 10, // how close to the corner can the relation be placed
     EntityExtraHeight: 5,
 
     UIMessageTransition: 0.4,

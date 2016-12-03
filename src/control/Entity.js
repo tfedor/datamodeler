@@ -191,14 +191,14 @@ DBSDM.Control.Entity = (function(){
         // set desired state
 
         if (/n/.test(cp)) {
-            y = (parent == null ? cursor.y : Math.max(cursor.y, 10)); // TODO edge padding
+            y = (parent == null ? cursor.y : Math.max(cursor.y, ns.Consts.EntityEdgePadding));
             height = (transform.y - y) + transform.height;
         } else if (/s/.test(cp)) {
             height = cursor.y - transform.y;
         }
 
         if (/w/.test(cp)) {
-            x = (parent == null ? cursor.x : Math.max(cursor.x, 10)); // TODO edge padding
+            x = (parent == null ? cursor.x : Math.max(cursor.x, ns.Consts.EntityEdgePadding));
             width = (transform.x - x) + transform.width;
         } else if (/e/.test(cp)) {
             width = cursor.x - transform.x;
@@ -390,10 +390,10 @@ DBSDM.Control.Entity = (function(){
         var edges = this._model.getEdges();
         var center = {
             x: (edges.left + edges.right)*0.5,
-            y: (edges.top + edges.bottom)*0.5,
+            y: (edges.top + edges.bottom)*0.5
         };
 
-        var EdgeOffset = 10; // TODO;
+        var EdgeOffset = ns.Consts.EntityEdgePadding;
 
         if (edges.left+EdgeOffset < x && x < edges.right-EdgeOffset) {
             if (y > center.y) {
@@ -437,7 +437,7 @@ DBSDM.Control.Entity = (function(){
             this._setPosition(mouse.x, mouse.y);
         } else {
             var parentTransform = parent._model.getTransform();
-            this._setPosition(mouse.x - parentTransform.x, mouse.y - parentTransform.y);;
+            this._setPosition(mouse.x - parentTransform.x, mouse.y - parentTransform.y);
 
             this._model.setParent(parent._model);
             this._view.setParent(parent.getDom());
