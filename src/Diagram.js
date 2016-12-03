@@ -12,14 +12,16 @@ DBSDM.Diagram = (function() {
     self.allowEdit = true;
     self.allowFile = true;
     self.showTutorial = true;
+    self.confirmLeave = false;
+
+    self._canvasList = [];
 
     self.init = function(options){
         options = options || {};
         if (typeof options.allowEdit == "boolean") { self.allowEdit = options.allowEdit; }
         if (typeof options.allowFile == "boolean") { self.allowFile = options.allowFile; }
         if (typeof options.showTutorial == "boolean") { self.showTutorial = options.showTutorial; }
-        var confirmLeave = false;
-        if (typeof options.confirmLeave == "boolean") { confirmLeave = options.confirmLeave; }
+        if (typeof options.confirmLeave == "boolean") { self.confirmLeave = options.confirmLeave; }
 
         ns.Menu.build();
 
@@ -33,11 +35,13 @@ DBSDM.Diagram = (function() {
         this._createRelationLegElements();
 
         // global events
-        if (confirmLeave) {
+        if (self.confirmLeave) {
             window.onbeforeunload = function(e) {
-                var dialog = "Are you sure you want to leave? Your model may not have been saved.";
-                e.returnValue = dialog;
-                return dialog;
+                if (self.didAnyCanvasChange()) {
+                    var dialog = "Are you sure you want to leave? Your model may not have been saved.";
+                    e.returnValue = dialog;
+                    return dialog;
+                }
             };
         }
 
@@ -65,6 +69,21 @@ DBSDM.Diagram = (function() {
         });
     };
 
+    self.registerCanvas = function(canvas) {
+        self._canvasList.push(canvas);
+    };
+
+    self.didAnyCanvasChange = function() {
+        var changed = false;
+        var count = self._canvasList.length;
+        for (var i=0; i<count; i++) {
+            if (self._canvasList[i].didDataChange()) {
+                self._canvasList[i].ui.error("Changes in this model have not been saved");
+                changed = true;
+            }
+        }
+        return changed;
+    };
 
     // svg elements
     self._sharedElementName = function(name) {

@@ -21,6 +21,12 @@ DBSDM.Canvas = (function() {
         this._zoom = 1;
 
         /**
+         * Check when exiting the site, to compare current with imported data
+         * and prompt user about leaving
+         */
+        this._dataRef = '{"entities":[],"relations":[]}'; // default empty object
+
+        /**
          * Mouse controller
          */
         this.Mouse = null;
@@ -33,6 +39,8 @@ DBSDM.Canvas = (function() {
     }
 
     Canvas.prototype.create = function() {
+        ns.Diagram.registerCanvas(this);
+
         this._container = document.createElement("div");
         this._container.className = "dbsdmCanvas";
 
@@ -247,9 +255,16 @@ DBSDM.Canvas = (function() {
         data.relations.sort(this._sortRelations);
     };
 
-    Canvas.prototype.export = function(promptDownload, prettify) {
+    /**
+     * promptDownload   boolean    Indicates whether we want to show download option to user
+     * prettify         boolean    When true, prettify resulting data
+     * saveRef          boolean    When true, save the data reference for future check of changes
+     *                             Default depends on confirmLeave setting of Diagram
+     */
+    Canvas.prototype.export = function(promptDownload, prettify, saveRef) {
         var entityModels = [];
         var relationModels = [];
+        saveRef = (typeof saveRef == "boolean" ? saveRef : ns.Diagram.confirmLeave);
 
         // get models for entities and relations
         var count = this._entities.length;
@@ -286,6 +301,10 @@ DBSDM.Canvas = (function() {
             jsonData = JSON.stringify(result);
         }
 
+        if (saveRef) {
+            this._dataRef = JSON.stringify(result);
+        }
+
         if (ns.Diagram.allowFile && promptDownload) {
             ns.File.download(jsonData, "model-data.json", "application/json");
         }
@@ -293,9 +312,12 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.import = function(data) {
-
         this.clear();
         this._sortData(data);
+
+        if (ns.Diagram.confirmLeave) {
+            this._dataRef = JSON.stringify(data);
+        }
 
         // create models from data
         var entityModels = [];
@@ -365,6 +387,10 @@ DBSDM.Canvas = (function() {
         this.sort();
     };
 
+    Canvas.prototype.didDataChange = function() {
+        return this.export(false, false, false) != this._dataRef;
+    };
+
     Canvas.prototype.saveAsImage = function() {
         var cloneDefs = ns.Diagram._defs.cloneNode(true);
         this.svg.insertBefore(cloneDefs, this.svg.firstChild);
@@ -425,6 +451,7 @@ DBSDM.Consts = {
 
     EntityStrokeWidth: 1,
     EntityPadding: 10,
+    EntityEdgePadding: 10, // how close to the corner can the relation be placed
     EntityExtraHeight: 5,
 
     UIMessageTransition: 0.4,
@@ -444,14 +471,16 @@ DBSDM.Diagram = (function() {
     self.allowEdit = true;
     self.allowFile = true;
     self.showTutorial = true;
+    self.confirmLeave = false;
+
+    self._canvasList = [];
 
     self.init = function(options){
         options = options || {};
         if (typeof options.allowEdit == "boolean") { self.allowEdit = options.allowEdit; }
         if (typeof options.allowFile == "boolean") { self.allowFile = options.allowFile; }
         if (typeof options.showTutorial == "boolean") { self.showTutorial = options.showTutorial; }
-        var confirmLeave = false;
-        if (typeof options.confirmLeave == "boolean") { confirmLeave = options.confirmLeave; }
+        if (typeof options.confirmLeave == "boolean") { self.confirmLeave = options.confirmLeave; }
 
         ns.Menu.build();
 
@@ -465,11 +494,13 @@ DBSDM.Diagram = (function() {
         this._createRelationLegElements();
 
         // global events
-        if (confirmLeave) {
+        if (self.confirmLeave) {
             window.onbeforeunload = function(e) {
-                var dialog = "Are you sure you want to leave? Your model may not have been saved.";
-                e.returnValue = dialog;
-                return dialog;
+                if (self.didAnyCanvasChange()) {
+                    var dialog = "Are you sure you want to leave? Your model may not have been saved.";
+                    e.returnValue = dialog;
+                    return dialog;
+                }
             };
         }
 
@@ -497,6 +528,21 @@ DBSDM.Diagram = (function() {
         });
     };
 
+    self.registerCanvas = function(canvas) {
+        self._canvasList.push(canvas);
+    };
+
+    self.didAnyCanvasChange = function() {
+        var changed = false;
+        var count = self._canvasList.length;
+        for (var i=0; i<count; i++) {
+            if (self._canvasList[i].didDataChange()) {
+                self._canvasList[i].ui.error("Changes in this model have not been saved");
+                changed = true;
+            }
+        }
+        return changed;
+    };
 
     // svg elements
     self._sharedElementName = function(name) {
@@ -1703,6 +1749,10 @@ DBSDM.Mouse = (function(){
     Mouse.prototype.down = function(e, object, params) {
         this._targetObject = object;
 
+        if (this._canvas.ui.shown() && !this._canvas.ui.inTutorial) {
+            this._canvas.ui.hideMessage();
+        }
+
         e.stopPropagation();
         if (this._attachedObject) { return; }
         if (e.button == 1) {
@@ -2006,6 +2056,10 @@ DBSDM.UI = (function() {
             callback = function() { that.hideMessage(); }
         }
         this._timer = window.setTimeout(callback, time*1000);
+    };
+
+    UI.prototype.shown = function() {
+        return this._shown;
     };
 
     // help
@@ -2502,14 +2556,14 @@ DBSDM.Control.Entity = (function(){
         // set desired state
 
         if (/n/.test(cp)) {
-            y = (parent == null ? cursor.y : Math.max(cursor.y, 10)); // TODO edge padding
+            y = (parent == null ? cursor.y : Math.max(cursor.y, ns.Consts.EntityEdgePadding));
             height = (transform.y - y) + transform.height;
         } else if (/s/.test(cp)) {
             height = cursor.y - transform.y;
         }
 
         if (/w/.test(cp)) {
-            x = (parent == null ? cursor.x : Math.max(cursor.x, 10)); // TODO edge padding
+            x = (parent == null ? cursor.x : Math.max(cursor.x, ns.Consts.EntityEdgePadding));
             width = (transform.x - x) + transform.width;
         } else if (/e/.test(cp)) {
             width = cursor.x - transform.x;
@@ -2701,10 +2755,10 @@ DBSDM.Control.Entity = (function(){
         var edges = this._model.getEdges();
         var center = {
             x: (edges.left + edges.right)*0.5,
-            y: (edges.top + edges.bottom)*0.5,
+            y: (edges.top + edges.bottom)*0.5
         };
 
-        var EdgeOffset = 10; // TODO;
+        var EdgeOffset = ns.Consts.EntityEdgePadding;
 
         if (edges.left+EdgeOffset < x && x < edges.right-EdgeOffset) {
             if (y > center.y) {
@@ -2748,7 +2802,7 @@ DBSDM.Control.Entity = (function(){
             this._setPosition(mouse.x, mouse.y);
         } else {
             var parentTransform = parent._model.getTransform();
-            this._setPosition(mouse.x - parentTransform.x, mouse.y - parentTransform.y);;
+            this._setPosition(mouse.x - parentTransform.x, mouse.y - parentTransform.y);
 
             this._model.setParent(parent._model);
             this._view.setParent(parent.getDom());

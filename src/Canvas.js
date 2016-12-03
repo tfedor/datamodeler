@@ -20,6 +20,12 @@ DBSDM.Canvas = (function() {
         this._zoom = 1;
 
         /**
+         * Check when exiting the site, to compare current with imported data
+         * and prompt user about leaving
+         */
+        this._dataRef = '{"entities":[],"relations":[]}'; // default empty object
+
+        /**
          * Mouse controller
          */
         this.Mouse = null;
@@ -32,6 +38,8 @@ DBSDM.Canvas = (function() {
     }
 
     Canvas.prototype.create = function() {
+        ns.Diagram.registerCanvas(this);
+
         this._container = document.createElement("div");
         this._container.className = "dbsdmCanvas";
 
@@ -246,9 +254,16 @@ DBSDM.Canvas = (function() {
         data.relations.sort(this._sortRelations);
     };
 
-    Canvas.prototype.export = function(promptDownload, prettify) {
+    /**
+     * promptDownload   boolean    Indicates whether we want to show download option to user
+     * prettify         boolean    When true, prettify resulting data
+     * saveRef          boolean    When true, save the data reference for future check of changes
+     *                             Default depends on confirmLeave setting of Diagram
+     */
+    Canvas.prototype.export = function(promptDownload, prettify, saveRef) {
         var entityModels = [];
         var relationModels = [];
+        saveRef = (typeof saveRef == "boolean" ? saveRef : ns.Diagram.confirmLeave);
 
         // get models for entities and relations
         var count = this._entities.length;
@@ -285,6 +300,10 @@ DBSDM.Canvas = (function() {
             jsonData = JSON.stringify(result);
         }
 
+        if (saveRef) {
+            this._dataRef = JSON.stringify(result);
+        }
+
         if (ns.Diagram.allowFile && promptDownload) {
             ns.File.download(jsonData, "model-data.json", "application/json");
         }
@@ -292,9 +311,12 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.import = function(data) {
-
         this.clear();
         this._sortData(data);
+
+        if (ns.Diagram.confirmLeave) {
+            this._dataRef = JSON.stringify(data);
+        }
 
         // create models from data
         var entityModels = [];
@@ -362,6 +384,10 @@ DBSDM.Canvas = (function() {
         }
 
         this.sort();
+    };
+
+    Canvas.prototype.didDataChange = function() {
+        return this.export(false, false, false) != this._dataRef;
     };
 
     Canvas.prototype.saveAsImage = function() {

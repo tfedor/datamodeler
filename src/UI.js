@@ -192,6 +192,10 @@ DBSDM.UI = (function() {
         this._timer = window.setTimeout(callback, time*1000);
     };
 
+    UI.prototype.shown = function() {
+        return this._shown;
+    };
+
     // help
     UI.prototype._toggleHelp = function() {
         if (this._help) {

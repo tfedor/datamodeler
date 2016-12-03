@@ -88,6 +88,10 @@ DBSDM.Mouse = (function(){
     Mouse.prototype.down = function(e, object, params) {
         this._targetObject = object;
 
+        if (this._canvas.ui.shown() && !this._canvas.ui.inTutorial) {
+            this._canvas.ui.hideMessage();
+        }
+
         e.stopPropagation();
         if (this._attachedObject) { return; }
         if (e.button == 1) {
