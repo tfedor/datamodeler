@@ -233,7 +233,7 @@ DBSDM.Canvas = (function() {
         return JSON.stringify(a).localeCompare(JSON.stringify(b).entity);
     };
     Canvas.prototype._sortRelations = function(a, b) {
-        return JSON.stringify(a).localeCompare(JSON.stringify(b).entity);
+        return JSON.stringify(a).localeCompare(JSON.stringify(b));
     };
 
     Canvas.prototype._sortData = function(data) {
