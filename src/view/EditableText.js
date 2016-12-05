@@ -77,7 +77,6 @@ DBSDM.View.EditableText = (function(){
         return this._getHandler() || "Editable Text";
     };
     EditableText.prototype._setValue = function() {
-        console.log(this._input.value);
         this._setHandler(this._input.value);
         this._text.innerHTML = this._getValue();
     };
