@@ -44,7 +44,10 @@ DBSDM.Control.RelationLeg = (function() {
     RelationLeg.prototype.translateAnchor = function(x, y) {
         var anchor = this._model.getAnchor();
         this._model.setAnchor(anchor.x + x, anchor.y + y, anchor.edge);
-        // TODO ANCHOR
+
+        if (this._model.inXor) {
+            this._entity.redrawXor(null, this);
+        }
     };
 
     RelationLeg.prototype.translate = function(dx, dy) {
@@ -61,7 +64,6 @@ DBSDM.Control.RelationLeg = (function() {
                 pos.x = ns.Geometry.snap(pos.x, this._model.getPoint(1).x, null, ns.Consts.SnappingLimit);
             }
             this._model.setAnchor(pos.x, pos.y, pos.edge);
-            // TODO ANCHOR
         }
 
         this._relation.onAnchorMove();

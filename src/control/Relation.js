@@ -202,7 +202,6 @@ DBSDM.Control.Relation = (function() {
 
     Relation.prototype._moveToDifferentEntity = function() {
         this._model.straighten(true, this._sourceEntity._model, this._targetEntity._model);
-        // TODO ANCHORS
         this.redraw();
     };
 
@@ -238,7 +237,6 @@ DBSDM.Control.Relation = (function() {
     Relation.prototype.onEntityDrag = function(dx, dy) {
         if (!this._model.hasManualPoints()) {
             this._model.resetAnchors();
-            // TODO ANCHORS
         }
         this.centerMiddlePoint();
         this.redraw();

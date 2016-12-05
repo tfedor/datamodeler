@@ -140,7 +140,7 @@ DBSDM.Control.Entity = (function(){
         var delta;
         if (this._parent != null) {
             var transform = this._model.getTransform();
-            delta = this._setPosition(
+            this._setPosition(
                 transform.x + mouse.rx,
                 transform.y + mouse.ry
             );
@@ -149,10 +149,9 @@ DBSDM.Control.Entity = (function(){
             delta = {
                 x: mouse.rx,
                 y: mouse.ry
-            }
+            };
+            this.notifyDrag(delta.x, delta.y);
         }
-
-        this.notifyDrag(delta.x, delta.y);
     };
 
     Entity.prototype.notifyDrag = function(x, y) {
@@ -173,7 +172,7 @@ DBSDM.Control.Entity = (function(){
             this._children[c].notifyDrag(x, y);
         }
 
-        // TODO improve performance
+        // TODO improve performance - should only redraw when anchors move - move reset anchors from relation model to controller?
         for (i=0;i<this._xorLegList.length; i++) {
             this.redrawXor(i);
         }
