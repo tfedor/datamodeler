@@ -15,6 +15,8 @@ DBSDM.View.Entity = (function(){
         this._attrContainer = null;
 
         this._controls = null;
+
+        this._xorNodes = [];
     }
 
     Entity.prototype.getDom = function() {
@@ -84,6 +86,26 @@ DBSDM.View.Entity = (function(){
     Entity.prototype.remove = function() {
         this._dom.remove();
     };
+
+    // XOR
+
+    Entity.prototype.clearXor = function(index) {
+        this._xorNodes[index].remove();
+        this._xorNodes.splice(index, 1);
+    };
+
+    Entity.prototype.drawXor = function(edges, index, edgeDistance) {
+        if (this._xorNodes[index]) {
+            this._xorNodes[index].remove();
+            this._xorNodes[index] = null;
+        }
+
+        var arcNode = ns.View.Arc.build(edges, this._model.getXor(index), edgeDistance);
+        this._dom.appendChild(arcNode);
+        this._xorNodes[index] = arcNode;
+    };
+
+    // Controls
 
     Entity.prototype.showControls = function() {
         this._controls = ns.Element.g(

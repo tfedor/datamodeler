@@ -35,6 +35,8 @@ DBSDM.Model.RelationLeg = (function(){
             {x: 0, y: 0}  // middle point
         ];
         this.pointsManual = false;
+
+        this.inXor = false;
     }
 
     RelationLeg.prototype.setRelation = function(relation) {
@@ -99,6 +101,20 @@ DBSDM.Model.RelationLeg = (function(){
         this._anchor.x = x;
         this._anchor.y = y;
         this._anchor.edge = edge;
+        this._updateFirstPoint();
+    };
+
+    RelationLeg.prototype.getAnchorOffset = function() {
+        return this._anchorOffset;
+    };
+    RelationLeg.prototype.setAnchorOffset = function(offset) {
+        this._anchorOffset = offset;
+        this._updateFirstPoint();
+    };
+
+    RelationLeg.prototype._updateFirstPoint = function() {
+        var edge = this._anchor.edge;
+        if (edge == null) { return; }
 
         var offsetX = 0;
         var offsetY = 0;
@@ -107,12 +123,8 @@ DBSDM.Model.RelationLeg = (function(){
         } else { // top/bottom
             offsetY = (edge-1) * this._anchorOffset;
         }
-        this._points[0].x = x - offsetX;
-        this._points[0].y = y + offsetY;
-    };
-
-    RelationLeg.prototype.setAnchorOffset = function(offset) {
-        this._anchorOffset = offset;
+        this._points[0].x = this._anchor.x - offsetX;
+        this._points[0].y = this._anchor.y + offsetY;
     };
 
     // points

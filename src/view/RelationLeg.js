@@ -80,12 +80,11 @@ DBSDM.View.RelationLeg = (function(){
 
     RelationLeg.prototype._buildAnchor = function() {
         this._anchor = ns.Element.g(
-            ns.Diagram.getSharedElement('Relation.AnchorControl', {class: "anchor"}),
-            ns.Diagram.getSharedElement('Relation.AnchorBase')
+            ns.Diagram.getSharedElement('Relation.AnchorControl', {class: "anchor"})
         );
         this.updateAnchorType();
 
-        this._model.setAnchorOffset(11);
+        this._model.setAnchorOffset(ns.Consts.DefaultAnchorOffset);
     };
 
     RelationLeg.prototype.updateAnchorType = function() {
@@ -125,7 +124,7 @@ DBSDM.View.RelationLeg = (function(){
             fill: "none",
             stroke: "black",
             strokeWidth: 1,
-            strokeLinejoin: "miter"
+            strokeLinejoin: "round"
         });
         this._lineControl = ns.Element.el("polyline", {
             points: "0 0 0 0",
@@ -133,13 +132,14 @@ DBSDM.View.RelationLeg = (function(){
             stroke: "none",
             strokeWidth: 10,
             strokeLinecap: "butt",
-            strokeLinejoin: "miter",
+            strokeLinejoin: "round",
             class: "line"
         });
     };
 
     RelationLeg.prototype._getPointsString = function(points) {
-        return points
+        var a = this._model.getAnchor();
+        return a.x+" "+a.y+" "+ points
             .map(function(p) { return [p.x, p.y] })
             .reduce(function(a, b) { return a.concat(b) })
             .join(" ");

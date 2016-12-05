@@ -13,6 +13,8 @@ DBSDM.Control.Entity = (function(){
         this._model = model;
         this._attributeList = new ns.Control.AttributeList(this._model.getAttributeList(), this._canvas, this);
         this._relationLegList = [];
+        this._xorLegList = [];
+
         this._view = new ns.View.Entity(this._canvas, this._model, this);
         this._parent = null;
         this._children = [];
@@ -169,6 +171,11 @@ DBSDM.Control.Entity = (function(){
 
         for (var c=0; c<this._children.length; c++) {
             this._children[c].notifyDrag(x, y);
+        }
+
+        // TODO improve performance
+        for (i=0;i<this._xorLegList.length; i++) {
+            this.redrawXor(i);
         }
     };
 
@@ -521,6 +528,93 @@ DBSDM.Control.Entity = (function(){
         return this;
     };
 
+    // XOR
+
+    /**
+     * Find index of XOR relation, which contains given leg
+     */
+    Entity.prototype._findXor = function(leg) {
+        var count = this._xorLegList.length;
+        for (var i=0; i<count; i++) {
+            if (this._xorLegList[i].indexOf(leg) != -1) {
+                return i;
+            }
+        }
+        return -1;
+    };
+
+    /**
+     * Create XOR with two Relation legs.
+     * If legB is already in XOR, add legA. Otherwise create new XOR
+     */
+    Entity.prototype.xorWith = function(legA, legB) {
+        var index = this._findXor(legB);
+        if (index != -1) {
+            this._xorLegList[index].push(legA);
+            this._model.addToXor(index, legA.getModel());
+        } else {
+            index = this._xorLegList.length;
+            this._xorLegList.push([legA, legB]);
+            this._model.createXor(legA.getModel(), legB.getModel());
+        }
+        this.redrawXor(index);
+    };
+
+    Entity.prototype.removeXorLeg = function(leg) {
+        var xorIndex = this._findXor(leg);
+        if (xorIndex == -1) { return; }
+
+        if (this._xorLegList[xorIndex].length == 2) {
+            this._xorLegList[xorIndex][0].getModel().setAnchorOffset(ns.Consts.DefaultAnchorOffset);
+            this._xorLegList[xorIndex][0].getRelation().onXorUpdate();
+
+            this._xorLegList[xorIndex][1].getModel().setAnchorOffset(ns.Consts.DefaultAnchorOffset);
+            this._xorLegList[xorIndex][1].getRelation().onXorUpdate();
+
+            this._xorLegList.splice(xorIndex, 1);
+            this._model.removeXor(xorIndex);
+            this._view.clearXor(xorIndex);
+
+            // update offset of all "higher" xors
+            for (var i=xorIndex; i<this._xorLegList.length; i++) {
+                this.redrawXor(i);
+            }
+        } else {
+            var index = this._xorLegList[xorIndex].indexOf(leg);
+            this._xorLegList[xorIndex][index].getModel().setAnchorOffset(ns.Consts.DefaultAnchorOffset);
+            leg.getRelation().onXorUpdate();
+
+            this._xorLegList[xorIndex].splice(index, 1);
+            this._model.removeXorLeg(xorIndex, index);
+            this.redrawXor(xorIndex);
+        }
+    };
+
+    /**
+     * Redraw XOR relation specified by either index or leg.
+     * If leg is supplied, index is computed from leg, otherwise index is used
+     */
+    Entity.prototype.redrawXor = function(index, leg) {
+        if (leg) {
+            index = this._findXor(leg);
+        }
+        if (typeof index == "undefined" || index == null || index < 0) { return; }
+
+        var edges = this._model.getEdges();
+
+        var edgeDistance = ns.View.Arc.getEdgeDistance(index);
+        this._view.drawXor(edges, index, edgeDistance);
+
+        for (var i=0; i<this._xorLegList[index].length; i++) {
+            var legControl = this._xorLegList[index][i];
+            var legModel = legControl.getModel();
+            if (legModel.getAnchorOffset() != edgeDistance) {
+                legModel.setAnchorOffset(edgeDistance);
+                legControl.getRelation().onXorUpdate();
+            }
+        }
+    };
+
     // Sort
 
     Entity.prototype.getCenter = function() {
@@ -609,12 +703,12 @@ DBSDM.Control.Entity = (function(){
             }
         } else if (!mouse.didMove()) {
             this.activate();
-        } else {
+        } else if (this._canvas.svg.classList.contains("isaMode")) { // TODO
             // TODO fix bug for when you get faster with than entity is
             var parent = mouse.getTarget();
             if (parent instanceof ns.Control.Entity && parent != this) {
                 this._isa(parent);
-            } else if (parent instanceof ns.Canvas) {
+            } else {
                 this._isa(null);
             }
         }

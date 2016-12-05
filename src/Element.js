@@ -107,5 +107,41 @@ DBSDM.Element = (function() {
         return node;
     };
 
+    /**
+     * Path builder
+     */
+    self.Path = (function(){
+        function Path() {
+            this._str = "";
+        }
+        Path.prototype.isEmpty = function() {
+            return this._str == "";
+        };
+
+        Path.prototype.path = function(attr) {
+            attr = attr || {};
+            var prop = Object.assign(attr, {d: this._str});
+            return DBSDM.Element.el("path", prop);
+        };
+
+        Path.prototype.M = function(x,y) { this._str += "M"+x+" "+y; return this; };
+        Path.prototype.m = function(x,y) { this._str += "m"+x+" "+y; return this; };
+
+        Path.prototype.H = function(x) { this._str += "H"+x; return this; };
+        Path.prototype.h = function(x) { this._str += "h"+x; return this; };
+
+        Path.prototype.V = function(x) { this._str += "V"+x; return this; };
+        Path.prototype.v = function(x) { this._str += "v"+x; return this; };
+
+        Path.prototype.L = function(x,y) { this._str += "L"+x+" "+y; return this; };
+        Path.prototype.l = function(x,y) { this._str += "l"+x+" "+y; return this; };
+
+        Path.prototype.C = function(x1,y1, x2,y2, x,y) { this._str += "C"+x1+" "+y1+","+x2+" "+y2+","+x+" "+y; return this; };
+        Path.prototype.c = function(x1,y1, x2,y2, x,y) { this._str += "c"+x1+" "+y1+","+x2+" "+y2+","+x+" "+y; return this; };
+
+
+        return Path;
+    })();
+
     return self;
 }());

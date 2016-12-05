@@ -384,6 +384,14 @@ DBSDM.Canvas = (function() {
         }
 
         this.sort();
+
+/*
+        // TODO
+        // draw arcs
+        count = this._entities.length;
+        for (i=0; i<count; i++) {
+            this._entities[i].redrawXor();
+        }*/
     };
 
     Canvas.prototype.didDataChange = function() {

@@ -44,6 +44,7 @@ DBSDM.Control.RelationLeg = (function() {
     RelationLeg.prototype.translateAnchor = function(x, y) {
         var anchor = this._model.getAnchor();
         this._model.setAnchor(anchor.x + x, anchor.y + y, anchor.edge);
+        // TODO ANCHOR
     };
 
     RelationLeg.prototype.translate = function(dx, dy) {
@@ -60,9 +61,14 @@ DBSDM.Control.RelationLeg = (function() {
                 pos.x = ns.Geometry.snap(pos.x, this._model.getPoint(1).x, null, ns.Consts.SnappingLimit);
             }
             this._model.setAnchor(pos.x, pos.y, pos.edge);
+            // TODO ANCHOR
         }
 
         this._relation.onAnchorMove();
+
+        if (this._model.inXor) {
+            this._entity.redrawXor(null, this);
+        }
     };
 
     RelationLeg.prototype.createControlPoint = function(P) {
@@ -103,6 +109,45 @@ DBSDM.Control.RelationLeg = (function() {
         this._relation.centerMiddlePoint();
     };
 
+    // XOR
+
+    RelationLeg.prototype._initXor = function() {
+        if (ns.Diagram.allowEdit) {
+            this._relation.getCanvas().Mouse.attachObject(this);
+            //this._view.select();
+            //this._canvas.svg.classList.add("isaMode");
+            console.log("init xor");
+        }
+    };
+
+    RelationLeg.prototype._xor = function(leg) {
+        if (!leg) {return;}
+
+        if (this == leg) {
+            console.log("Same leg selected");
+            return;
+        }
+
+        if (this._model.inXor && leg._model.inXor) {
+            console.log("Both entities are already in XOR");
+            return;
+        }
+        if (this._entity != leg._entity) {
+            console.log("Legs have different parent");
+            return;
+        }
+
+        if (this._model.inXor) {
+            this._entity.xorWith(leg, this);
+        } else {
+            this._entity.xorWith(this, leg);
+        }
+    };
+
+    RelationLeg.prototype._removeXor = function() {
+        this._entity.removeXorLeg(this);
+    };
+
     // Events
 
     RelationLeg.prototype.onEntityDrag = function(dx, dy) {
@@ -132,6 +177,10 @@ DBSDM.Control.RelationLeg = (function() {
             a.x = Math.min(a.x, edges.right  - EdgeOffset);
         }
         this._model.setAnchor(a.x, a.y, a.edge);
+
+        if (this._model.inXor) {
+            this._entity.redrawXor(null, this);
+        }
         this._relation.onEntityResize();
     };
 
@@ -152,6 +201,16 @@ DBSDM.Control.RelationLeg = (function() {
             this._moveAnchor(mouse);
         } else if (params.action == "cp") {
             this._moveControlPoint(params.index, mouse);
+        }
+    };
+
+    RelationLeg.prototype.onMouseUp = function(e, mouse) {
+        // TODO check for fast mouse movement bug, as in Entity
+        var leg = mouse.getTarget();
+        if (leg instanceof ns.Control.RelationLeg) {
+            this._xor(leg);
+        } else {
+            this._xor(null);
         }
     };
 
@@ -178,6 +237,8 @@ DBSDM.Control.RelationLeg = (function() {
             case "many":        this._model.setCardinality( Enum.Cardinality.MANY );        break;
             case "identifying": this._model.setIdentifying( !this._model.isIdentifying() ); break;
             case "required":    this._model.setOptional   ( !this._model.isOptional()    ); break;
+            case "xor":         this._initXor(); break;
+            case "remove-xor":  this._removeXor(); break;
         }
 
         this._view.updateType();
@@ -190,7 +251,8 @@ DBSDM.Control.RelationLeg = (function() {
             many: this._model.getCardinality() == Enum.Cardinality.MANY,
             identifying: this._model.isIdentifying(),
             required: !this._model.isOptional(),
-            name: (this._view._name != null)
+            name: (this._view._name != null),
+            "remove-xor": this._model.inXor
         }
     };
 

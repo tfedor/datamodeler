@@ -58,8 +58,10 @@ DBSDM.Menu = (function(){
                 ],
                 null, "allowEdit"
             ],
-            ["Identifying", "identifying", ["check-square-o", "square-o"], "allowEdit"], // TODO icon
-            ["Required", "required", ["check-square-o", "square-o"], "allowEdit"], // TODO icon
+            ["Identifying", "identifying", ["check-square-o", "square-o"], "allowEdit"],
+            ["Required", "required", ["check-square-o", "square-o"], "allowEdit"],
+            ["XOR with...", "xor", null, "allowEdit"], // TODO icon
+            ["Remove from XOR", "remove-xor", null, "allowEdit"], // TODO icon
             ["Toggle Name", "name", ["check-square-o", "square-o"]]
         ],
         relation: [
@@ -186,15 +188,24 @@ DBSDM.Menu = (function(){
             for (var key in state) {
                 if (!state.hasOwnProperty(key)) { return; }
 
-                var item = dom.querySelector("li[data-action="+key+"] i.fa");
-                if (item && item.dataset.on && item.dataset.off) {
-                    item.classList.remove(item.dataset.off);
-                    item.classList.remove(item.dataset.on);
+                var li = dom.querySelector("li[data-action="+key+"]");
+                if (li) {
+                    var icon = li.querySelector("i.fa");
+                    if (icon && icon.dataset.on && icon.dataset.off) {
+                        icon.classList.remove(icon.dataset.off);
+                        icon.classList.remove(icon.dataset.on);
 
-                    if (state[key]) {
-                        item.classList.add(item.dataset.on);
+                        if (state[key]) {
+                            icon.classList.add(icon.dataset.on);
+                        } else {
+                            icon.classList.add(icon.dataset.off);
+                        }
                     } else {
-                        item.classList.add(item.dataset.off);
+                        if (state[key]) {
+                            li.classList.remove("disabled");
+                        } else {
+                            li.classList.add("disabled");
+                        }
                     }
                 }
             }

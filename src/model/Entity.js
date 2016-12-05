@@ -26,6 +26,7 @@ DBSDM.Model.Entity = (function(){
         this._children = [];
 
         this._relationLegs = []; // does not export from here
+        this._xorList = []; // Array of Arrays of relation leg models. Each array represent one XOR relation
 
         if (name && typeof name == "object") {
             this.import(name);
@@ -88,6 +89,36 @@ DBSDM.Model.Entity = (function(){
             relationLeg.setEntity(null);
         }
     };
+
+    // XOR
+    Entity.prototype.createXor = function(legA, legB) {
+        this._xorList.push([legA, legB]);
+        legA.inXor = true;
+        legB.inXor = true;
+    };
+
+    Entity.prototype.addToXor = function(index, leg) {
+        this._xorList[index].push(leg);
+        leg.inXor = true;
+    };
+
+    Entity.prototype.removeXor = function(index) {
+        for (var i=0; i<this._xorList[index].length; i++) {
+            this._xorList[index][i].inXor = false;
+        }
+        this._xorList.splice(index, 1);
+    };
+
+    Entity.prototype.removeXorLeg = function(xorIndex, legIndex) {
+        this._xorList[xorIndex][legIndex].inXor = false;
+        this._xorList[xorIndex].splice(legIndex, 1);
+    };
+
+    Entity.prototype.getXor = function(index) {
+        return this._xorList[index];
+    };
+
+    // Transform
 
     Entity.prototype.setPosition = function(x, y) {
         this._transform.x = (x != null ? x : this._transform.x);
