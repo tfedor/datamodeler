@@ -7,7 +7,7 @@ DBSDM.Model = DBSDM.Model ||{};
 DBSDM.Model.Attribute = (function(){
 
     function Attribute(name) {
-        this._name = name || "Attribute";
+        this._name = name || "attribute";
         this._primary = false;
         this._unique = false;
         this._nullable = false;

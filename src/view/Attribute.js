@@ -75,7 +75,7 @@ DBSDM.View.Attribute = (function(){
         this._nullable.textContent = this._getNullable();
 
         var model = this._model;
-        this._nameInput = new DBSDM.View.EditableText(this._canvas,
+        this._nameInput = new ns.View.EditableText(this._canvas,
             null, null,
             { dominantBaseline: "central", dx: "4" },
             function() { return model.getName(); },
@@ -93,6 +93,7 @@ DBSDM.View.Attribute = (function(){
             that._control.selectAt(position, false);
             that.destroy();
         });
+        this._nameInput.setNormalizeHandler(this._nameInput.normalizeLower);
 
         this._text.appendChild(this._nameInput.getTextDom());
 

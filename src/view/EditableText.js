@@ -18,6 +18,7 @@ DBSDM.View.EditableText = (function(){
         this._setHandler = setHandler;
         this._nextHandler = null;
         this._emptyHandler = null;
+        this._normalizeHandler = null;
 
         // dom
         this._createSharedElements();
@@ -71,13 +72,28 @@ DBSDM.View.EditableText = (function(){
         this._emptyHandler = callback;
     };
 
+    EditableText.prototype.setNormalizeHandler = function(callback) {
+        this._normalizeHandler = callback;
+    };
+
     /** Value handling */
+
+    EditableText.prototype.normalizeUpperFirst = function(string) {
+        return string[0].toLocaleUpperCase() + string.substr(1).toLocaleLowerCase();
+    };
+
+    EditableText.prototype.normalizeLower = function(string) {
+        return string.toLocaleLowerCase();
+    };
 
     EditableText.prototype._getValue = function() {
         return this._getHandler() || "Editable Text";
     };
     EditableText.prototype._setValue = function() {
-        var value = this._input.value;
+        var value = this._input.value.trim();
+        if (this._normalizeHandler) {
+            value = this._normalizeHandler(value);
+        }
         this._text.innerHTML = value;
         this._setHandler(value);
     };

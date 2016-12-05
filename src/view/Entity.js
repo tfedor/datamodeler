@@ -60,12 +60,14 @@ DBSDM.View.Entity = (function(){
             "50%", ns.Consts.EntityStrokeWidth,
             { class: "entity-name", textAnchor: "middle" },
             function() { return that._model.getName(); },
-            function(value) { that._control.setName(value); } // TODO set name in control?
+            function(value) { that._control.setName(value); }
         );
+        nameInput.setNormalizeHandler(nameInput.normalizeUpperFirst);
+
         this._name = this._dom.appendChild(nameInput.getTextDom());
         this._attrContainer = this._dom.appendChild(
             ns.Element.el("svg", {
-                x: 0, y: 20 // TODO offset
+                x: 0, y: ns.Consts.EntityAttributesOffset
             })
         );
 

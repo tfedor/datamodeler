@@ -213,12 +213,14 @@ DBSDM.View.RelationLeg = (function(){
         if (this._name) { return; }
 
         var model = this._model;
-        this._name = new ns.View.EditableText(this._canvas, 0, 0, {},
-            function()     { return model.getName() || "Relation"; },
+        var name = new ns.View.EditableText(this._canvas, 0, 0, {},
+            function()     { return model.getName() || "relation"; },
             function(name) { model.setName(name); }
-        ).getTextDom();
-        this.updateNamePosition();
+        );
+        name.setNormalizeHandler(name.normalizeLower);
 
+        this._name = name.getTextDom();
+        this.updateNamePosition();
         this._g.appendChild(this._name);
     };
 
