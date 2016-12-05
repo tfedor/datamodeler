@@ -93,7 +93,6 @@ DBSDM.View.Attribute = (function(){
             that._control.selectAt(position, false);
             that.destroy();
         });
-        this._nameInput.setNormalizeHandler(this._nameInput.normalizeLower);
 
         this._text.appendChild(this._nameInput.getTextDom());
 

@@ -18,7 +18,7 @@ DBSDM.Model.Attribute = (function(){
     };
 
     Attribute.prototype.setName = function(name) {
-        this._name = name;
+        this._name = name.trim().toLocaleLowerCase();
         return this;
     };
 
@@ -88,6 +88,8 @@ DBSDM.Model.Attribute = (function(){
     };
 
     Attribute.prototype.getData = function() {
+        this.setName(this._name); // force normalization
+
         return {
             name: this._name,
             primary: this._primary,

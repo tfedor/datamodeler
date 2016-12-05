@@ -62,7 +62,6 @@ DBSDM.View.Entity = (function(){
             function() { return that._model.getName(); },
             function(value) { that._control.setName(value); }
         );
-        nameInput.setNormalizeHandler(nameInput.normalizeUpperFirst);
 
         this._name = this._dom.appendChild(nameInput.getTextDom());
         this._attrContainer = this._dom.appendChild(

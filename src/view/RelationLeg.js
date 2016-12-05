@@ -217,7 +217,6 @@ DBSDM.View.RelationLeg = (function(){
             function()     { return model.getName() || "relation"; },
             function(name) { model.setName(name); }
         );
-        name.setNormalizeHandler(name.normalizeLower);
 
         this._name = name.getTextDom();
         this.updateNamePosition();

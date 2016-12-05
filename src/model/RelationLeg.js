@@ -57,7 +57,7 @@ DBSDM.Model.RelationLeg = (function(){
     };
 
     RelationLeg.prototype.setName = function(name) {
-        this._name = name || null;
+        this._name = name.trim().toLocaleLowerCase() || null;
     };
 
     RelationLeg.prototype.isIdentifying = function() {
@@ -182,7 +182,7 @@ DBSDM.Model.RelationLeg = (function(){
 
     RelationLeg.prototype.getExportData = function() {
         return {
-            entity: this._entity.getName(),
+            entity: this._entity.getName(), // TODO maybe setName first, to force normalization, just to be sure? Shouldnt be needed, since entities are exported first, but who knows...
             identifying: this._identifying,
             optional: this._optional,
             cardinality: this._cardinality

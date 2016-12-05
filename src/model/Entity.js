@@ -8,7 +8,7 @@ DBSDM.Model.Entity = (function(){
     var ns = DBSDM;
     var Enum = ns.Enums;
 
-    var EdgeOffset = 10; // TODO
+    var EdgeOffset = ns.Consts.EntityEdgePadding;
 
     /**
      * @param name       string|object   Name of new entity or object to create entity from
@@ -37,7 +37,8 @@ DBSDM.Model.Entity = (function(){
     };
 
     Entity.prototype.setName = function(name) {
-        this._name = name;
+        name = name.trim();
+        this._name = name[0].toLocaleUpperCase() + name.substr(1).toLocaleLowerCase();
     };
 
     Entity.prototype.setParent = function(parent) {
@@ -203,6 +204,8 @@ DBSDM.Model.Entity = (function(){
     };
 
     Entity.prototype.getExportData = function() {
+        this.setName(this._name); // force normalization
+
         var data = [{
             name: this._name,
             parent: (this._parent == null ? null : this._parent.getName()), // only name of the parent, not the parent object!
