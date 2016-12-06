@@ -118,6 +118,17 @@ DBSDM.Model.Entity = (function(){
         return this._xorList[index];
     };
 
+    Entity.prototype.getXorHash = function(leg) {
+        for (var i=0; i<this._xorList.length; i++) {
+            if (this._xorList[i].indexOf(leg) != -1) {
+                return this._xorList[i].map(function(leg){
+                    return leg.getRelation().getHash();
+                }).sort().join("");
+            }
+        }
+        return null;
+    };
+
     // Transform
 
     Entity.prototype.setPosition = function(x, y) {

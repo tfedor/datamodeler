@@ -171,11 +171,6 @@ DBSDM.Control.Entity = (function(){
         for (var c=0; c<this._children.length; c++) {
             this._children[c].notifyDrag(x, y);
         }
-
-        // TODO improve performance - should only redraw when anchors move - move reset anchors from relation model to controller?
-        for (i=0;i<this._xorLegList.length; i++) {
-            this.redrawXor(i);
-        }
     };
 
     Entity.prototype.dragControlPoint = function(mouse, cp) {

@@ -14,7 +14,7 @@ DBSDM.Consts = {
     ArcSize: 12,
     ArcEndPointOffset: 10, // how far from the start/end point draw arc
     ArcEdgeDistance: 17, // distance of the arc from the entity edge
-    ArcArcDistance: 5, // distance from another arc of the same entity
+    ArcArcDistance: 10, // distance from another arc of the same entity
 
     UIMessageTransition: 0.4,
     UIDefaultSuccessDuration: 2

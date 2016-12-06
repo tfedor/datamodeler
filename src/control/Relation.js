@@ -240,13 +240,19 @@ DBSDM.Control.Relation = (function() {
         }
         this.centerMiddlePoint();
         this.redraw();
+
+        if (this._legs.source.getModel().inXor) {
+            this._sourceEntity.redrawXor(null, this._legs.source);
+        }
+        if (this._legs.target.getModel().inXor) {
+            this._targetEntity.redrawXor(null, this._legs.target);
+        }
     };
 
     Relation.prototype.onXorUpdate = function() {
         if (!this._model.hasManualPoints()) {
-            this._model.resetAnchors();
+            this._model.resetMiddlePoint();
         }
-        this.centerMiddlePoint();
         this.redraw();
     };
 

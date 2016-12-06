@@ -174,5 +174,9 @@ DBSDM.Model.Relation = (function(){
         ];
     };
 
+    Relation.prototype.getHash = function() {
+        return [this._source.getHash(), this._target.getHash()].sort().join("");
+    };
+
     return Relation;
 })();

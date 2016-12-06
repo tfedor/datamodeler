@@ -122,7 +122,7 @@ DBSDM.Control.RelationLeg = (function() {
         }
     };
 
-    RelationLeg.prototype._xor = function(leg) {
+    RelationLeg.prototype.xor = function(leg) {
         if (!leg) {return;}
 
         if (this == leg) {
@@ -210,9 +210,9 @@ DBSDM.Control.RelationLeg = (function() {
         // TODO check for fast mouse movement bug, as in Entity
         var leg = mouse.getTarget();
         if (leg instanceof ns.Control.RelationLeg) {
-            this._xor(leg);
+            this.xor(leg);
         } else {
-            this._xor(null);
+            this.xor(null);
         }
     };
 

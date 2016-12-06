@@ -372,6 +372,16 @@ DBSDM.Canvas = (function() {
         }
 
         // set relations
+        var xorMap = {};
+        function makeXor(xorId, legControl) {
+            if (!xorId) { return; }
+            if (!xorMap[xorId]) {
+                xorMap[xorId] = legControl;
+            } else {
+                xorMap[xorId].xor(legControl);
+            }
+        }
+
         count = data.relations.length;
         for (i=0; i<count; i++) {
             var model = relationModels[i];
@@ -381,17 +391,12 @@ DBSDM.Canvas = (function() {
 
             control = new ns.Control.Relation(this, sourceEntityControl, targetEntityControl, null, null, model);
             control.import();
+
+            makeXor(relation[0].xor, control._legs.source);
+            makeXor(relation[1].xor, control._legs.target);
         }
 
         this.sort();
-
-/*
-        // TODO
-        // draw arcs
-        count = this._entities.length;
-        for (i=0; i<count; i++) {
-            this._entities[i].redrawXor();
-        }*/
     };
 
     Canvas.prototype.didDataChange = function() {
