@@ -40,7 +40,7 @@ DBSDM.File = (function() {
         // process all File objects
         if (files.length > 0) {
             var file = files[0];
-            if (file.type == "application/x-zip-compressed") {
+            if (file.type == "application/x-zip-compressed" || file.type == "application/zip") {
                 self._processZip(canvas, file);
             } else if (file.type == "application/json") {
                 self._processJson(canvas, file);
@@ -134,6 +134,7 @@ DBSDM.File = (function() {
 
                 for (var j=0; j<attributes.length; j++) {
                     var id = attributes[j];
+                    if (!attributeMap[id]) { continue; } // ignore keys that came from different entity
                     attributeMap[id].primary = primary;
                     attributeMap[id].unique = unique;
                 }
@@ -164,7 +165,7 @@ DBSDM.File = (function() {
             entityMap[id].attr = toArray(attributeMap); // map to array
         }
 
-        function parseRelation(node, relationsMap) {
+        function parseRelation(node, relationsMap, relationsRef) {
             var sourceEntityIdNode = node.querySelector("sourceEntity");
             var identifyingNode = node.querySelector("identifying");
             var optionalSourceNode = node.querySelector("optionalSource");
@@ -172,30 +173,45 @@ DBSDM.File = (function() {
 
             var targetEntityIdNode = node.querySelector("targetEntity");
             var optionalTargetNode = node.querySelector("optionalTarget");
-            var targetCardinalityNode = node.querySelector("targetCardinality");
+            var targetCardinalityNode = node.querySelector("targetCardinalityString");
 
             if (!sourceEntityIdNode || !targetEntityIdNode) { return; }
 
             relationsMap.push([
                 {
                     entity: sourceEntityIdNode.innerHTML,
-                    identifying: (identifyingNode ? identifyingNode.innerHTML == "true" : false),
+                    identifying: false,
                     optional: (optionalSourceNode ? optionalSourceNode.innerHTML == "true" : false),
-                    cardinality: (sourceCardinalityNode && sourceCardinalityNode.innerHTML == "*" ? 0 : 1)
+                    cardinality: (sourceCardinalityNode && sourceCardinalityNode.innerHTML == "*" ? 0 : 1),
+                    xor: null
                 }, {
                     entity: targetEntityIdNode.innerHTML,
-                    identifying: false,
+                    identifying: (identifyingNode ? identifyingNode.innerHTML == "true" : false),
                     optional: (optionalTargetNode ? optionalTargetNode.innerHTML == "true" : false),
-                    cardinality: (targetCardinalityNode && targetCardinalityNode.innerHTML == "*" ? 0 : 1)
+                    cardinality: (targetCardinalityNode && targetCardinalityNode.innerHTML == "*" ? 0 : 1),
+                    xor: null
                 }
             ]);
+            relationsRef[node.getAttribute("id")] = relationsMap.length-1;
+        }
+
+        function parseArc(node, arcMap) {
+            var arcID = node.getAttribute("id");
+            var entityID = node.querySelector("entity").innerHTML;
+            var relations = node.querySelectorAll("relationID");
+
+            arcMap[arcID] = [];
+            for (var i=0; i<relations.length; i++) {
+                var relationID = relations[i].innerHTML;
+                arcMap[arcID].push([entityID, relationID]);
+            }
         }
 
         var zip = new JSZip();
         zip.loadAsync(zipfile)
             .then(function(contents) {
                 var toPromise = [];
-                var files = zip.file(/\Wlogical\/(entity|relation)\/seg_0\/.*?\.xml$/);
+                var files = zip.file(/(\W|^)logical\/(entity|relation|arc)\/seg_0\/.*?\.xml$/);
                 for (var i=0; i<files.length; i++) {
                     toPromise.push(files[i].async("string"));
                 }
@@ -204,6 +220,8 @@ DBSDM.File = (function() {
                     var entityMap = {};
                     var parentMap = [];
                     var relationsMap = [];
+                    var relationsRef = {}; // map of {relation ID} => {relationsMap index}
+                    var arcMap = {};
 
                     var parser = new DOMParser();
                     for (var i=0; i<result.length; i++) {
@@ -214,7 +232,10 @@ DBSDM.File = (function() {
                                 parseEntity(xml.documentElement, entityMap, parentMap);
                                 break;
                             case "Relation":
-                                parseRelation(xml.documentElement, relationsMap);
+                                parseRelation(xml.documentElement, relationsMap, relationsRef);
+                                break;
+                            case "Arc":
+                                parseArc(xml.documentElement, arcMap);
                                 break;
                         }
 
@@ -230,6 +251,22 @@ DBSDM.File = (function() {
                         }
                     }
 
+                    // add arc data
+                    for (var arcID in arcMap) {
+                        if (!arcMap.hasOwnProperty(arcID)) { continue; }
+                        for (i=0; i<arcMap[arcID].length; i++) {
+                            var entityID = arcMap[arcID][i][0];
+                            var relationID = arcMap[arcID][i][1];
+                            var relIndex = relationsRef[relationID];
+                            var rel = relationsMap[relIndex];
+                            if (rel[0].entity == entityID) {
+                                rel[0].xor = arcID;
+                            } else if (rel[1].entity == entityID) {
+                                rel[1].xor = arcID;
+                            }
+                        }
+                    }
+
                     // convert relations' entity ids to names
                     for(i=0; i<relationsMap.length; i++) {
                         var source = relationsMap[i][0].entity;
@@ -238,6 +275,8 @@ DBSDM.File = (function() {
                         relationsMap[i][0].entity = entityMap[source].name;
                         relationsMap[i][1].entity = entityMap[target].name;
                     }
+
+                    //
 
                     var data = {
                         entities: toArray(entityMap),
