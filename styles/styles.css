@@ -31,7 +31,7 @@ div.dbsdmCanvas.fullscreen {
 
 /** UI */
 div.dbsdmCanvas div.ui {
-    position:absolute;
+    position:absolute;z-index:999;
     left:0;right:0;top:0;
     overflow:visible;
     color:black;
@@ -47,11 +47,10 @@ div.dbsdmCanvas div.message {
     border-bottom:1px solid black;
     transition:margin ease;
     box-shadow:0 1px 3px 0 rgba(0,0,0,0.75);
-    position:absolute;
+    position:absolute;z-index:999;
     left:0;right:0;
     pointer-events: visible;
     cursor: pointer;
-    z-index:999;
 }
 div.dbsdmCanvas div.message.hint    { background:#ffcc00; }
 div.dbsdmCanvas div.message.error   { background:#b62727; color:white; }
@@ -69,7 +68,7 @@ div.dbsdmCanvas div.message i.fa {
 }
 
 div.dbsdmCanvas div.ledge {
-    position:absolute;
+    position:absolute;z-index:999;
     top:0;right:0;
     font-size:1.1em;
     color:#d1d1d1;
@@ -107,7 +106,7 @@ div.dbsdmCanvas div.help {
     border:1px solid black;
     border-radius: 7px;
     box-shadow: 0 1px 3px 0 rgba(0,0,0,0.5);
-    position:absolute;
+    position:absolute;z-index:999;
     right:0;top:2.1em;
 }
 
@@ -137,7 +136,7 @@ use.e-cp-sw { cursor: nesw-resize; }
 use.e-cp-w  { cursor: ew-resize; }
 
 input.editableSvgText {
-    position:absolute;
+    position:absolute;z-index:999;
     font-size:0.8em;
     padding:3px 2px;
     margin:-2px 0 0 -3px;
@@ -150,7 +149,7 @@ input.editableSvgText {
 
 /** MENU */
 #dbsdmContextMenu {
-    position:absolute;
+    position:absolute;z-index:999;
     top:40px;
     left:40px;
     display:none;
@@ -197,7 +196,7 @@ input.editableSvgText {
     color: #282828;
 }
 #dbsdmContextMenu li > i.fa-caret-right {
-    position:absolute;
+    position:absolute;z-index:999;
     right:6px;
 }
 
@@ -208,10 +207,9 @@ input.editableSvgText {
 }
 
 #dbsdmContextMenu li ul {
-    position:absolute;
+    position:absolute;z-index:1000;
     left:99%;
     top:-2px;
-    z-index:1000;
     float:left;
     display:none;
 }
