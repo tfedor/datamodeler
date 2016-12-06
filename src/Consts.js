@@ -17,5 +17,6 @@ DBSDM.Consts = {
     ArcArcDistance: 10, // distance from another arc of the same entity
 
     UIMessageTransition: 0.4,
-    UIDefaultSuccessDuration: 2
+    UIDefaultSuccessDuration: 2,
+    UIDefaultErrorDuration: 2
 };

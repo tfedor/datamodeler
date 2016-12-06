@@ -174,6 +174,22 @@ DBSDM.View.RelationLeg = (function(){
         });
     };
 
+    // select
+    RelationLeg.prototype.select = function() {
+        this._g.classList.add("selected");
+    };
+    RelationLeg.prototype.allow = function() {
+        this._g.classList.add("allowed");
+    };
+    RelationLeg.prototype.mark = function() {
+        this._g.classList.add("marked");
+    };
+    RelationLeg.prototype.clearSelectionClasses = function() {
+        this._g.classList.remove("selected");
+        this._g.classList.remove("allowed");
+        this._g.classList.remove("marked");
+    };
+
     // control points
 
     RelationLeg.prototype.buildControlPoint = function(index, p) {

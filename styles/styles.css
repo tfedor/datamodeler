@@ -296,5 +296,20 @@ g.leg:hover polyline.line {
     stroke: #ede8eb;
 }
 
+g.leg.selected polyline.line {
+    stroke: #ffa800;
+    stroke-linecap: round;
+}
+g.leg.allowed { cursor:copy; }
+g.leg.allowed polyline.line {
+    stroke: #71b627;
+    stroke-linecap: round;
+}
+g.leg.marked { cursor:not-allowed; }
+g.leg.marked polyline.line {
+    stroke: #b62727;
+    stroke-linecap: round;
+}
+
 use.cp, use.anchor { cursor:move; }
 

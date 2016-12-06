@@ -116,25 +116,29 @@ DBSDM.Control.RelationLeg = (function() {
     RelationLeg.prototype._initXor = function() {
         if (ns.Diagram.allowEdit) {
             this._relation.getCanvas().Mouse.attachObject(this);
-            //this._view.select();
-            //this._canvas.svg.classList.add("isaMode");
-            console.log("init xor");
+            this._view.select();
+            this._entity.markRelations(this, this._model.inXor);
         }
     };
 
     RelationLeg.prototype.xor = function(leg) {
+        this._entity.unmarkRelations();
+
         if (!leg) {return;}
 
         if (this == leg) {
+            this._relation.getCanvas().ui.error("Same leg selected", ns.Consts.UIDefaultErrorDuration);
             console.log("Same leg selected");
             return;
         }
 
         if (this._model.inXor && leg._model.inXor) {
-            console.log("Both entities are already in XOR");
+            this._relation.getCanvas().ui.error("Both relations are already in XOR", ns.Consts.UIDefaultErrorDuration);
+            console.log("Both relations are already in XOR");
             return;
         }
         if (this._entity != leg._entity) {
+            this._relation.getCanvas().ui.error("Relations have different parent", ns.Consts.UIDefaultErrorDuration);
             console.log("Legs have different parent");
             return;
         }
@@ -148,6 +152,20 @@ DBSDM.Control.RelationLeg = (function() {
 
     RelationLeg.prototype._removeXor = function() {
         this._entity.removeXorLeg(this);
+    };
+
+    // Marks
+
+    RelationLeg.prototype.mark = function() {
+        this._view.mark();
+    };
+
+    RelationLeg.prototype.allow = function() {
+        this._view.allow();
+    };
+
+    RelationLeg.prototype.clearMarks = function() {
+        this._view.clearSelectionClasses();
     };
 
     // Events

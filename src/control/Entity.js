@@ -585,6 +585,28 @@ DBSDM.Control.Entity = (function(){
     };
 
     /**
+     * Visually mark relation legs suitable for creating XOR relation
+     * If leg, which initiated XOR is already in XOR, target relation can't be in XOR
+     */
+    Entity.prototype.markRelations = function(leg, inXor) {
+        for (var i=0; i<this._relationLegList.length; i++) {
+            var otherLeg = this._relationLegList[i];
+            if (otherLeg != leg ) {
+                if (inXor && otherLeg.getModel().inXor) {
+                    otherLeg.mark();
+                } else {
+                    otherLeg.allow();
+                }
+            }
+        }
+    };
+    Entity.prototype.unmarkRelations = function() {
+        for (var i=0; i<this._relationLegList.length; i++) {
+            this._relationLegList[i].clearMarks();
+        }
+    };
+
+    /**
      * Redraw XOR relation specified by either index or leg.
      * If leg is supplied, index is computed from leg, otherwise index is used
      */
