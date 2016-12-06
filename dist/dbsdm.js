@@ -234,7 +234,7 @@ DBSDM.Canvas = (function() {
         return JSON.stringify(a).localeCompare(JSON.stringify(b).entity);
     };
     Canvas.prototype._sortRelations = function(a, b) {
-        return JSON.stringify(a).localeCompare(JSON.stringify(b).entity);
+        return JSON.stringify(a).localeCompare(JSON.stringify(b));
     };
 
     Canvas.prototype._sortData = function(data) {
@@ -373,6 +373,16 @@ DBSDM.Canvas = (function() {
         }
 
         // set relations
+        var xorMap = {};
+        function makeXor(xorId, legControl) {
+            if (!xorId) { return; }
+            if (!xorMap[xorId]) {
+                xorMap[xorId] = legControl;
+            } else {
+                xorMap[xorId].xor(legControl);
+            }
+        }
+
         count = data.relations.length;
         for (i=0; i<count; i++) {
             var model = relationModels[i];
@@ -382,6 +392,9 @@ DBSDM.Canvas = (function() {
 
             control = new ns.Control.Relation(this, sourceEntityControl, targetEntityControl, null, null, model);
             control.import();
+
+            makeXor(relation[0].xor, control._legs.source);
+            makeXor(relation[1].xor, control._legs.target);
         }
 
         this.sort();
@@ -449,13 +462,21 @@ DBSDM.Consts = {
     SnappingLimit: 5,
     CanvasGridSize: 15,
 
+    EntityAttributesOffset: 20,
     EntityStrokeWidth: 1,
     EntityPadding: 10,
     EntityEdgePadding: 10, // how close to the corner can the relation be placed
     EntityExtraHeight: 5,
 
+    DefaultAnchorOffset: 11, // how for from edge to start drawing relation leg
+    ArcSize: 12,
+    ArcEndPointOffset: 10, // how far from the start/end point draw arc
+    ArcEdgeDistance: 17, // distance of the arc from the entity edge
+    ArcArcDistance: 10, // distance from another arc of the same entity
+
     UIMessageTransition: 0.4,
-    UIDefaultSuccessDuration: 2
+    UIDefaultSuccessDuration: 2,
+    UIDefaultErrorDuration: 2
 };
 /** src/Diagram.js */
 
@@ -805,6 +826,42 @@ DBSDM.Element = (function() {
         return node;
     };
 
+    /**
+     * Path builder
+     */
+    self.Path = (function(){
+        function Path() {
+            this._str = "";
+        }
+        Path.prototype.isEmpty = function() {
+            return this._str == "";
+        };
+
+        Path.prototype.path = function(attr) {
+            attr = attr || {};
+            var prop = Object.assign(attr, {d: this._str});
+            return DBSDM.Element.el("path", prop);
+        };
+
+        Path.prototype.M = function(x,y) { this._str += "M"+x+" "+y; return this; };
+        Path.prototype.m = function(x,y) { this._str += "m"+x+" "+y; return this; };
+
+        Path.prototype.H = function(x) { this._str += "H"+x; return this; };
+        Path.prototype.h = function(x) { this._str += "h"+x; return this; };
+
+        Path.prototype.V = function(x) { this._str += "V"+x; return this; };
+        Path.prototype.v = function(x) { this._str += "v"+x; return this; };
+
+        Path.prototype.L = function(x,y) { this._str += "L"+x+" "+y; return this; };
+        Path.prototype.l = function(x,y) { this._str += "l"+x+" "+y; return this; };
+
+        Path.prototype.C = function(x1,y1, x2,y2, x,y) { this._str += "C"+x1+" "+y1+","+x2+" "+y2+","+x+" "+y; return this; };
+        Path.prototype.c = function(x1,y1, x2,y2, x,y) { this._str += "c"+x1+" "+y1+","+x2+" "+y2+","+x+" "+y; return this; };
+
+
+        return Path;
+    })();
+
     return self;
 }());
 /** src/Enums.js */
@@ -864,7 +921,7 @@ DBSDM.File = (function() {
         // process all File objects
         if (files.length > 0) {
             var file = files[0];
-            if (file.type == "application/x-zip-compressed") {
+            if (file.type == "application/x-zip-compressed" || file.type == "application/zip") {
                 self._processZip(canvas, file);
             } else if (file.type == "application/json") {
                 self._processJson(canvas, file);
@@ -958,6 +1015,7 @@ DBSDM.File = (function() {
 
                 for (var j=0; j<attributes.length; j++) {
                     var id = attributes[j];
+                    if (!attributeMap[id]) { continue; } // ignore keys that came from different entity
                     attributeMap[id].primary = primary;
                     attributeMap[id].unique = unique;
                 }
@@ -988,7 +1046,7 @@ DBSDM.File = (function() {
             entityMap[id].attr = toArray(attributeMap); // map to array
         }
 
-        function parseRelation(node, relationsMap) {
+        function parseRelation(node, relationsMap, relationsRef) {
             var sourceEntityIdNode = node.querySelector("sourceEntity");
             var identifyingNode = node.querySelector("identifying");
             var optionalSourceNode = node.querySelector("optionalSource");
@@ -996,30 +1054,45 @@ DBSDM.File = (function() {
 
             var targetEntityIdNode = node.querySelector("targetEntity");
             var optionalTargetNode = node.querySelector("optionalTarget");
-            var targetCardinalityNode = node.querySelector("targetCardinality");
+            var targetCardinalityNode = node.querySelector("targetCardinalityString");
 
             if (!sourceEntityIdNode || !targetEntityIdNode) { return; }
 
             relationsMap.push([
                 {
                     entity: sourceEntityIdNode.innerHTML,
-                    identifying: (identifyingNode ? identifyingNode.innerHTML == "true" : false),
+                    identifying: false,
                     optional: (optionalSourceNode ? optionalSourceNode.innerHTML == "true" : false),
-                    cardinality: (sourceCardinalityNode && sourceCardinalityNode.innerHTML == "*" ? 0 : 1)
+                    cardinality: (sourceCardinalityNode && sourceCardinalityNode.innerHTML == "*" ? 0 : 1),
+                    xor: null
                 }, {
                     entity: targetEntityIdNode.innerHTML,
-                    identifying: false,
+                    identifying: (identifyingNode ? identifyingNode.innerHTML == "true" : false),
                     optional: (optionalTargetNode ? optionalTargetNode.innerHTML == "true" : false),
-                    cardinality: (targetCardinalityNode && targetCardinalityNode.innerHTML == "*" ? 0 : 1)
+                    cardinality: (targetCardinalityNode && targetCardinalityNode.innerHTML == "*" ? 0 : 1),
+                    xor: null
                 }
             ]);
+            relationsRef[node.getAttribute("id")] = relationsMap.length-1;
+        }
+
+        function parseArc(node, arcMap) {
+            var arcID = node.getAttribute("id");
+            var entityID = node.querySelector("entity").innerHTML;
+            var relations = node.querySelectorAll("relationID");
+
+            arcMap[arcID] = [];
+            for (var i=0; i<relations.length; i++) {
+                var relationID = relations[i].innerHTML;
+                arcMap[arcID].push([entityID, relationID]);
+            }
         }
 
         var zip = new JSZip();
         zip.loadAsync(zipfile)
             .then(function(contents) {
                 var toPromise = [];
-                var files = zip.file(/\Wlogical\/(entity|relation)\/seg_0\/.*?\.xml$/);
+                var files = zip.file(/(\W|^)logical\/(entity|relation|arc)\/seg_0\/.*?\.xml$/);
                 for (var i=0; i<files.length; i++) {
                     toPromise.push(files[i].async("string"));
                 }
@@ -1028,6 +1101,8 @@ DBSDM.File = (function() {
                     var entityMap = {};
                     var parentMap = [];
                     var relationsMap = [];
+                    var relationsRef = {}; // map of {relation ID} => {relationsMap index}
+                    var arcMap = {};
 
                     var parser = new DOMParser();
                     for (var i=0; i<result.length; i++) {
@@ -1038,7 +1113,10 @@ DBSDM.File = (function() {
                                 parseEntity(xml.documentElement, entityMap, parentMap);
                                 break;
                             case "Relation":
-                                parseRelation(xml.documentElement, relationsMap);
+                                parseRelation(xml.documentElement, relationsMap, relationsRef);
+                                break;
+                            case "Arc":
+                                parseArc(xml.documentElement, arcMap);
                                 break;
                         }
 
@@ -1054,6 +1132,22 @@ DBSDM.File = (function() {
                         }
                     }
 
+                    // add arc data
+                    for (var arcID in arcMap) {
+                        if (!arcMap.hasOwnProperty(arcID)) { continue; }
+                        for (i=0; i<arcMap[arcID].length; i++) {
+                            var entityID = arcMap[arcID][i][0];
+                            var relationID = arcMap[arcID][i][1];
+                            var relIndex = relationsRef[relationID];
+                            var rel = relationsMap[relIndex];
+                            if (rel[0].entity == entityID) {
+                                rel[0].xor = arcID;
+                            } else if (rel[1].entity == entityID) {
+                                rel[1].xor = arcID;
+                            }
+                        }
+                    }
+
                     // convert relations' entity ids to names
                     for(i=0; i<relationsMap.length; i++) {
                         var source = relationsMap[i][0].entity;
@@ -1062,6 +1156,8 @@ DBSDM.File = (function() {
                         relationsMap[i][0].entity = entityMap[source].name;
                         relationsMap[i][1].entity = entityMap[target].name;
                     }
+
+                    //
 
                     var data = {
                         entities: toArray(entityMap),
@@ -1237,7 +1333,31 @@ DBSDM.Geometry = (function() {
 
     return self;
 }());
-/** src/Layout.js */
+/** src/Hash.js */
+
+/**
+ * Algorithm source http://stackoverflow.com/a/7616484/4705537
+ */
+DBSDM.Hash = (function(){
+    var self = {};
+
+    self.string = function(str) {
+        var hash = 0, i, chr, len;
+        if (str.length === 0) return hash;
+        for (i = 0, len = str.length; i < len; i++) {
+            chr   = str.charCodeAt(i);
+            hash  = ((hash << 5) - hash) + chr;
+            hash |= 0; // Convert to 32bit integer
+        }
+        return hash >>> 0; // unsigned
+    };
+
+    self.object = function(obj) {
+        return self.string(JSON.stringify(obj));
+    };
+
+    return self;
+})();/** src/Layout.js */
 
 DBSDM.Layout = (function() {
     var ns = DBSDM;
@@ -1423,8 +1543,10 @@ DBSDM.Menu = (function(){
                 ],
                 null, "allowEdit"
             ],
-            ["Identifying", "identifying", ["check-square-o", "square-o"], "allowEdit"], // TODO icon
-            ["Required", "required", ["check-square-o", "square-o"], "allowEdit"], // TODO icon
+            ["Identifying", "identifying", ["check-square-o", "square-o"], "allowEdit"],
+            ["Required", "required", ["check-square-o", "square-o"], "allowEdit"],
+            ["XOR with...", "xor", null, "allowEdit"], // TODO icon
+            ["Remove from XOR", "remove-xor", null, "allowEdit"], // TODO icon
             ["Toggle Name", "name", ["check-square-o", "square-o"]]
         ],
         relation: [
@@ -1551,15 +1673,24 @@ DBSDM.Menu = (function(){
             for (var key in state) {
                 if (!state.hasOwnProperty(key)) { return; }
 
-                var item = dom.querySelector("li[data-action="+key+"] i.fa");
-                if (item && item.dataset.on && item.dataset.off) {
-                    item.classList.remove(item.dataset.off);
-                    item.classList.remove(item.dataset.on);
+                var li = dom.querySelector("li[data-action="+key+"]");
+                if (li) {
+                    var icon = li.querySelector("i.fa");
+                    if (icon && icon.dataset.on && icon.dataset.off) {
+                        icon.classList.remove(icon.dataset.off);
+                        icon.classList.remove(icon.dataset.on);
 
-                    if (state[key]) {
-                        item.classList.add(item.dataset.on);
+                        if (state[key]) {
+                            icon.classList.add(icon.dataset.on);
+                        } else {
+                            icon.classList.add(icon.dataset.off);
+                        }
                     } else {
-                        item.classList.add(item.dataset.off);
+                        if (state[key]) {
+                            li.classList.remove("disabled");
+                        } else {
+                            li.classList.add("disabled");
+                        }
                     }
                 }
             }
@@ -2378,6 +2509,8 @@ DBSDM.Control.Entity = (function(){
         this._model = model;
         this._attributeList = new ns.Control.AttributeList(this._model.getAttributeList(), this._canvas, this);
         this._relationLegList = [];
+        this._xorLegList = [];
+
         this._view = new ns.View.Entity(this._canvas, this._model, this);
         this._parent = null;
         this._children = [];
@@ -2503,7 +2636,7 @@ DBSDM.Control.Entity = (function(){
         var delta;
         if (this._parent != null) {
             var transform = this._model.getTransform();
-            delta = this._setPosition(
+            this._setPosition(
                 transform.x + mouse.rx,
                 transform.y + mouse.ry
             );
@@ -2512,10 +2645,9 @@ DBSDM.Control.Entity = (function(){
             delta = {
                 x: mouse.rx,
                 y: mouse.ry
-            }
+            };
+            this.notifyDrag(delta.x, delta.y);
         }
-
-        this.notifyDrag(delta.x, delta.y);
     };
 
     Entity.prototype.notifyDrag = function(x, y) {
@@ -2886,6 +3018,115 @@ DBSDM.Control.Entity = (function(){
         return this;
     };
 
+    // XOR
+
+    /**
+     * Find index of XOR relation, which contains given leg
+     */
+    Entity.prototype._findXor = function(leg) {
+        var count = this._xorLegList.length;
+        for (var i=0; i<count; i++) {
+            if (this._xorLegList[i].indexOf(leg) != -1) {
+                return i;
+            }
+        }
+        return -1;
+    };
+
+    /**
+     * Create XOR with two Relation legs.
+     * If legB is already in XOR, add legA. Otherwise create new XOR
+     */
+    Entity.prototype.xorWith = function(legA, legB) {
+        var index = this._findXor(legB);
+        if (index != -1) {
+            this._xorLegList[index].push(legA);
+            this._model.addToXor(index, legA.getModel());
+        } else {
+            index = this._xorLegList.length;
+            this._xorLegList.push([legA, legB]);
+            this._model.createXor(legA.getModel(), legB.getModel());
+        }
+        this.redrawXor(index);
+    };
+
+    Entity.prototype.removeXorLeg = function(leg) {
+        var xorIndex = this._findXor(leg);
+        if (xorIndex == -1) { return; }
+
+        if (this._xorLegList[xorIndex].length == 2) {
+            this._xorLegList[xorIndex][0].getModel().setAnchorOffset(ns.Consts.DefaultAnchorOffset);
+            this._xorLegList[xorIndex][0].getRelation().onXorUpdate();
+
+            this._xorLegList[xorIndex][1].getModel().setAnchorOffset(ns.Consts.DefaultAnchorOffset);
+            this._xorLegList[xorIndex][1].getRelation().onXorUpdate();
+
+            this._xorLegList.splice(xorIndex, 1);
+            this._model.removeXor(xorIndex);
+            this._view.clearXor(xorIndex);
+
+            // update offset of all "higher" xors
+            for (var i=xorIndex; i<this._xorLegList.length; i++) {
+                this.redrawXor(i);
+            }
+        } else {
+            var index = this._xorLegList[xorIndex].indexOf(leg);
+            this._xorLegList[xorIndex][index].getModel().setAnchorOffset(ns.Consts.DefaultAnchorOffset);
+            leg.getRelation().onXorUpdate();
+
+            this._xorLegList[xorIndex].splice(index, 1);
+            this._model.removeXorLeg(xorIndex, index);
+            this.redrawXor(xorIndex);
+        }
+    };
+
+    /**
+     * Visually mark relation legs suitable for creating XOR relation
+     * If leg, which initiated XOR is already in XOR, target relation can't be in XOR
+     */
+    Entity.prototype.markRelations = function(leg, inXor) {
+        for (var i=0; i<this._relationLegList.length; i++) {
+            var otherLeg = this._relationLegList[i];
+            if (otherLeg != leg ) {
+                if (inXor && otherLeg.getModel().inXor) {
+                    otherLeg.mark();
+                } else {
+                    otherLeg.allow();
+                }
+            }
+        }
+    };
+    Entity.prototype.unmarkRelations = function() {
+        for (var i=0; i<this._relationLegList.length; i++) {
+            this._relationLegList[i].clearMarks();
+        }
+    };
+
+    /**
+     * Redraw XOR relation specified by either index or leg.
+     * If leg is supplied, index is computed from leg, otherwise index is used
+     */
+    Entity.prototype.redrawXor = function(index, leg) {
+        if (leg) {
+            index = this._findXor(leg);
+        }
+        if (typeof index == "undefined" || index == null || index < 0) { return; }
+
+        var edges = this._model.getEdges();
+
+        var edgeDistance = ns.View.Arc.getEdgeDistance(index);
+        this._view.drawXor(edges, index, edgeDistance);
+
+        for (var i=0; i<this._xorLegList[index].length; i++) {
+            var legControl = this._xorLegList[index][i];
+            var legModel = legControl.getModel();
+            if (legModel.getAnchorOffset() != edgeDistance) {
+                legModel.setAnchorOffset(edgeDistance);
+                legControl.getRelation().onXorUpdate();
+            }
+        }
+    };
+
     // Sort
 
     Entity.prototype.getCenter = function() {
@@ -2974,12 +3215,12 @@ DBSDM.Control.Entity = (function(){
             }
         } else if (!mouse.didMove()) {
             this.activate();
-        } else {
+        } else if (this._canvas.svg.classList.contains("isaMode")) { // TODO
             // TODO fix bug for when you get faster with than entity is
             var parent = mouse.getTarget();
             if (parent instanceof ns.Control.Entity && parent != this) {
                 this._isa(parent);
-            } else if (parent instanceof ns.Canvas) {
+            } else {
                 this._isa(null);
             }
         }
@@ -3066,6 +3307,10 @@ DBSDM.Control.Relation = (function() {
     };
 
     //
+
+    Relation.prototype.getCanvas = function() {
+        return this._canvas;
+    };
 
     Relation.prototype.getModel = function() {
         return this._model;
@@ -3240,6 +3485,20 @@ DBSDM.Control.Relation = (function() {
         }
         this.centerMiddlePoint();
         this.redraw();
+
+        if (this._legs.source.getModel().inXor) {
+            this._sourceEntity.redrawXor(null, this._legs.source);
+        }
+        if (this._legs.target.getModel().inXor) {
+            this._targetEntity.redrawXor(null, this._legs.target);
+        }
+    };
+
+    Relation.prototype.onXorUpdate = function() {
+        if (!this._model.hasManualPoints()) {
+            this._model.resetMiddlePoint();
+        }
+        this.redraw();
     };
 
     Relation.prototype.onEntityResize = function() {
@@ -3347,6 +3606,10 @@ DBSDM.Control.RelationLeg = (function() {
     RelationLeg.prototype.translateAnchor = function(x, y) {
         var anchor = this._model.getAnchor();
         this._model.setAnchor(anchor.x + x, anchor.y + y, anchor.edge);
+
+        if (this._model.inXor) {
+            this._entity.redrawXor(null, this);
+        }
     };
 
     RelationLeg.prototype.translate = function(dx, dy) {
@@ -3366,6 +3629,10 @@ DBSDM.Control.RelationLeg = (function() {
         }
 
         this._relation.onAnchorMove();
+
+        if (this._model.inXor) {
+            this._entity.redrawXor(null, this);
+        }
     };
 
     RelationLeg.prototype.createControlPoint = function(P) {
@@ -3406,6 +3673,63 @@ DBSDM.Control.RelationLeg = (function() {
         this._relation.centerMiddlePoint();
     };
 
+    // XOR
+
+    RelationLeg.prototype._initXor = function() {
+        if (ns.Diagram.allowEdit) {
+            this._relation.getCanvas().Mouse.attachObject(this);
+            this._view.select();
+            this._entity.markRelations(this, this._model.inXor);
+        }
+    };
+
+    RelationLeg.prototype.xor = function(leg) {
+        this._entity.unmarkRelations();
+
+        if (!leg) {return;}
+
+        if (this == leg) {
+            this._relation.getCanvas().ui.error("Same leg selected", ns.Consts.UIDefaultErrorDuration);
+            console.log("Same leg selected");
+            return;
+        }
+
+        if (this._model.inXor && leg._model.inXor) {
+            this._relation.getCanvas().ui.error("Both relations are already in XOR", ns.Consts.UIDefaultErrorDuration);
+            console.log("Both relations are already in XOR");
+            return;
+        }
+        if (this._entity != leg._entity) {
+            this._relation.getCanvas().ui.error("Relations have different parent", ns.Consts.UIDefaultErrorDuration);
+            console.log("Legs have different parent");
+            return;
+        }
+
+        if (this._model.inXor) {
+            this._entity.xorWith(leg, this);
+        } else {
+            this._entity.xorWith(this, leg);
+        }
+    };
+
+    RelationLeg.prototype._removeXor = function() {
+        this._entity.removeXorLeg(this);
+    };
+
+    // Marks
+
+    RelationLeg.prototype.mark = function() {
+        this._view.mark();
+    };
+
+    RelationLeg.prototype.allow = function() {
+        this._view.allow();
+    };
+
+    RelationLeg.prototype.clearMarks = function() {
+        this._view.clearSelectionClasses();
+    };
+
     // Events
 
     RelationLeg.prototype.onEntityDrag = function(dx, dy) {
@@ -3435,6 +3759,10 @@ DBSDM.Control.RelationLeg = (function() {
             a.x = Math.min(a.x, edges.right  - EdgeOffset);
         }
         this._model.setAnchor(a.x, a.y, a.edge);
+
+        if (this._model.inXor) {
+            this._entity.redrawXor(null, this);
+        }
         this._relation.onEntityResize();
     };
 
@@ -3455,6 +3783,16 @@ DBSDM.Control.RelationLeg = (function() {
             this._moveAnchor(mouse);
         } else if (params.action == "cp") {
             this._moveControlPoint(params.index, mouse);
+        }
+    };
+
+    RelationLeg.prototype.onMouseUp = function(e, mouse) {
+        // TODO check for fast mouse movement bug, as in Entity
+        var leg = mouse.getTarget();
+        if (leg instanceof ns.Control.RelationLeg) {
+            this.xor(leg);
+        } else {
+            this.xor(null);
         }
     };
 
@@ -3481,6 +3819,8 @@ DBSDM.Control.RelationLeg = (function() {
             case "many":        this._model.setCardinality( Enum.Cardinality.MANY );        break;
             case "identifying": this._model.setIdentifying( !this._model.isIdentifying() ); break;
             case "required":    this._model.setOptional   ( !this._model.isOptional()    ); break;
+            case "xor":         this._initXor(); break;
+            case "remove-xor":  this._removeXor(); break;
         }
 
         this._view.updateType();
@@ -3493,7 +3833,8 @@ DBSDM.Control.RelationLeg = (function() {
             many: this._model.getCardinality() == Enum.Cardinality.MANY,
             identifying: this._model.isIdentifying(),
             required: !this._model.isOptional(),
-            name: (this._view._name != null)
+            name: (this._view._name != null),
+            "remove-xor": this._model.inXor
         }
     };
 
@@ -3508,7 +3849,7 @@ DBSDM.Model = DBSDM.Model ||{};
 DBSDM.Model.Attribute = (function(){
 
     function Attribute(name) {
-        this._name = name || "Attribute";
+        this._name = name || "attribute";
         this._primary = false;
         this._unique = false;
         this._nullable = false;
@@ -3519,7 +3860,7 @@ DBSDM.Model.Attribute = (function(){
     };
 
     Attribute.prototype.setName = function(name) {
-        this._name = name;
+        this._name = name.trim().toLocaleLowerCase();
         return this;
     };
 
@@ -3589,6 +3930,8 @@ DBSDM.Model.Attribute = (function(){
     };
 
     Attribute.prototype.getData = function() {
+        this.setName(this._name); // force normalization
+
         return {
             name: this._name,
             primary: this._primary,
@@ -3703,7 +4046,7 @@ DBSDM.Model.Entity = (function(){
     var ns = DBSDM;
     var Enum = ns.Enums;
 
-    var EdgeOffset = 10; // TODO
+    var EdgeOffset = ns.Consts.EntityEdgePadding;
 
     /**
      * @param name       string|object   Name of new entity or object to create entity from
@@ -3721,6 +4064,7 @@ DBSDM.Model.Entity = (function(){
         this._children = [];
 
         this._relationLegs = []; // does not export from here
+        this._xorList = []; // Array of Arrays of relation leg models. Each array represent one XOR relation
 
         if (name && typeof name == "object") {
             this.import(name);
@@ -3732,7 +4076,8 @@ DBSDM.Model.Entity = (function(){
     };
 
     Entity.prototype.setName = function(name) {
-        this._name = name;
+        name = name.trim();
+        this._name = name[0].toLocaleUpperCase() + name.substr(1).toLocaleLowerCase();
     };
 
     Entity.prototype.setParent = function(parent) {
@@ -3782,6 +4127,47 @@ DBSDM.Model.Entity = (function(){
             relationLeg.setEntity(null);
         }
     };
+
+    // XOR
+    Entity.prototype.createXor = function(legA, legB) {
+        this._xorList.push([legA, legB]);
+        legA.inXor = true;
+        legB.inXor = true;
+    };
+
+    Entity.prototype.addToXor = function(index, leg) {
+        this._xorList[index].push(leg);
+        leg.inXor = true;
+    };
+
+    Entity.prototype.removeXor = function(index) {
+        for (var i=0; i<this._xorList[index].length; i++) {
+            this._xorList[index][i].inXor = false;
+        }
+        this._xorList.splice(index, 1);
+    };
+
+    Entity.prototype.removeXorLeg = function(xorIndex, legIndex) {
+        this._xorList[xorIndex][legIndex].inXor = false;
+        this._xorList[xorIndex].splice(legIndex, 1);
+    };
+
+    Entity.prototype.getXor = function(index) {
+        return this._xorList[index];
+    };
+
+    Entity.prototype.getXorHash = function(leg) {
+        for (var i=0; i<this._xorList.length; i++) {
+            if (this._xorList[i].indexOf(leg) != -1) {
+                return this._xorList[i].map(function(leg){
+                    return leg.getRelation().getHash();
+                }).sort().join("");
+            }
+        }
+        return null;
+    };
+
+    // Transform
 
     Entity.prototype.setPosition = function(x, y) {
         this._transform.x = (x != null ? x : this._transform.x);
@@ -3898,6 +4284,8 @@ DBSDM.Model.Entity = (function(){
     };
 
     Entity.prototype.getExportData = function() {
+        this.setName(this._name); // force normalization
+
         var data = [{
             name: this._name,
             parent: (this._parent == null ? null : this._parent.getName()), // only name of the parent, not the parent object!
@@ -4092,6 +4480,10 @@ DBSDM.Model.Relation = (function(){
         ];
     };
 
+    Relation.prototype.getHash = function() {
+        return [this._source.getHash(), this._target.getHash()].sort().join("");
+    };
+
     return Relation;
 })();/** src/model/RelationLeg.js */
 DBSDM.Model = DBSDM.Model ||{};
@@ -4100,7 +4492,8 @@ DBSDM.Model = DBSDM.Model ||{};
  * Model class modelling one part of relation (source or target)
  */
 DBSDM.Model.RelationLeg = (function(){
-    var Enum = DBSDM.Enums;
+    var ns = DBSDM;
+    var Enum = ns.Enums;
 
     function RelationLeg(identifying, optional, cardinality) {
         this._relation = null;
@@ -4130,6 +4523,8 @@ DBSDM.Model.RelationLeg = (function(){
             {x: 0, y: 0}  // middle point
         ];
         this.pointsManual = false;
+
+        this.inXor = false;
     }
 
     RelationLeg.prototype.setRelation = function(relation) {
@@ -4152,7 +4547,7 @@ DBSDM.Model.RelationLeg = (function(){
     };
 
     RelationLeg.prototype.setName = function(name) {
-        this._name = name || null;
+        this._name = name.trim().toLocaleLowerCase() || null;
     };
 
     RelationLeg.prototype.isIdentifying = function() {
@@ -4194,6 +4589,20 @@ DBSDM.Model.RelationLeg = (function(){
         this._anchor.x = x;
         this._anchor.y = y;
         this._anchor.edge = edge;
+        this._updateFirstPoint();
+    };
+
+    RelationLeg.prototype.getAnchorOffset = function() {
+        return this._anchorOffset;
+    };
+    RelationLeg.prototype.setAnchorOffset = function(offset) {
+        this._anchorOffset = offset;
+        this._updateFirstPoint();
+    };
+
+    RelationLeg.prototype._updateFirstPoint = function() {
+        var edge = this._anchor.edge;
+        if (edge == null) { return; }
 
         var offsetX = 0;
         var offsetY = 0;
@@ -4202,12 +4611,8 @@ DBSDM.Model.RelationLeg = (function(){
         } else { // top/bottom
             offsetY = (edge-1) * this._anchorOffset;
         }
-        this._points[0].x = x - offsetX;
-        this._points[0].y = y + offsetY;
-    };
-
-    RelationLeg.prototype.setAnchorOffset = function(offset) {
-        this._anchorOffset = offset;
+        this._points[0].x = this._anchor.x - offsetX;
+        this._points[0].y = this._anchor.y + offsetY;
     };
 
     // points
@@ -4275,17 +4680,227 @@ DBSDM.Model.RelationLeg = (function(){
         return str;
     };
 
+    RelationLeg.prototype.getHash = function() {
+        return ns.Hash.object([
+            this._entity.getName(),
+            this._identifying,
+            this._optional,
+            this._cardinality
+        ]).toString(16);
+    };
+
     RelationLeg.prototype.getExportData = function() {
+        console.log(this._entity.getXorHash(this));
+
+
         return {
-            entity: this._entity.getName(),
+            entity: this._entity.getName(), // TODO maybe setName first, to force normalization, just to be sure? Shouldnt be needed, since entities are exported first, but who knows...
             identifying: this._identifying,
             optional: this._optional,
-            cardinality: this._cardinality
+            cardinality: this._cardinality,
+            xor: this._entity.getXorHash(this)
         };
     };
 
     return RelationLeg;
-})();/** src/view/Attribute.js */
+})();/** src/view/Arc.js */
+DBSDM.View = DBSDM.View ||{};
+
+DBSDM.View.Arc = (function(){
+    var self = {};
+
+    var ns = DBSDM;
+    var Edge = ns.Enums.Edge;
+    var TOP = Edge.TOP;
+    var RIGHT = Edge.RIGHT;
+    var BOTTOM = Edge.BOTTOM;
+    var LEFT = Edge.LEFT;
+
+    /**
+     * @param order    Order of the arc in the same entity, to figure out edge offset. Should start at 0
+     */
+    self.getEdgeDistance = function(order) {
+        return ns.Consts.ArcEdgeDistance + order*ns.Consts.ArcArcDistance;
+    };
+
+    /**
+     * @param edges    Entity edges
+     * @param legs     List of relation legs models, which are in same XOR
+     * @param edgeDist Distance of arc from edge
+     */
+    self.build = function(edges, legs, edgeDist) {
+        if (legs.length < 1) { return null;}
+
+        var points = self._getArcPoints(legs);
+        self._sortPoints(points);
+
+        var dx=0, dy=0;
+        function setDistMod(edge) {
+            switch(edge) {
+                case TOP:    dx = 0; dy = -edgeDist; break;
+                case RIGHT:  dx =  edgeDist; dy = 0; break;
+                case BOTTOM: dx = 0; dy =  edgeDist; break;
+                case LEFT:   dx = -edgeDist; dy = 0; break;
+            }
+        }
+
+        var g = ns.Element.el("g", {pointerEvents: "none"});
+
+        var path = new ns.Element.Path();
+
+        var edge = self._getStartingEdge(points, edges);
+        var prev = null;
+        var skipped = null;
+        for (var i=0; i<4; i++,edge = (edge+1)%4) {
+
+            // solve edge that has no points
+            if (i!=0) {
+                if (!points[edge]) {
+                    skipped = edge;
+                    continue;
+                }
+                if (skipped != null) {
+                    setDistMod(skipped);
+                    switch(edge) {
+                        case TOP:    x = edges.left;  y = edges.bottom; break;
+                        case RIGHT:  x = edges.left;  y = edges.top;    break;
+                        case BOTTOM: x = edges.right; y = edges.top;    break;
+                        case LEFT:   x = edges.right; y = edges.bottom; break;
+                    }
+                    this._arcCorner(path, skipped, Math.round(x+dx-edges.left),  Math.round(y+dy-edges.top));
+                }
+            }
+
+            // edge with points
+            setDistMod(edge);
+            for (var pi=0; pi<points[edge].length; pi++) {
+                var p = points[edge][pi];
+                var x = Math.round(p.x + dx - edges.left);
+                var y = Math.round(p.y + dy - edges.top);
+                if (path.isEmpty()) {
+                    this._arcStart(path, edge, x,y);
+                } else if (pi == 0) {
+                    this._arcCorner(path, edge, x,y);
+                }
+                path.L(x,y);
+
+                g.appendChild(ns.Element.el("circle", {cx:x, cy:y, r:2.5}));
+
+                prev = edge;
+            }
+        }
+        this._arcEnd(path, prev, x, y);
+
+        g.appendChild( path.path({stroke: "black", fill: "transparent"}) );
+        return g;
+    };
+
+    self._getArcPoints = function(legs) {
+        var points = {};
+        for (var i=0; i<legs.length; i++) {
+            var anchor = legs[i].getAnchor();
+
+            var edge = anchor.edge;
+            if (!points[edge]) {
+                points[edge] = [];
+            }
+            points[edge].push(anchor);
+        }
+        return points;
+    };
+
+    /**
+     * Sort points on edges in clockwise order
+     */
+    self._pointsComparator = function(a, b){
+        if (a.edge == b.edge) {
+            switch(a.edge) {
+                case TOP:    return a.x - b.x;
+                case RIGHT:  return a.y - b.y;
+                case BOTTOM: return b.x - a.x;
+                case LEFT:   return b.y - a.y;
+            }
+        } else {
+            return a.edge - b.edge;
+        }
+    };
+    self._sortPoints = function(points) {
+        for (var e in points) {
+            if (!points.hasOwnProperty(e)) { continue; }
+            points[e].sort(self._pointsComparator);
+        }
+    };
+
+    /**
+     * Figure out where to start drawing arc
+     * Arc is drawn in a clockwise manner, start at the edge which which would create shortest possible arc
+     * If there are points at opposite edges, try to start at edge which has point closest to the corner
+     * @param points    Clockwise sorted arc points
+     * @param edges     Entity edges
+     */
+    self._getStartingEdge = function(points, edges) {
+        if (points.length == 2 && ((points[TOP] && points[BOTTOM]) || (points[LEFT] && points[RIGHT]))) {
+            var a,b,len;
+            if (points[TOP]) {
+                len = points[TOP].length;
+                a = edges.right - points[TOP][len-1].x;
+
+                len = points[BOTTOM].length;
+                b = points[BOTTOM][len-1].x - edges.left;
+
+                return (a < b ? TOP : BOTTOM);
+            } else {
+                len = points[RIGHT].length;
+                a = edges.bottom - points[RIGHT][len-1].y;
+
+                len = points[LEFT].length;
+                b = points[LEFT][len-1].x - edges.top;
+
+                return (a < b ? RIGHT : LEFT);
+            }
+        } else {
+            for (var e=1; e<4; e++) {
+                if (!points[e-1] && points[e]) {
+                    return e;
+                }
+            }
+        }
+        return 0;
+    };
+
+    self._arcCorner = function(path, edge, x, y) {
+        var a = ns.Consts.ArcSize;
+        switch(edge) {
+            case TOP:    path.V(y+a).c( 0,-a,  a,-a,  a,-a); break;
+            case RIGHT:  path.H(x-a).c( a, 0,  a, a,  a, a); break;
+            case BOTTOM: path.V(y-a).c( 0, a, -a, a, -a, a); break;
+            case LEFT:   path.H(x+a).c(-a, 0, -a,-a, -a,-a); break;
+        }
+    };
+    self._arcStart = function(path, edge, x, y) {
+        var a = ns.Consts.ArcSize;
+        var o = ns.Consts.ArcEndPointOffset;
+        switch(edge) {
+            case TOP:    path.M(x-a-o,y+a).c( 0,-a,  a,-a,  a,-a); break;
+            case RIGHT:  path.M(x-a,y-a-o).c( a, 0,  a, a,  a, a); break;
+            case BOTTOM: path.M(x+a+o,y-a).c( 0, a, -a, a, -a, a); break;
+            case LEFT:   path.M(x+a,y+a+o).c(-a, 0, -a,-a, -a,-a); break;
+        }
+    };
+    self._arcEnd = function(path, edge, x, y) {
+        var a = ns.Consts.ArcSize;
+        var o = ns.Consts.ArcEndPointOffset;
+        switch(edge) {
+            case TOP:    path.l( o, 0).c(0,0,  a, 0,  a, a); break;
+            case RIGHT:  path.l( 0, o).c(0,0,  0, a, -a, a); break;
+            case BOTTOM: path.l(-o, 0).c(0,0, -a,0,  -a,-a); break;
+            case LEFT:   path.l( 0,-o).c(0,0,  0,-a,  a,-a); break;
+        }
+    };
+
+    return self;
+})();
+/** src/view/Attribute.js */
 DBSDM.View = DBSDM.View ||{};
 
 DBSDM.View.Attribute = (function(){
@@ -4362,7 +4977,7 @@ DBSDM.View.Attribute = (function(){
         this._nullable.textContent = this._getNullable();
 
         var model = this._model;
-        this._nameInput = new DBSDM.View.EditableText(this._canvas,
+        this._nameInput = new ns.View.EditableText(this._canvas,
             null, null,
             { dominantBaseline: "central", dx: "4" },
             function() { return model.getName(); },
@@ -4504,9 +5119,8 @@ DBSDM.View.EditableText = (function(){
         return this._getHandler() || "Editable Text";
     };
     EditableText.prototype._setValue = function() {
-        var value = this._input.value;
-        this._text.innerHTML = value;
-        this._setHandler(value);
+        this._setHandler(this._input.value);
+        this._text.innerHTML = this._getValue();
     };
 
     /** Input handling */
@@ -4593,6 +5207,7 @@ DBSDM.View.EditableText = (function(){
     };
 
     EditableText.prototype._cancel = function() {
+        this._input.onblur = null;
         this._input.value = this._getValue(); // set old value, so the blur event won't update it
         this._hideInput();
     };
@@ -4641,6 +5256,8 @@ DBSDM.View.Entity = (function(){
         this._attrContainer = null;
 
         this._controls = null;
+
+        this._xorNodes = [];
     }
 
     Entity.prototype.getDom = function() {
@@ -4686,12 +5303,13 @@ DBSDM.View.Entity = (function(){
             "50%", ns.Consts.EntityStrokeWidth,
             { class: "entity-name", textAnchor: "middle" },
             function() { return that._model.getName(); },
-            function(value) { that._control.setName(value); } // TODO set name in control?
+            function(value) { that._control.setName(value); }
         );
+
         this._name = this._dom.appendChild(nameInput.getTextDom());
         this._attrContainer = this._dom.appendChild(
             ns.Element.el("svg", {
-                x: 0, y: 20 // TODO offset
+                x: 0, y: ns.Consts.EntityAttributesOffset
             })
         );
 
@@ -4709,6 +5327,26 @@ DBSDM.View.Entity = (function(){
     Entity.prototype.remove = function() {
         this._dom.remove();
     };
+
+    // XOR
+
+    Entity.prototype.clearXor = function(index) {
+        this._xorNodes[index].remove();
+        this._xorNodes.splice(index, 1);
+    };
+
+    Entity.prototype.drawXor = function(edges, index, edgeDistance) {
+        if (this._xorNodes[index]) {
+            this._xorNodes[index].remove();
+            this._xorNodes[index] = null;
+        }
+
+        var arcNode = ns.View.Arc.build(edges, this._model.getXor(index), edgeDistance);
+        this._dom.appendChild(arcNode);
+        this._xorNodes[index] = arcNode;
+    };
+
+    // Controls
 
     Entity.prototype.showControls = function() {
         this._controls = ns.Element.g(
@@ -4882,12 +5520,11 @@ DBSDM.View.RelationLeg = (function(){
 
     RelationLeg.prototype._buildAnchor = function() {
         this._anchor = ns.Element.g(
-            ns.Diagram.getSharedElement('Relation.AnchorControl', {class: "anchor"}),
-            ns.Diagram.getSharedElement('Relation.AnchorBase')
+            ns.Diagram.getSharedElement('Relation.AnchorControl', {class: "anchor"})
         );
         this.updateAnchorType();
 
-        this._model.setAnchorOffset(11);
+        this._model.setAnchorOffset(ns.Consts.DefaultAnchorOffset);
     };
 
     RelationLeg.prototype.updateAnchorType = function() {
@@ -4927,7 +5564,7 @@ DBSDM.View.RelationLeg = (function(){
             fill: "none",
             stroke: "black",
             strokeWidth: 1,
-            strokeLinejoin: "miter"
+            strokeLinejoin: "round"
         });
         this._lineControl = ns.Element.el("polyline", {
             points: "0 0 0 0",
@@ -4935,13 +5572,14 @@ DBSDM.View.RelationLeg = (function(){
             stroke: "none",
             strokeWidth: 10,
             strokeLinecap: "butt",
-            strokeLinejoin: "miter",
+            strokeLinejoin: "round",
             class: "line"
         });
     };
 
     RelationLeg.prototype._getPointsString = function(points) {
-        return points
+        var a = this._model.getAnchor();
+        return a.x+" "+a.y+" "+ points
             .map(function(p) { return [p.x, p.y] })
             .reduce(function(a, b) { return a.concat(b) })
             .join(" ");
@@ -4974,6 +5612,22 @@ DBSDM.View.RelationLeg = (function(){
         ns.Element.attr(this._line, {
             strokeDasharray: (this._model.isOptional() ? 5 : null)
         });
+    };
+
+    // select
+    RelationLeg.prototype.select = function() {
+        this._g.classList.add("selected");
+    };
+    RelationLeg.prototype.allow = function() {
+        this._g.classList.add("allowed");
+    };
+    RelationLeg.prototype.mark = function() {
+        this._g.classList.add("marked");
+    };
+    RelationLeg.prototype.clearSelectionClasses = function() {
+        this._g.classList.remove("selected");
+        this._g.classList.remove("allowed");
+        this._g.classList.remove("marked");
     };
 
     // control points
@@ -5015,12 +5669,13 @@ DBSDM.View.RelationLeg = (function(){
         if (this._name) { return; }
 
         var model = this._model;
-        this._name = new ns.View.EditableText(this._canvas, 0, 0, {},
-            function()     { return model.getName() || "Relation"; },
+        var name = new ns.View.EditableText(this._canvas, 0, 0, {},
+            function()     { return model.getName() || "relation"; },
             function(name) { model.setName(name); }
-        ).getTextDom();
-        this.updateNamePosition();
+        );
 
+        this._name = name.getTextDom();
+        this.updateNamePosition();
         this._g.appendChild(this._name);
     };
 
