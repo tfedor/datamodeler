@@ -3576,6 +3576,8 @@ DBSDM.Control.RelationLeg = (function() {
         this._model = model;
         this._view = new ns.View.RelationLeg(canvas, this._model, this);
         this._view.draw();
+
+        this._inXorCreation = false;
     }
 
     /**
@@ -3680,10 +3682,12 @@ DBSDM.Control.RelationLeg = (function() {
             this._relation.getCanvas().Mouse.attachObject(this);
             this._view.select();
             this._entity.markRelations(this, this._model.inXor);
+            this._inXorCreation = true;
         }
     };
 
     RelationLeg.prototype.xor = function(leg) {
+        if (!this._inXorCreation) { return; }
         this._entity.unmarkRelations();
 
         if (!leg) {return;}
