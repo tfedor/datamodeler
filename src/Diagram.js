@@ -172,18 +172,9 @@ DBSDM.Diagram = (function() {
             })
         );
 
-        ns.Diagram.createSharedElement("Relation.AnchorBase",
-            ns.Element.el("polyline", {
-                points: "0.5,-1.5, 0.5,-11.5",
-                fill: 'none',
-                stroke:'black',
-                strokeWidth: 1
-            })
-        );
-
         ns.Diagram.createSharedElement("Relation.AnchorMany",
             ns.Element.el("polyline", {
-                points: "-7.5,-1.5, 0.5,-11.5, 7.5,-1.5",
+                points: "-4.5,-0.5, -0.5,-10.5, 0.5,-10.5, 4.5,-0.5",
                 fill: 'none',
                 stroke:'black',
                 strokeWidth: 1
@@ -192,7 +183,7 @@ DBSDM.Diagram = (function() {
 
         ns.Diagram.createSharedElement("Relation.AnchorIdentifying",
             ns.Element.el("polyline", {
-                points: "-7.5,-11.5, 7.5,-11.5",
+                points: "-5.5,-10.5, 5.5,-10.5",
                 fill: 'none',
                 stroke:'black',
                 strokeWidth: 1

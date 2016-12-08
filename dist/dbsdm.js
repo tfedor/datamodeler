@@ -469,6 +469,8 @@ DBSDM.Consts = {
     EntityExtraHeight: 5,
 
     DefaultAnchorOffset: 11, // how for from edge to start drawing relation leg
+    MinAnchorAnchorDistance: 10, // should be half the anchor width
+
     ArcSize: 12,
     ArcEndPointOffset: 10, // how far from the start/end point draw arc
     ArcEdgeDistance: 17, // distance of the arc from the entity edge
@@ -652,18 +654,9 @@ DBSDM.Diagram = (function() {
             })
         );
 
-        ns.Diagram.createSharedElement("Relation.AnchorBase",
-            ns.Element.el("polyline", {
-                points: "0.5,-1.5, 0.5,-11.5",
-                fill: 'none',
-                stroke:'black',
-                strokeWidth: 1
-            })
-        );
-
         ns.Diagram.createSharedElement("Relation.AnchorMany",
             ns.Element.el("polyline", {
-                points: "-7.5,-1.5, 0.5,-11.5, 7.5,-1.5",
+                points: "-4.5,-0.5, -0.5,-10.5, 0.5,-10.5, 4.5,-0.5",
                 fill: 'none',
                 stroke:'black',
                 strokeWidth: 1
@@ -672,7 +665,7 @@ DBSDM.Diagram = (function() {
 
         ns.Diagram.createSharedElement("Relation.AnchorIdentifying",
             ns.Element.el("polyline", {
-                points: "-7.5,-11.5, 7.5,-11.5",
+                points: "-5.5,-10.5, 5.5,-10.5",
                 fill: 'none',
                 stroke:'black',
                 strokeWidth: 1
@@ -1257,6 +1250,11 @@ DBSDM.Geometry = (function() {
         var x = B.x - A.x;
         var y = B.y - A.y;
         return Math.sqrt(x*x + y*y);
+    };
+    self.pointToPointSquareDistance = function(A, B) {
+        var x = B.x - A.x;
+        var y = B.y - A.y;
+        return x*x + y*y;
     };
 
     self.pointToLineDistance = function(p, P1, P2) {
@@ -4216,11 +4214,33 @@ DBSDM.Model.Entity = (function(){
         };
     };
 
-    Entity.prototype._getMaxEdgeInterval = function(edge) {
-        var edgeStart, edgeEnd;
+    Entity.prototype._pointsOnEdgeCmp = function(a, b) {
+        return a-b;
+    };
+    Entity.prototype.getEdgePosition = function(edge) { // , leg, recompute
+        //recompute = recompute || false;
+
+        /**
+         * Add points of currently existing anchors
+         */
+        var points = [];
+        for (var i=0; i<this._relationLegs.length; i++) {
+            var anchor = this._relationLegs[i].getAnchor();
+            if (anchor.edge == edge) {
+                /*if (this._relationLegs[i] == leg) {
+                    if (!recompute) {
+                        return anchor;
+                    } else {
+                        continue;
+                    }
+                }*/
+                points.push( ((edge & 1) == 0 ? anchor.x : anchor.y) );
+            }
+        }
+        points.sort(this._pointsOnEdgeCmp);
 
         var edges = this.getEdges();
-
+        var edgeStart, edgeEnd;
         if ((edge & 1) == 0) {  // top, bottom
             edgeStart = edges.left + EdgeOffset;
             edgeEnd = edges.right - EdgeOffset;
@@ -4229,45 +4249,45 @@ DBSDM.Model.Entity = (function(){
             edgeEnd = edges.bottom - EdgeOffset;
         }
 
-        // add positions of current relation anchors
-        var positions = [edgeStart]; // minimal position of the edge
+        points.unshift(edgeStart);
+        var ptsLen = points.push(edgeEnd);
 
-        for (var i=0; i<this._relationLegs.length; i++) {
-            var anchor = this._relationLegs[i].getAnchor();
-            if (anchor.edge == edge) {
-                positions.push( ((edge & 1) == 0 ? anchor.x : anchor.y) );
+        /**
+         * Add point at each interval intersection
+         */
+        var bestPoint = null;
+        var maxDiff = -1;
+        for (i=1; i<ptsLen; i++) {
+            var diff = (points[i] - points[i-1]) * 0.5;
+            if (diff > maxDiff) {
+                bestPoint = points[i] - diff;
+                maxDiff = diff;
             }
         }
 
-        positions.push(edgeEnd); // maximal position of the edge
-        positions.sort(function(a, b) {
-            return a-b;
-        });
+        /**
+         * If new anchor position is too close to other anchor, try edge points
+         */
+        if (ptsLen > 2 && maxDiff < ns.Consts.MinAnchorAnchorDistance) {
+            diff = points[1] - edgeStart; // first real point to edge distance
+            if (diff > maxDiff) {
+                bestPoint = edgeStart;
+                maxDiff = diff;
+            }
 
-        // pick position - find max interval and split it in half = new anchor position
-        var index = 1;
-        var maxLength = 0;
-        for (i=index; i<positions.length; i++) {
-            var len = positions[i] - positions[i-1];
-            if (len >= maxLength) {
-                index = i;
-                maxLength = len;
+            diff = edgeEnd - points[points.length-2]; // last real point to edge distance
+            if (diff > maxDiff) {
+                bestPoint = edgeEnd;
+                maxDiff = diff;
             }
         }
 
-        return [positions[index-1], positions[index], maxLength];
-    };
-
-    Entity.prototype.getEdgePosition = function(edge) {
-        var edges = this.getEdges();
-        var interval = this._getMaxEdgeInterval(edge);
-        var newPosition = Math.round((interval[0] + interval[1]) / 2);
-
+        var dist = maxDiff-ns.Consts.MinAnchorAnchorDistance;
         switch (edge) {
-            case Enum.Edge.TOP:    return {x: newPosition, y: edges.top}; break;
-            case Enum.Edge.RIGHT:  return {x: edges.right, y: newPosition}; break;
-            case Enum.Edge.BOTTOM: return {x: newPosition, y: edges.bottom}; break;
-            case Enum.Edge.LEFT:   return {x: edges.left, y: newPosition}; break;
+            case Enum.Edge.TOP:    return {x: bestPoint,   y: edges.top,    edge: edge, dist: dist}; break;
+            case Enum.Edge.RIGHT:  return {x: edges.right, y: bestPoint,    edge: edge, dist: dist}; break;
+            case Enum.Edge.BOTTOM: return {x: bestPoint,   y: edges.bottom, edge: edge, dist: dist}; break;
+            case Enum.Edge.LEFT:   return {x: edges.left,  y: bestPoint,    edge: edge, dist: dist}; break;
         }
     };
 
@@ -4377,77 +4397,74 @@ DBSDM.Model.Relation = (function(){
      * Set anchors on entities edges, so the relation is as short as possible
      * If recompute is false, entity won't change position on the same edge that it is already at
      */
-    Relation.prototype.resetAnchors = function(recompute, sourceEntity, targetEntity) {
-        recompute = recompute || false;
 
+
+    Relation.prototype._addPoints = function(leg, entity, edge, recompute) {
+        var anchor = leg.getAnchor();
+        if (!recompute && anchor.edge == edge) {
+            return anchor;
+        } else {
+            return entity.getEdgePosition(edge);
+        }
+    };
+
+    Relation.prototype.resetAnchors = function(recompute, sourceEntity, targetEntity) {
         sourceEntity = sourceEntity || this._source.getEntity();
         targetEntity = targetEntity || this._target.getEntity();
         if (sourceEntity == targetEntity) { return; }
+        recompute = recompute || false;
 
-        var edges = [];
-        var source = { pos: [], best: 0 };
-        var target = { pos: [], best: 0 };
-
-        // get possible edges
+        /**
+         * Get possible anchor points
+         */
+        var source = [];
+        var target = [];
         var sourceEdges = sourceEntity.getEdges();
         var targetEdges = targetEntity.getEdges();
-
         if (sourceEdges.right < targetEdges.left) {
-            edges.push(Enum.Edge.RIGHT);
+            source.push(this._addPoints(this._source, sourceEntity, Enum.Edge.RIGHT, recompute));
+            target.push(this._addPoints(this._target, targetEntity, Enum.Edge.LEFT,  recompute));
         } else if (sourceEdges.left > targetEdges.right) {
-            edges.push(Enum.Edge.LEFT);
+            source.push(this._addPoints(this._source, sourceEntity, Enum.Edge.LEFT,  recompute));
+            target.push(this._addPoints(this._target, targetEntity, Enum.Edge.RIGHT, recompute));
         }
-
         if (sourceEdges.bottom < targetEdges.top) {
-            edges.push(Enum.Edge.BOTTOM);
+            source.push(this._addPoints(this._source, sourceEntity, Enum.Edge.BOTTOM, recompute));
+            target.push(this._addPoints(this._target, targetEntity, Enum.Edge.TOP,    recompute));
         } else if (sourceEdges.top > targetEdges.bottom) {
-            edges.push(Enum.Edge.TOP);
+            source.push(this._addPoints(this._source, sourceEntity, Enum.Edge.TOP,    recompute));
+            target.push(this._addPoints(this._target, targetEntity, Enum.Edge.BOTTOM, recompute));
         }
 
-        if (edges.length == 0) { // ISA or something weird
-            edges.push(Enum.Edge.TOP);
-            edges.push(Enum.Edge.RIGHT);
-            edges.push(Enum.Edge.BOTTOM);
-            edges.push(Enum.Edge.LEFT);
+        if (source.length == 0) { // ISA or something weird
+            for (var i=0;i<4; i++) {
+                source.push(this._addPoints(this._source, sourceEntity, i, recompute));
+                target.push(this._addPoints(this._target, targetEntity, i, recompute));
+            }
         }
 
-        if (edges.length > 0) {
-            // compute positions
-            var i,j;
-            var anchor;
-            for (i=0; i<edges.length; i++) {
-                anchor = this._source.getAnchor();
-                if (!recompute && anchor.edge == edges[i]) {
-                    source.pos.push({x: anchor.x, y: anchor.y});
-                } else {
-                    source.pos.push(sourceEntity.getEdgePosition(edges[i]));
-                }
-
-                anchor = this._target.getAnchor();
-                if (!recompute && anchor.edge == (edges[i] + 2) % 4) {
-                    target.pos.push({x: anchor.x, y: anchor.y});
-                } else {
-                    target.pos.push(targetEntity.getEdgePosition((edges[i] + 2) % 4));
+        /**
+         * Pick combination of anchor points, that creates shortest relation
+         */
+        var minLen = null;
+        var bestSource = null;
+        var bestTarget = null;
+        for (var s=0; s<source.length; s++) {
+            for (var t=0; t<target.length; t++) {
+                var len = ns.Geometry.pointToPointSquareDistance(source[s], target[t]);
+                if (minLen == null || len < minLen) {
+                    minLen = len;
+                    bestSource = source[s];
+                    bestTarget = target[t];
                 }
             }
-
-            // check edges combinations and pick the best (shortest) one
-            var minLen;
-            for (i=0; i<edges.length; i++) {
-                for (j=0; j<edges.length; j++) {
-                    var len = ns.Geometry.pointToPointDistance(source.pos[i], target.pos[j]);
-                    if (!minLen || len < minLen) {
-                        minLen = len;
-                        source.best = i;
-                        target.best = j;
-                    }
-                }
-            }
-
-            // rotate and position anchor
-            this._source.setAnchor(source.pos[source.best].x, source.pos[source.best].y, edges[source.best]);
-            this._target.setAnchor(target.pos[target.best].x, target.pos[target.best].y, (edges[target.best]+2)%4);
         }
+
+        /**
+         * Rotate and position anchors
+         */
+        this._source.setAnchor(bestSource.x, bestSource.y, bestSource.edge);
+        this._target.setAnchor(bestTarget.x, bestTarget.y, bestTarget.edge);
     };
 
     Relation.prototype.straighten = function(recompute, sourceEntity, targetEntity) {
