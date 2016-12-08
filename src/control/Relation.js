@@ -239,7 +239,6 @@ DBSDM.Control.Relation = (function() {
             this._model.resetAnchors();
         }
         this.centerMiddlePoint();
-        this.redraw();
 
         if (this._legs.source.getModel().inXor) {
             this._sourceEntity.redrawXor(null, this._legs.source);
