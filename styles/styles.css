@@ -22,6 +22,14 @@ div.dbsdmCanvas > svg {
 div.dbsdmCanvas > svg.isaMode {
     cursor: alias;
 }
+div.dbsdmCanvas > svg.correctionMode {
+    cursor:default;
+    background-color:#fffafa;
+}
+div.dbsdmCanvas > svg.correctionMode * {
+    cursor:help;
+    background-color:#fffafa;
+}
 
 div.dbsdmCanvas.fullscreen {
     background-color:white;
@@ -68,7 +76,7 @@ div.dbsdmCanvas div.message i.fa {
 }
 
 div.dbsdmCanvas div.ledge {
-    position:absolute;z-index:999;
+    position:absolute;z-index:998;
     top:0;right:0;
     font-size:1.1em;
     color:#d1d1d1;
@@ -94,9 +102,12 @@ div.dbsdmCanvas div.zoom a.reset {
 }
 
 /** Help */
-div.dbsdmCanvas a.helperIcon {
+div.dbsdmCanvas a.uiIcon {
     display:inline-block;
     margin:0.5em;
+}
+div.dbsdmCanvas a.uiIcon.active {
+    color:black;
 }
 div.dbsdmCanvas div.help {
     margin: 0.5em;
@@ -276,6 +287,8 @@ svg.attr.dragged, svg.attr.dragged * {
 use.attr-bg { visibility: hidden; }
 svg.attr:hover use.attr-bg { visibility: visible; }
 
+svg.incorrect tspan, svg.incorrect text { fill:red; }
+
 /** RELATION */
 g.rel text { font-size: 0.65em; }
 
@@ -307,6 +320,10 @@ g.leg.marked { cursor:not-allowed; }
 g.leg.marked polyline.line {
     stroke: #b62727;
     stroke-linecap: round;
+}
+g.leg.incorrect polyline:not(.line) {
+    stroke: #b62727;
+    stroke-width:2;
 }
 
 use.cp, use.anchor { cursor:move; }

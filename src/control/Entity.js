@@ -420,7 +420,7 @@ DBSDM.Control.Entity = (function(){
         if (!ns.Diagram.allowEdit) { return; }
 
         this._canvas.svg.classList.remove("isaMode");
-        this._view.deselect();
+        this._view.defaultMark();
 
         if (this._parent == parent) { return; }
         if (this._parent != null) {
@@ -664,6 +664,11 @@ DBSDM.Control.Entity = (function(){
         return this._model.hasParent();
     };
 
+    Entity.prototype._toggleIncorrect = function() {
+        this._model.incorrect = !this._model.incorrect;
+        this._view.defaultMark();
+    };
+
     // Menu Handlers
     Entity.prototype.handleMenu = function(action) {
         switch(action) {
@@ -681,6 +686,8 @@ DBSDM.Control.Entity = (function(){
     // Event Handlers
 
     Entity.prototype.onMouseDown = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
+
         var matches = e.target.className.baseVal.match(/e-cp-(\w+)/);
         if (matches) {
             mouse.setParam("action", "cp");
@@ -689,6 +696,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.onMouseMove = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
 
         if (this._new) {
             this.place(mouse);
@@ -705,6 +713,11 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.onMouseUp = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) {
+            this._toggleIncorrect();
+            return;
+        }
+
         if (this._new) {
             // view create other elements
             if (mouse.dx == 0 || mouse.dy == 0) {
@@ -719,8 +732,7 @@ DBSDM.Control.Entity = (function(){
             }
         } else if (!mouse.didMove()) {
             this.activate();
-        } else if (this._canvas.svg.classList.contains("isaMode")) { // TODO
-            // TODO fix bug for when you get faster with than entity is
+        } else if (this._canvas.svg.classList.contains("isaMode")) {
             var parent = mouse.getTarget();
             if (parent instanceof ns.Control.Entity && parent != this) {
                 this._isa(parent);
@@ -733,6 +745,8 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.onKeyPress = function(e) {
+        if (this._canvas.inCorrectionMode) { return; }
+
         if (ns.View.EditableText.shown) { return; }
         switch(e.keyCode) {
             case 46: this.delete(); break; // del

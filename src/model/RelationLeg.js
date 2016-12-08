@@ -8,7 +8,7 @@ DBSDM.Model.RelationLeg = (function(){
     var ns = DBSDM;
     var Enum = ns.Enums;
 
-    function RelationLeg(identifying, optional, cardinality) {
+    function RelationLeg(identifying, optional, cardinality, incorrect) {
         this._relation = null;
 
         this._entity = null;
@@ -38,6 +38,8 @@ DBSDM.Model.RelationLeg = (function(){
         this.pointsManual = false;
 
         this.inXor = false;
+
+        this.incorrect = typeof(incorrect) == "boolean" ? incorrect : false;
     }
 
     RelationLeg.prototype.setRelation = function(relation) {
@@ -203,16 +205,17 @@ DBSDM.Model.RelationLeg = (function(){
     };
 
     RelationLeg.prototype.getExportData = function() {
-        console.log(this._entity.getXorHash(this));
-
-
-        return {
+        var data = {
             entity: this._entity.getName(), // TODO maybe setName first, to force normalization, just to be sure? Shouldnt be needed, since entities are exported first, but who knows...
-            identifying: this._identifying,
+                identifying: this._identifying,
             optional: this._optional,
             cardinality: this._cardinality,
             xor: this._entity.getXorHash(this)
         };
+        if (this.incorrect) {
+            data.incorrect = true;
+        }
+        return data;
     };
 
     return RelationLeg;

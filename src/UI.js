@@ -28,8 +28,11 @@ DBSDM.UI = (function() {
         var ledge = document.createElement("div");
         ledge.className = "ledge";
 
+        if (ns.Diagram.allowCorrectMode) {
+            this._cModeSwitch = ledge.appendChild(this._createCorrectionModeSwitch());
+        }
         ledge.appendChild(this._createZoomControls());
-        ledge.appendChild(this._createHelp());
+        this._helpSwitch = ledge.appendChild(this._createHelp());
 
         this._ui.appendChild(ledge);
         container.appendChild(this._ui);
@@ -91,11 +94,22 @@ DBSDM.UI = (function() {
 
     UI.prototype._createHelp = function() {
         var a = document.createElement("a");
-        a.className = "helperIcon";
+        a.className = "uiIcon";
         a.innerHTML = "<i class='fa fa-info-circle'></i>";
 
         var that = this;
         a.addEventListener("click", function() { that._toggleHelp(); });
+
+        return a;
+    };
+
+    UI.prototype._createCorrectionModeSwitch = function() {
+        var a = document.createElement("a");
+        a.className = "uiIcon";
+        a.innerHTML = "<i class='fa fa-check-circle-o'></i>";
+
+        var that = this;
+        a.addEventListener("click", function() { that._toggleCorrectionMode(); });
 
         return a;
     };
@@ -201,8 +215,10 @@ DBSDM.UI = (function() {
         if (this._help) {
             this._help.remove();
             this._help = null;
+            this._helpSwitch.classList.remove("active");
             return;
         }
+        this._helpSwitch.classList.add("active");
 
         var data = {
             "Shortcuts on selected Entity": [
@@ -239,6 +255,18 @@ DBSDM.UI = (function() {
         div.innerHTML = content;
 
         this._help = this._ui.appendChild(div);
+    };
+
+    UI.prototype._toggleCorrectionMode = function() {
+        if (!ns.Diagram.allowCorrectMode) { return };
+        this._canvas.inCorrectionMode = !this._canvas.inCorrectionMode;
+        if (this._canvas.inCorrectionMode) {
+            this._cModeSwitch.classList.add("active");
+            this._canvas.svg.classList.add("correctionMode");
+        } else {
+            this._cModeSwitch.classList.remove("active");
+            this._canvas.svg.classList.remove("correctionMode");
+        }
     };
 
     return UI;

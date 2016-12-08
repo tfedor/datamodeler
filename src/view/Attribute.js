@@ -99,6 +99,10 @@ DBSDM.View.Attribute = (function(){
         this._svg.appendChild(this._text);
         parentDom.appendChild(this._svg);
 
+        if (this._model.incorrect) {
+            this.markIncorrect();
+        }
+
         var mouse = this._canvas.Mouse;
         this._svg.addEventListener("mousedown", function(e) { mouse.down(e, control); });
         this._svg.addEventListener("contextmenu", function(e) { ns.Menu.attach(control, "attribute"); });
@@ -134,6 +138,13 @@ DBSDM.View.Attribute = (function(){
 
     Attribute.prototype.dragEnded = function() {
         this._svg.classList.remove("dragged");
+    };
+
+    Attribute.prototype.markIncorrect = function() {
+        this._svg.classList.add("incorrect");
+    };
+    Attribute.prototype.markCorrect = function() {
+        this._svg.classList.remove("incorrect");
     };
 
     return Attribute;

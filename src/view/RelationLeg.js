@@ -40,6 +40,10 @@ DBSDM.View.RelationLeg = (function(){
 
         ns.Element.attr(this._g, {class: "leg"});
 
+        if (this._model.incorrect) {
+            this.markIncorrect();
+        }
+
         var that = this;
         this._g.addEventListener("mousedown", function(e) {
             var className = e.target.getAttribute("class");
@@ -188,6 +192,13 @@ DBSDM.View.RelationLeg = (function(){
         this._g.classList.remove("selected");
         this._g.classList.remove("allowed");
         this._g.classList.remove("marked");
+    };
+
+    RelationLeg.prototype.markIncorrect = function() {
+        this._g.classList.add("incorrect");
+    };
+    RelationLeg.prototype.markCorrect = function() {
+        this._g.classList.remove("incorrect");
     };
 
     // control points

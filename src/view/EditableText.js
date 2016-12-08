@@ -38,8 +38,16 @@ DBSDM.View.EditableText = (function(){
         if (ns.Diagram.allowEdit) {
             this._text.classList.add("editable");
 
-            this._text.addEventListener("mousedown", function(e) { e.stopPropagation(); }); // won't work in Chrome for Relation names otherwise
-            this._text.addEventListener("click", function(e) { that.showInput(); e.stopPropagation(); });
+            this._text.addEventListener("mousedown", function(e) {
+                if (!that._canvas.inCorrectionMode) {
+                    e.stopPropagation();
+                }
+            }); // won't work in Chrome for Relation names otherwise
+            this._text.addEventListener("click", function(e) {
+                if (!that._canvas.inCorrectionMode) {
+                    that.showInput(); e.stopPropagation();
+                }
+            });
         }
     }
 

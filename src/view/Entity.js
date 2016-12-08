@@ -72,6 +72,8 @@ DBSDM.View.Entity = (function(){
             })
         );
 
+        this.defaultMark();
+
         this._dom.addEventListener("mousedown", function(e) { mouse.down(e, control); });
         this._dom.addEventListener("mouseenter", function(e) { mouse.enter(e, control); });
         this._dom.addEventListener("mouseleave", function(e) { mouse.leave(e); });
@@ -130,8 +132,13 @@ DBSDM.View.Entity = (function(){
     Entity.prototype.select = function() {
         ns.Element.attr(this._bg, {href: "#Entity.Bg.Selected"});
     };
-    Entity.prototype.deselect = function() {
-        ns.Element.attr(this._bg, {href: "#Entity.Bg"});
+
+    Entity.prototype.defaultMark = function() {
+        if (this._model.incorrect) {
+            ns.Element.attr(this._bg, {href: "#Entity.Bg.Incorrect"});
+        } else {
+            ns.Element.attr(this._bg, {href: "#Entity.Bg"});
+        }
     };
 
     return Entity;

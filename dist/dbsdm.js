@@ -36,6 +36,11 @@ DBSDM.Canvas = (function() {
 
         this._entities = [];
         this._relations = [];
+
+        /**
+         * Modes
+         */
+        this.inCorrectionMode = false;
     }
 
     Canvas.prototype.create = function() {
@@ -70,6 +75,11 @@ DBSDM.Canvas = (function() {
         this.svg.addEventListener("mouseup",   function(e) { that.Mouse.up(e); });
 
         this.svg.addEventListener("contextmenu", function(e) {
+            if (that.inCorrectionMode) {
+                e.preventDefault();
+                return;
+            }
+
             that.ui.acceptTutorialAction("Menu");
 
             if (!ns.Menu.hasAttachedHandlers()) {
@@ -422,6 +432,7 @@ DBSDM.Canvas = (function() {
     // event handlers
 
     Canvas.prototype.onMouseDown = function(e, mouse) {
+        if (this.inCorrectionMode) { return; }
         if (mouse.button != 0) { return; }
         if (ns.Diagram.allowEdit) {
             var ent = new ns.Control.Entity(this, new ns.Model.Entity("Entity_" + (this._entities.length + 1)));
@@ -493,6 +504,7 @@ DBSDM.Diagram = (function() {
     /** Should only be read */
     self.allowEdit = true;
     self.allowFile = true;
+    self.allowCorrectMode = false;
     self.showTutorial = true;
     self.confirmLeave = false;
 
@@ -502,6 +514,7 @@ DBSDM.Diagram = (function() {
         options = options || {};
         if (typeof options.allowEdit == "boolean") { self.allowEdit = options.allowEdit; }
         if (typeof options.allowFile == "boolean") { self.allowFile = options.allowFile; }
+        if (typeof options.allowCorrectMode == "boolean") { self.allowCorrectMode = options.allowCorrectMode; }
         if (typeof options.showTutorial == "boolean") { self.showTutorial = options.showTutorial; }
         if (typeof options.confirmLeave == "boolean") { self.confirmLeave = options.confirmLeave; }
 
@@ -607,6 +620,15 @@ DBSDM.Diagram = (function() {
                 rx: 10, ry: 10,
                 fill: "#EFFFA4",
                 stroke: "#ffa800",
+                strokeWidth: ns.Consts.EntityStrokeWidth
+            })
+        );
+
+        self.createSharedElement("Entity.Bg.Incorrect",
+            ns.Element.rect(0, 0, "100%", "100%", {
+                rx: 10, ry: 10,
+                fill: "#ffaaaa",
+                stroke: "#b62727",
                 strokeWidth: ns.Consts.EntityStrokeWidth
             })
         );
@@ -2023,8 +2045,11 @@ DBSDM.UI = (function() {
         var ledge = document.createElement("div");
         ledge.className = "ledge";
 
+        if (ns.Diagram.allowCorrectMode) {
+            this._cModeSwitch = ledge.appendChild(this._createCorrectionModeSwitch());
+        }
         ledge.appendChild(this._createZoomControls());
-        ledge.appendChild(this._createHelp());
+        this._helpSwitch = ledge.appendChild(this._createHelp());
 
         this._ui.appendChild(ledge);
         container.appendChild(this._ui);
@@ -2086,11 +2111,22 @@ DBSDM.UI = (function() {
 
     UI.prototype._createHelp = function() {
         var a = document.createElement("a");
-        a.className = "helperIcon";
+        a.className = "uiIcon";
         a.innerHTML = "<i class='fa fa-info-circle'></i>";
 
         var that = this;
         a.addEventListener("click", function() { that._toggleHelp(); });
+
+        return a;
+    };
+
+    UI.prototype._createCorrectionModeSwitch = function() {
+        var a = document.createElement("a");
+        a.className = "uiIcon";
+        a.innerHTML = "<i class='fa fa-check-circle-o'></i>";
+
+        var that = this;
+        a.addEventListener("click", function() { that._toggleCorrectionMode(); });
 
         return a;
     };
@@ -2196,8 +2232,10 @@ DBSDM.UI = (function() {
         if (this._help) {
             this._help.remove();
             this._help = null;
+            this._helpSwitch.classList.remove("active");
             return;
         }
+        this._helpSwitch.classList.add("active");
 
         var data = {
             "Shortcuts on selected Entity": [
@@ -2234,6 +2272,18 @@ DBSDM.UI = (function() {
         div.innerHTML = content;
 
         this._help = this._ui.appendChild(div);
+    };
+
+    UI.prototype._toggleCorrectionMode = function() {
+        if (!ns.Diagram.allowCorrectMode) { return };
+        this._canvas.inCorrectionMode = !this._canvas.inCorrectionMode;
+        if (this._canvas.inCorrectionMode) {
+            this._cModeSwitch.classList.add("active");
+            this._canvas.svg.classList.add("correctionMode");
+        } else {
+            this._cModeSwitch.classList.remove("active");
+            this._canvas.svg.classList.remove("correctionMode");
+        }
     };
 
     return UI;
@@ -2302,6 +2352,7 @@ DBSDM.Control.Attribute = (function(){
     function Attribute(list, model, canvas, entityControl) {
         this._list = list;
 
+        this._canvas = canvas;
         this._model = (model || new DBSDM.Model.Attribute());
         this._view = new ns.View.Attribute(this._model, this, canvas);
         this._view.create(this, entityControl.getAttrContainer());
@@ -2336,6 +2387,15 @@ DBSDM.Control.Attribute = (function(){
         this._view.showInput();
     };
 
+    Attribute.prototype._toggleIncorrect = function() {
+        this._model.incorrect = !this._model.incorrect;
+        if (this._model.incorrect) {
+            this._view.markIncorrect();
+        } else {
+            this._view.markCorrect();
+        }
+    };
+
     // Menu Handlers
     Attribute.prototype.handleMenu = function(action) {
         switch(action) {
@@ -2368,6 +2428,7 @@ DBSDM.Control.Attribute = (function(){
 
     // Event Handlers
     Attribute.prototype.onMouseDown = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
         if (!ns.Diagram.allowEdit) { return; }
         this._dragOffset = e.clientY - this._view.getEdges().top;
 
@@ -2378,6 +2439,7 @@ DBSDM.Control.Attribute = (function(){
     };
 
     Attribute.prototype.onMouseMove = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
         if (!ns.Diagram.allowEdit) { return; }
         var delta = Math.floor((mouse.dy + this._dragOffset) / 18);
         var position = this._dragStartPosition + delta;
@@ -2388,6 +2450,11 @@ DBSDM.Control.Attribute = (function(){
     };
 
     Attribute.prototype.onMouseUp = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) {
+            this._toggleIncorrect();
+            return;
+        }
+
         this._view.dragEnded();
     };
 
@@ -2914,7 +2981,7 @@ DBSDM.Control.Entity = (function(){
         if (!ns.Diagram.allowEdit) { return; }
 
         this._canvas.svg.classList.remove("isaMode");
-        this._view.deselect();
+        this._view.defaultMark();
 
         if (this._parent == parent) { return; }
         if (this._parent != null) {
@@ -3158,6 +3225,11 @@ DBSDM.Control.Entity = (function(){
         return this._model.hasParent();
     };
 
+    Entity.prototype._toggleIncorrect = function() {
+        this._model.incorrect = !this._model.incorrect;
+        this._view.defaultMark();
+    };
+
     // Menu Handlers
     Entity.prototype.handleMenu = function(action) {
         switch(action) {
@@ -3175,6 +3247,8 @@ DBSDM.Control.Entity = (function(){
     // Event Handlers
 
     Entity.prototype.onMouseDown = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
+
         var matches = e.target.className.baseVal.match(/e-cp-(\w+)/);
         if (matches) {
             mouse.setParam("action", "cp");
@@ -3183,6 +3257,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.onMouseMove = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
 
         if (this._new) {
             this.place(mouse);
@@ -3199,6 +3274,11 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.onMouseUp = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) {
+            this._toggleIncorrect();
+            return;
+        }
+
         if (this._new) {
             // view create other elements
             if (mouse.dx == 0 || mouse.dy == 0) {
@@ -3213,8 +3293,7 @@ DBSDM.Control.Entity = (function(){
             }
         } else if (!mouse.didMove()) {
             this.activate();
-        } else if (this._canvas.svg.classList.contains("isaMode")) { // TODO
-            // TODO fix bug for when you get faster with than entity is
+        } else if (this._canvas.svg.classList.contains("isaMode")) {
             var parent = mouse.getTarget();
             if (parent instanceof ns.Control.Entity && parent != this) {
                 this._isa(parent);
@@ -3227,6 +3306,8 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.onKeyPress = function(e) {
+        if (this._canvas.inCorrectionMode) { return; }
+
         if (ns.View.EditableText.shown) { return; }
         switch(e.keyCode) {
             case 46: this.delete(); break; // del
@@ -3482,7 +3563,6 @@ DBSDM.Control.Relation = (function() {
             this._model.resetAnchors();
         }
         this.centerMiddlePoint();
-        this.redraw();
 
         if (this._legs.source.getModel().inXor) {
             this._sourceEntity.redrawXor(null, this._legs.source);
@@ -3514,6 +3594,7 @@ DBSDM.Control.Relation = (function() {
     };
 
     Relation.prototype.onMouseMove = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
         if (this._new) {
             var target = mouse.getTarget();
             if (target instanceof ns.Control.Entity) {
@@ -3570,6 +3651,7 @@ DBSDM.Control.RelationLeg = (function() {
 
     function RelationLeg(relationControl, canvas, model) {
         this._relation = relationControl;
+        this._canvas = relationControl.getCanvas();
         this._entity = null;
         this._model = model;
         this._view = new ns.View.RelationLeg(canvas, this._model, this);
@@ -3732,6 +3814,15 @@ DBSDM.Control.RelationLeg = (function() {
         this._view.clearSelectionClasses();
     };
 
+    RelationLeg.prototype._toggleIncorrect = function() {
+        this._model.incorrect = !this._model.incorrect;
+        if (this._model.incorrect) {
+            this._view.markIncorrect();
+        } else {
+            this._view.markCorrect();
+        }
+    };
+
     // Events
 
     RelationLeg.prototype.onEntityDrag = function(dx, dy) {
@@ -3769,6 +3860,8 @@ DBSDM.Control.RelationLeg = (function() {
     };
 
     RelationLeg.prototype.onMouseDown = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
+
         var params = mouse.getParams();
         if (params.action && params.action == "line") {
             params.action = "cp";
@@ -3778,6 +3871,8 @@ DBSDM.Control.RelationLeg = (function() {
     };
 
     RelationLeg.prototype.onMouseMove = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
+
         var params = mouse.getParams();
         if (!params.action) { return; }
 
@@ -3789,6 +3884,11 @@ DBSDM.Control.RelationLeg = (function() {
     };
 
     RelationLeg.prototype.onMouseUp = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) {
+            this._toggleIncorrect();
+            return;
+        }
+
         // TODO check for fast mouse movement bug, as in Entity
         var leg = mouse.getTarget();
         if (leg instanceof ns.Control.RelationLeg) {
@@ -3855,6 +3955,8 @@ DBSDM.Model.Attribute = (function(){
         this._primary = false;
         this._unique = false;
         this._nullable = false;
+
+        this.incorrect = false;
     }
 
     Attribute.prototype.getName = function() {
@@ -3933,13 +4035,16 @@ DBSDM.Model.Attribute = (function(){
 
     Attribute.prototype.getData = function() {
         this.setName(this._name); // force normalization
-
-        return {
+        var data = {
             name: this._name,
             primary: this._primary,
             unique: this._unique,
             nullable: this._nullable
+        };
+        if (this.incorrect) {
+            data.incorrect = true;
         }
+        return data;
     };
 
     return Attribute;
@@ -4027,12 +4132,12 @@ DBSDM.Model.AttributeList = (function(){
             var a = data[i];
             if (!a.name) { return; }
 
-            this.add(
-                (new ns.Model.Attribute(a.name))
+            var atr = (new ns.Model.Attribute(a.name))
                 .setPrimary(a.primary)
                 .setUnique(a.unique)
-                .setNullable(a.nullable)
-            );
+                .setNullable(a.nullable);
+            if (typeof a.incorrect == "boolean") { atr.incorrect = a.incorrect; }
+            this.add(atr);
         }
     };
 
@@ -4067,6 +4172,8 @@ DBSDM.Model.Entity = (function(){
 
         this._relationLegs = []; // does not export from here
         this._xorList = []; // Array of Arrays of relation leg models. Each array represent one XOR relation
+
+        this.incorrect = false;
 
         if (name && typeof name == "object") {
             this.import(name);
@@ -4318,12 +4425,18 @@ DBSDM.Model.Entity = (function(){
         for (var i=0; i<this._children.length; i++) {
             data = data.concat(this._children[i].getExportData());
         }
+
+        if (this.incorrect) {
+            data[0].incorrect = true;
+        }
+
         return data;
     };
 
     Entity.prototype.import = function(data) {
         if (data.name) { this._name = data.name; }
         if (data.attr) { this._attributes.import(data.attr); }
+        if (typeof data.incorrect == "boolean") { this.incorrect = data.incorrect; }
     };
 
     return Entity;
@@ -4340,8 +4453,8 @@ DBSDM.Model.Relation = (function(){
 
     function Relation(source, target, data) {
         if (typeof data == "object") {
-            this._source = new ns.Model.RelationLeg(data[0].identifying, data[0].optional, data[0].cardinality);
-            this._target = new ns.Model.RelationLeg(data[1].identifying, data[1].optional, data[1].cardinality);
+            this._source = new ns.Model.RelationLeg(data[0].identifying, data[0].optional, data[0].cardinality, data[0].incorrect);
+            this._target = new ns.Model.RelationLeg(data[1].identifying, data[1].optional, data[1].cardinality, data[1].incorrect);
         } else {
             this._source = source;
             this._target = target;
@@ -4516,7 +4629,7 @@ DBSDM.Model.RelationLeg = (function(){
     var ns = DBSDM;
     var Enum = ns.Enums;
 
-    function RelationLeg(identifying, optional, cardinality) {
+    function RelationLeg(identifying, optional, cardinality, incorrect) {
         this._relation = null;
 
         this._entity = null;
@@ -4546,6 +4659,8 @@ DBSDM.Model.RelationLeg = (function(){
         this.pointsManual = false;
 
         this.inXor = false;
+
+        this.incorrect = typeof(incorrect) == "boolean" ? incorrect : false;
     }
 
     RelationLeg.prototype.setRelation = function(relation) {
@@ -4711,16 +4826,17 @@ DBSDM.Model.RelationLeg = (function(){
     };
 
     RelationLeg.prototype.getExportData = function() {
-        console.log(this._entity.getXorHash(this));
-
-
-        return {
+        var data = {
             entity: this._entity.getName(), // TODO maybe setName first, to force normalization, just to be sure? Shouldnt be needed, since entities are exported first, but who knows...
-            identifying: this._identifying,
+                identifying: this._identifying,
             optional: this._optional,
             cardinality: this._cardinality,
             xor: this._entity.getXorHash(this)
         };
+        if (this.incorrect) {
+            data.incorrect = true;
+        }
+        return data;
     };
 
     return RelationLeg;
@@ -5022,6 +5138,10 @@ DBSDM.View.Attribute = (function(){
         this._svg.appendChild(this._text);
         parentDom.appendChild(this._svg);
 
+        if (this._model.incorrect) {
+            this.markIncorrect();
+        }
+
         var mouse = this._canvas.Mouse;
         this._svg.addEventListener("mousedown", function(e) { mouse.down(e, control); });
         this._svg.addEventListener("contextmenu", function(e) { ns.Menu.attach(control, "attribute"); });
@@ -5057,6 +5177,13 @@ DBSDM.View.Attribute = (function(){
 
     Attribute.prototype.dragEnded = function() {
         this._svg.classList.remove("dragged");
+    };
+
+    Attribute.prototype.markIncorrect = function() {
+        this._svg.classList.add("incorrect");
+    };
+    Attribute.prototype.markCorrect = function() {
+        this._svg.classList.remove("incorrect");
     };
 
     return Attribute;
@@ -5101,8 +5228,16 @@ DBSDM.View.EditableText = (function(){
         if (ns.Diagram.allowEdit) {
             this._text.classList.add("editable");
 
-            this._text.addEventListener("mousedown", function(e) { e.stopPropagation(); }); // won't work in Chrome for Relation names otherwise
-            this._text.addEventListener("click", function(e) { that.showInput(); e.stopPropagation(); });
+            this._text.addEventListener("mousedown", function(e) {
+                if (!that._canvas.inCorrectionMode) {
+                    e.stopPropagation();
+                }
+            }); // won't work in Chrome for Relation names otherwise
+            this._text.addEventListener("click", function(e) {
+                if (!that._canvas.inCorrectionMode) {
+                    that.showInput(); e.stopPropagation();
+                }
+            });
         }
     }
 
@@ -5334,6 +5469,8 @@ DBSDM.View.Entity = (function(){
             })
         );
 
+        this.defaultMark();
+
         this._dom.addEventListener("mousedown", function(e) { mouse.down(e, control); });
         this._dom.addEventListener("mouseenter", function(e) { mouse.enter(e, control); });
         this._dom.addEventListener("mouseleave", function(e) { mouse.leave(e); });
@@ -5392,8 +5529,13 @@ DBSDM.View.Entity = (function(){
     Entity.prototype.select = function() {
         ns.Element.attr(this._bg, {href: "#Entity.Bg.Selected"});
     };
-    Entity.prototype.deselect = function() {
-        ns.Element.attr(this._bg, {href: "#Entity.Bg"});
+
+    Entity.prototype.defaultMark = function() {
+        if (this._model.incorrect) {
+            ns.Element.attr(this._bg, {href: "#Entity.Bg.Incorrect"});
+        } else {
+            ns.Element.attr(this._bg, {href: "#Entity.Bg"});
+        }
     };
 
     return Entity;
@@ -5500,6 +5642,10 @@ DBSDM.View.RelationLeg = (function(){
         this.updateType();
 
         ns.Element.attr(this._g, {class: "leg"});
+
+        if (this._model.incorrect) {
+            this.markIncorrect();
+        }
 
         var that = this;
         this._g.addEventListener("mousedown", function(e) {
@@ -5649,6 +5795,13 @@ DBSDM.View.RelationLeg = (function(){
         this._g.classList.remove("selected");
         this._g.classList.remove("allowed");
         this._g.classList.remove("marked");
+    };
+
+    RelationLeg.prototype.markIncorrect = function() {
+        this._g.classList.add("incorrect");
+    };
+    RelationLeg.prototype.markCorrect = function() {
+        this._g.classList.remove("incorrect");
     };
 
     // control points

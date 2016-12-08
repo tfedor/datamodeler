@@ -270,6 +270,7 @@ DBSDM.Control.Relation = (function() {
     };
 
     Relation.prototype.onMouseMove = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
         if (this._new) {
             var target = mouse.getTarget();
             if (target instanceof ns.Control.Entity) {

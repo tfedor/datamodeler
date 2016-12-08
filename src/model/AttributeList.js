@@ -81,12 +81,12 @@ DBSDM.Model.AttributeList = (function(){
             var a = data[i];
             if (!a.name) { return; }
 
-            this.add(
-                (new ns.Model.Attribute(a.name))
+            var atr = (new ns.Model.Attribute(a.name))
                 .setPrimary(a.primary)
                 .setUnique(a.unique)
-                .setNullable(a.nullable)
-            );
+                .setNullable(a.nullable);
+            if (typeof a.incorrect == "boolean") { atr.incorrect = a.incorrect; }
+            this.add(atr);
         }
     };
 

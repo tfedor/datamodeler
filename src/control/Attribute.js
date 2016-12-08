@@ -7,6 +7,7 @@ DBSDM.Control.Attribute = (function(){
     function Attribute(list, model, canvas, entityControl) {
         this._list = list;
 
+        this._canvas = canvas;
         this._model = (model || new DBSDM.Model.Attribute());
         this._view = new ns.View.Attribute(this._model, this, canvas);
         this._view.create(this, entityControl.getAttrContainer());
@@ -41,6 +42,15 @@ DBSDM.Control.Attribute = (function(){
         this._view.showInput();
     };
 
+    Attribute.prototype._toggleIncorrect = function() {
+        this._model.incorrect = !this._model.incorrect;
+        if (this._model.incorrect) {
+            this._view.markIncorrect();
+        } else {
+            this._view.markCorrect();
+        }
+    };
+
     // Menu Handlers
     Attribute.prototype.handleMenu = function(action) {
         switch(action) {
@@ -73,6 +83,7 @@ DBSDM.Control.Attribute = (function(){
 
     // Event Handlers
     Attribute.prototype.onMouseDown = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
         if (!ns.Diagram.allowEdit) { return; }
         this._dragOffset = e.clientY - this._view.getEdges().top;
 
@@ -83,6 +94,7 @@ DBSDM.Control.Attribute = (function(){
     };
 
     Attribute.prototype.onMouseMove = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
         if (!ns.Diagram.allowEdit) { return; }
         var delta = Math.floor((mouse.dy + this._dragOffset) / 18);
         var position = this._dragStartPosition + delta;
@@ -93,6 +105,11 @@ DBSDM.Control.Attribute = (function(){
     };
 
     Attribute.prototype.onMouseUp = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) {
+            this._toggleIncorrect();
+            return;
+        }
+
         this._view.dragEnded();
     };
 

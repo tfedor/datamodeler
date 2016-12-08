@@ -10,8 +10,8 @@ DBSDM.Model.Relation = (function(){
 
     function Relation(source, target, data) {
         if (typeof data == "object") {
-            this._source = new ns.Model.RelationLeg(data[0].identifying, data[0].optional, data[0].cardinality);
-            this._target = new ns.Model.RelationLeg(data[1].identifying, data[1].optional, data[1].cardinality);
+            this._source = new ns.Model.RelationLeg(data[0].identifying, data[0].optional, data[0].cardinality, data[0].incorrect);
+            this._target = new ns.Model.RelationLeg(data[1].identifying, data[1].optional, data[1].cardinality, data[1].incorrect);
         } else {
             this._source = source;
             this._target = target;

@@ -35,6 +35,11 @@ DBSDM.Canvas = (function() {
 
         this._entities = [];
         this._relations = [];
+
+        /**
+         * Modes
+         */
+        this.inCorrectionMode = false;
     }
 
     Canvas.prototype.create = function() {
@@ -69,6 +74,11 @@ DBSDM.Canvas = (function() {
         this.svg.addEventListener("mouseup",   function(e) { that.Mouse.up(e); });
 
         this.svg.addEventListener("contextmenu", function(e) {
+            if (that.inCorrectionMode) {
+                e.preventDefault();
+                return;
+            }
+
             that.ui.acceptTutorialAction("Menu");
 
             if (!ns.Menu.hasAttachedHandlers()) {
@@ -421,6 +431,7 @@ DBSDM.Canvas = (function() {
     // event handlers
 
     Canvas.prototype.onMouseDown = function(e, mouse) {
+        if (this.inCorrectionMode) { return; }
         if (mouse.button != 0) { return; }
         if (ns.Diagram.allowEdit) {
             var ent = new ns.Control.Entity(this, new ns.Model.Entity("Entity_" + (this._entities.length + 1)));

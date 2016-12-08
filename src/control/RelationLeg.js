@@ -10,6 +10,7 @@ DBSDM.Control.RelationLeg = (function() {
 
     function RelationLeg(relationControl, canvas, model) {
         this._relation = relationControl;
+        this._canvas = relationControl.getCanvas();
         this._entity = null;
         this._model = model;
         this._view = new ns.View.RelationLeg(canvas, this._model, this);
@@ -172,6 +173,15 @@ DBSDM.Control.RelationLeg = (function() {
         this._view.clearSelectionClasses();
     };
 
+    RelationLeg.prototype._toggleIncorrect = function() {
+        this._model.incorrect = !this._model.incorrect;
+        if (this._model.incorrect) {
+            this._view.markIncorrect();
+        } else {
+            this._view.markCorrect();
+        }
+    };
+
     // Events
 
     RelationLeg.prototype.onEntityDrag = function(dx, dy) {
@@ -209,6 +219,8 @@ DBSDM.Control.RelationLeg = (function() {
     };
 
     RelationLeg.prototype.onMouseDown = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
+
         var params = mouse.getParams();
         if (params.action && params.action == "line") {
             params.action = "cp";
@@ -218,6 +230,8 @@ DBSDM.Control.RelationLeg = (function() {
     };
 
     RelationLeg.prototype.onMouseMove = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
+
         var params = mouse.getParams();
         if (!params.action) { return; }
 
@@ -229,6 +243,11 @@ DBSDM.Control.RelationLeg = (function() {
     };
 
     RelationLeg.prototype.onMouseUp = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) {
+            this._toggleIncorrect();
+            return;
+        }
+
         // TODO check for fast mouse movement bug, as in Entity
         var leg = mouse.getTarget();
         if (leg instanceof ns.Control.RelationLeg) {

@@ -11,6 +11,8 @@ DBSDM.Model.Attribute = (function(){
         this._primary = false;
         this._unique = false;
         this._nullable = false;
+
+        this.incorrect = false;
     }
 
     Attribute.prototype.getName = function() {
@@ -89,13 +91,16 @@ DBSDM.Model.Attribute = (function(){
 
     Attribute.prototype.getData = function() {
         this.setName(this._name); // force normalization
-
-        return {
+        var data = {
             name: this._name,
             primary: this._primary,
             unique: this._unique,
             nullable: this._nullable
+        };
+        if (this.incorrect) {
+            data.incorrect = true;
         }
+        return data;
     };
 
     return Attribute;

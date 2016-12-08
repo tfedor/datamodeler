@@ -11,6 +11,7 @@ DBSDM.Diagram = (function() {
     /** Should only be read */
     self.allowEdit = true;
     self.allowFile = true;
+    self.allowCorrectMode = false;
     self.showTutorial = true;
     self.confirmLeave = false;
 
@@ -20,6 +21,7 @@ DBSDM.Diagram = (function() {
         options = options || {};
         if (typeof options.allowEdit == "boolean") { self.allowEdit = options.allowEdit; }
         if (typeof options.allowFile == "boolean") { self.allowFile = options.allowFile; }
+        if (typeof options.allowCorrectMode == "boolean") { self.allowCorrectMode = options.allowCorrectMode; }
         if (typeof options.showTutorial == "boolean") { self.showTutorial = options.showTutorial; }
         if (typeof options.confirmLeave == "boolean") { self.confirmLeave = options.confirmLeave; }
 
@@ -125,6 +127,15 @@ DBSDM.Diagram = (function() {
                 rx: 10, ry: 10,
                 fill: "#EFFFA4",
                 stroke: "#ffa800",
+                strokeWidth: ns.Consts.EntityStrokeWidth
+            })
+        );
+
+        self.createSharedElement("Entity.Bg.Incorrect",
+            ns.Element.rect(0, 0, "100%", "100%", {
+                rx: 10, ry: 10,
+                fill: "#ffaaaa",
+                stroke: "#b62727",
                 strokeWidth: ns.Consts.EntityStrokeWidth
             })
         );
