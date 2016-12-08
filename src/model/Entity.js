@@ -174,11 +174,33 @@ DBSDM.Model.Entity = (function(){
         };
     };
 
-    Entity.prototype._getMaxEdgeInterval = function(edge) {
-        var edgeStart, edgeEnd;
+    Entity.prototype._pointsOnEdgeCmp = function(a, b) {
+        return a-b;
+    };
+    Entity.prototype.getEdgePosition = function(edge) { // , leg, recompute
+        //recompute = recompute || false;
+
+        /**
+         * Add points of currently existing anchors
+         */
+        var points = [];
+        for (var i=0; i<this._relationLegs.length; i++) {
+            var anchor = this._relationLegs[i].getAnchor();
+            if (anchor.edge == edge) {
+                /*if (this._relationLegs[i] == leg) {
+                    if (!recompute) {
+                        return anchor;
+                    } else {
+                        continue;
+                    }
+                }*/
+                points.push( ((edge & 1) == 0 ? anchor.x : anchor.y) );
+            }
+        }
+        points.sort(this._pointsOnEdgeCmp);
 
         var edges = this.getEdges();
-
+        var edgeStart, edgeEnd;
         if ((edge & 1) == 0) {  // top, bottom
             edgeStart = edges.left + EdgeOffset;
             edgeEnd = edges.right - EdgeOffset;
@@ -187,45 +209,45 @@ DBSDM.Model.Entity = (function(){
             edgeEnd = edges.bottom - EdgeOffset;
         }
 
-        // add positions of current relation anchors
-        var positions = [edgeStart]; // minimal position of the edge
+        points.unshift(edgeStart);
+        var ptsLen = points.push(edgeEnd);
 
-        for (var i=0; i<this._relationLegs.length; i++) {
-            var anchor = this._relationLegs[i].getAnchor();
-            if (anchor.edge == edge) {
-                positions.push( ((edge & 1) == 0 ? anchor.x : anchor.y) );
+        /**
+         * Add point at each interval intersection
+         */
+        var bestPoint = null;
+        var maxDiff = -1;
+        for (i=1; i<ptsLen; i++) {
+            var diff = (points[i] - points[i-1]) * 0.5;
+            if (diff > maxDiff) {
+                bestPoint = points[i] - diff;
+                maxDiff = diff;
             }
         }
 
-        positions.push(edgeEnd); // maximal position of the edge
-        positions.sort(function(a, b) {
-            return a-b;
-        });
+        /**
+         * If new anchor position is too close to other anchor, try edge points
+         */
+        if (ptsLen > 2 && maxDiff < ns.Consts.MinAnchorAnchorDistance) {
+            diff = points[1] - edgeStart; // first real point to edge distance
+            if (diff > maxDiff) {
+                bestPoint = edgeStart;
+                maxDiff = diff;
+            }
 
-        // pick position - find max interval and split it in half = new anchor position
-        var index = 1;
-        var maxLength = 0;
-        for (i=index; i<positions.length; i++) {
-            var len = positions[i] - positions[i-1];
-            if (len >= maxLength) {
-                index = i;
-                maxLength = len;
+            diff = edgeEnd - points[points.length-2]; // last real point to edge distance
+            if (diff > maxDiff) {
+                bestPoint = edgeEnd;
+                maxDiff = diff;
             }
         }
 
-        return [positions[index-1], positions[index], maxLength];
-    };
-
-    Entity.prototype.getEdgePosition = function(edge) {
-        var edges = this.getEdges();
-        var interval = this._getMaxEdgeInterval(edge);
-        var newPosition = Math.round((interval[0] + interval[1]) / 2);
-
+        var dist = maxDiff-ns.Consts.MinAnchorAnchorDistance;
         switch (edge) {
-            case Enum.Edge.TOP:    return {x: newPosition, y: edges.top}; break;
-            case Enum.Edge.RIGHT:  return {x: edges.right, y: newPosition}; break;
-            case Enum.Edge.BOTTOM: return {x: newPosition, y: edges.bottom}; break;
-            case Enum.Edge.LEFT:   return {x: edges.left, y: newPosition}; break;
+            case Enum.Edge.TOP:    return {x: bestPoint,   y: edges.top,    edge: edge, dist: dist}; break;
+            case Enum.Edge.RIGHT:  return {x: edges.right, y: bestPoint,    edge: edge, dist: dist}; break;
+            case Enum.Edge.BOTTOM: return {x: bestPoint,   y: edges.bottom, edge: edge, dist: dist}; break;
+            case Enum.Edge.LEFT:   return {x: edges.left,  y: bestPoint,    edge: edge, dist: dist}; break;
         }
     };
 

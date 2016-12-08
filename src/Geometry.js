@@ -8,6 +8,11 @@ DBSDM.Geometry = (function() {
         var y = B.y - A.y;
         return Math.sqrt(x*x + y*y);
     };
+    self.pointToPointSquareDistance = function(A, B) {
+        var x = B.x - A.x;
+        var y = B.y - A.y;
+        return x*x + y*y;
+    };
 
     self.pointToLineDistance = function(p, P1, P2) {
         var a = (P2.y - P1.y);

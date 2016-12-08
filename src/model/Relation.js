@@ -67,77 +67,74 @@ DBSDM.Model.Relation = (function(){
      * Set anchors on entities edges, so the relation is as short as possible
      * If recompute is false, entity won't change position on the same edge that it is already at
      */
-    Relation.prototype.resetAnchors = function(recompute, sourceEntity, targetEntity) {
-        recompute = recompute || false;
 
+
+    Relation.prototype._addPoints = function(leg, entity, edge, recompute) {
+        var anchor = leg.getAnchor();
+        if (!recompute && anchor.edge == edge) {
+            return anchor;
+        } else {
+            return entity.getEdgePosition(edge);
+        }
+    };
+
+    Relation.prototype.resetAnchors = function(recompute, sourceEntity, targetEntity) {
         sourceEntity = sourceEntity || this._source.getEntity();
         targetEntity = targetEntity || this._target.getEntity();
         if (sourceEntity == targetEntity) { return; }
+        recompute = recompute || false;
 
-        var edges = [];
-        var source = { pos: [], best: 0 };
-        var target = { pos: [], best: 0 };
-
-        // get possible edges
+        /**
+         * Get possible anchor points
+         */
+        var source = [];
+        var target = [];
         var sourceEdges = sourceEntity.getEdges();
         var targetEdges = targetEntity.getEdges();
-
         if (sourceEdges.right < targetEdges.left) {
-            edges.push(Enum.Edge.RIGHT);
+            source.push(this._addPoints(this._source, sourceEntity, Enum.Edge.RIGHT, recompute));
+            target.push(this._addPoints(this._target, targetEntity, Enum.Edge.LEFT,  recompute));
         } else if (sourceEdges.left > targetEdges.right) {
-            edges.push(Enum.Edge.LEFT);
+            source.push(this._addPoints(this._source, sourceEntity, Enum.Edge.LEFT,  recompute));
+            target.push(this._addPoints(this._target, targetEntity, Enum.Edge.RIGHT, recompute));
         }
-
         if (sourceEdges.bottom < targetEdges.top) {
-            edges.push(Enum.Edge.BOTTOM);
+            source.push(this._addPoints(this._source, sourceEntity, Enum.Edge.BOTTOM, recompute));
+            target.push(this._addPoints(this._target, targetEntity, Enum.Edge.TOP,    recompute));
         } else if (sourceEdges.top > targetEdges.bottom) {
-            edges.push(Enum.Edge.TOP);
+            source.push(this._addPoints(this._source, sourceEntity, Enum.Edge.TOP,    recompute));
+            target.push(this._addPoints(this._target, targetEntity, Enum.Edge.BOTTOM, recompute));
         }
 
-        if (edges.length == 0) { // ISA or something weird
-            edges.push(Enum.Edge.TOP);
-            edges.push(Enum.Edge.RIGHT);
-            edges.push(Enum.Edge.BOTTOM);
-            edges.push(Enum.Edge.LEFT);
+        if (source.length == 0) { // ISA or something weird
+            for (var i=0;i<4; i++) {
+                source.push(this._addPoints(this._source, sourceEntity, i, recompute));
+                target.push(this._addPoints(this._target, targetEntity, i, recompute));
+            }
         }
 
-        if (edges.length > 0) {
-            // compute positions
-            var i,j;
-            var anchor;
-            for (i=0; i<edges.length; i++) {
-                anchor = this._source.getAnchor();
-                if (!recompute && anchor.edge == edges[i]) {
-                    source.pos.push({x: anchor.x, y: anchor.y});
-                } else {
-                    source.pos.push(sourceEntity.getEdgePosition(edges[i]));
-                }
-
-                anchor = this._target.getAnchor();
-                if (!recompute && anchor.edge == (edges[i] + 2) % 4) {
-                    target.pos.push({x: anchor.x, y: anchor.y});
-                } else {
-                    target.pos.push(targetEntity.getEdgePosition((edges[i] + 2) % 4));
+        /**
+         * Pick combination of anchor points, that creates shortest relation
+         */
+        var minLen = null;
+        var bestSource = null;
+        var bestTarget = null;
+        for (var s=0; s<source.length; s++) {
+            for (var t=0; t<target.length; t++) {
+                var len = ns.Geometry.pointToPointSquareDistance(source[s], target[t]);
+                if (minLen == null || len < minLen) {
+                    minLen = len;
+                    bestSource = source[s];
+                    bestTarget = target[t];
                 }
             }
-
-            // check edges combinations and pick the best (shortest) one
-            var minLen;
-            for (i=0; i<edges.length; i++) {
-                for (j=0; j<edges.length; j++) {
-                    var len = ns.Geometry.pointToPointDistance(source.pos[i], target.pos[j]);
-                    if (!minLen || len < minLen) {
-                        minLen = len;
-                        source.best = i;
-                        target.best = j;
-                    }
-                }
-            }
-
-            // rotate and position anchor
-            this._source.setAnchor(source.pos[source.best].x, source.pos[source.best].y, edges[source.best]);
-            this._target.setAnchor(target.pos[target.best].x, target.pos[target.best].y, (edges[target.best]+2)%4);
         }
+
+        /**
+         * Rotate and position anchors
+         */
+        this._source.setAnchor(bestSource.x, bestSource.y, bestSource.edge);
+        this._target.setAnchor(bestTarget.x, bestTarget.y, bestTarget.edge);
     };
 
     Relation.prototype.straighten = function(recompute, sourceEntity, targetEntity) {

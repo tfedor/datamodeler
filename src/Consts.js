@@ -11,6 +11,8 @@ DBSDM.Consts = {
     EntityExtraHeight: 5,
 
     DefaultAnchorOffset: 11, // how for from edge to start drawing relation leg
+    MinAnchorAnchorDistance: 10, // should be half the anchor width
+
     ArcSize: 12,
     ArcEndPointOffset: 10, // how far from the start/end point draw arc
     ArcEdgeDistance: 17, // distance of the arc from the entity edge
