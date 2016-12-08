@@ -366,6 +366,7 @@ DBSDM.Control.Entity = (function(){
         if (!ns.Diagram.allowEdit) { return; }
         var control = new ns.Control.Relation(this._canvas, this, null, sourceCardinality, targetCardinality);
         this._canvas.Mouse.attachObject(control);
+        ns.Diagram.cancelAction = function() { control.cancel(); };
     };
 
     Entity.prototype.addRelationLeg = function(relationLegControl) {
@@ -456,6 +457,23 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
+    Entity.prototype._initIsa = function() {
+        if (ns.Diagram.allowEdit) {
+            this._canvas.Mouse.attachObject(this);
+            this._view.select();
+            this._canvas.svg.classList.add("isaMode");
+
+            var that = this;
+            ns.Diagram.cancelAction = function() { that.cancelIsa(); };
+        }
+    };
+
+    Entity.prototype.cancelIsa = function() {
+        this._canvas.svg.classList.remove("isaMode");
+        this._view.defaultMark();
+        this._canvas.Mouse.detachObject();
+    };
+
     Entity.prototype.removeChild = function(child) {
         this._model.removeChild(child);
 
@@ -486,14 +504,6 @@ DBSDM.Control.Entity = (function(){
         this._notifyResize();
         this._view.redraw();
         this.computeNeededSize();
-    };
-
-    Entity.prototype._initIsa = function() {
-        if (ns.Diagram.allowEdit) {
-            this._canvas.Mouse.attachObject(this);
-            this._view.select();
-            this._canvas.svg.classList.add("isaMode");
-        }
     };
 
     Entity.prototype.fitToContents = function() {
@@ -750,6 +760,7 @@ DBSDM.Control.Entity = (function(){
         if (ns.View.EditableText.shown) { return; }
         switch(e.keyCode) {
             case 46: this.delete(); break; // del
+            case 27: this.deactivate(); break; // esc
         }
         switch(e.key.toLowerCase()) {
             case "a": this._createAttribute(); break; // "a"

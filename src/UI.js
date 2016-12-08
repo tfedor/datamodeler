@@ -98,7 +98,7 @@ DBSDM.UI = (function() {
         a.innerHTML = "<i class='fa fa-info-circle'></i>";
 
         var that = this;
-        a.addEventListener("click", function() { that._toggleHelp(); });
+        a.addEventListener("click", function() { that.toggleHelp(); });
 
         return a;
     };
@@ -211,7 +211,7 @@ DBSDM.UI = (function() {
     };
 
     // help
-    UI.prototype._toggleHelp = function() {
+    UI.prototype.toggleHelp = function() {
         if (this._help) {
             this._help.remove();
             this._help = null;
@@ -263,9 +263,13 @@ DBSDM.UI = (function() {
         if (this._canvas.inCorrectionMode) {
             this._cModeSwitch.classList.add("active");
             this._canvas.svg.classList.add("correctionMode");
+
+            var that = this;
+            ns.Diagram.cancelAction = function() { that._toggleCorrectionMode(); }
         } else {
             this._cModeSwitch.classList.remove("active");
             this._canvas.svg.classList.remove("correctionMode");
+            ns.Diagram.cancelAction = null;
         }
     };
 

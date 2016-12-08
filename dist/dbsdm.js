@@ -509,6 +509,8 @@ DBSDM.Diagram = (function() {
     self.confirmLeave = false;
 
     self._canvasList = [];
+    self._lastCanvas = null;
+    self.cancelAction = null;
 
     self.init = function(options){
         options = options || {};
@@ -541,7 +543,21 @@ DBSDM.Diagram = (function() {
         }
 
         window.addEventListener('keypress',function(e){
-            if (ns.Control.Entity.activeEntity) {
+            if (self.lastCanvas) {
+                if (e.keyCode == 112) { // F1
+                    self.lastCanvas.ui.toggleHelp();
+                    return;
+                }
+                switch(e.key) {
+                    case "+": self.lastCanvas.zoomIn(); return;
+                    case "-": self.lastCanvas.zoomOut(); return;
+                    case "*": self.lastCanvas.zoomReset(); return;
+                }
+            }
+            if (e.keyCode == 27 && self.cancelAction) { // ESC
+                self.cancelAction();
+                self.cancelAction = null;
+            } else if (ns.Control.Entity.activeEntity) {
                 ns.Control.Entity.activeEntity.onKeyPress(e);
             }
         });
@@ -1898,6 +1914,8 @@ DBSDM.Mouse = (function(){
     };
 
     Mouse.prototype.down = function(e, object, params) {
+        ns.Diagram.lastCanvas = this._canvas;
+
         this._targetObject = object;
 
         if (this._canvas.ui.shown() && !this._canvas.ui.inTutorial) {
@@ -2115,7 +2133,7 @@ DBSDM.UI = (function() {
         a.innerHTML = "<i class='fa fa-info-circle'></i>";
 
         var that = this;
-        a.addEventListener("click", function() { that._toggleHelp(); });
+        a.addEventListener("click", function() { that.toggleHelp(); });
 
         return a;
     };
@@ -2228,7 +2246,7 @@ DBSDM.UI = (function() {
     };
 
     // help
-    UI.prototype._toggleHelp = function() {
+    UI.prototype.toggleHelp = function() {
         if (this._help) {
             this._help.remove();
             this._help = null;
@@ -2280,9 +2298,13 @@ DBSDM.UI = (function() {
         if (this._canvas.inCorrectionMode) {
             this._cModeSwitch.classList.add("active");
             this._canvas.svg.classList.add("correctionMode");
+
+            var that = this;
+            ns.Diagram.cancelAction = function() { that._toggleCorrectionMode(); }
         } else {
             this._cModeSwitch.classList.remove("active");
             this._canvas.svg.classList.remove("correctionMode");
+            ns.Diagram.cancelAction = null;
         }
     };
 
@@ -2927,6 +2949,7 @@ DBSDM.Control.Entity = (function(){
         if (!ns.Diagram.allowEdit) { return; }
         var control = new ns.Control.Relation(this._canvas, this, null, sourceCardinality, targetCardinality);
         this._canvas.Mouse.attachObject(control);
+        ns.Diagram.cancelAction = function() { control.cancel(); };
     };
 
     Entity.prototype.addRelationLeg = function(relationLegControl) {
@@ -3017,6 +3040,23 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
+    Entity.prototype._initIsa = function() {
+        if (ns.Diagram.allowEdit) {
+            this._canvas.Mouse.attachObject(this);
+            this._view.select();
+            this._canvas.svg.classList.add("isaMode");
+
+            var that = this;
+            ns.Diagram.cancelAction = function() { that.cancelIsa(); };
+        }
+    };
+
+    Entity.prototype.cancelIsa = function() {
+        this._canvas.svg.classList.remove("isaMode");
+        this._view.defaultMark();
+        this._canvas.Mouse.detachObject();
+    };
+
     Entity.prototype.removeChild = function(child) {
         this._model.removeChild(child);
 
@@ -3047,14 +3087,6 @@ DBSDM.Control.Entity = (function(){
         this._notifyResize();
         this._view.redraw();
         this.computeNeededSize();
-    };
-
-    Entity.prototype._initIsa = function() {
-        if (ns.Diagram.allowEdit) {
-            this._canvas.Mouse.attachObject(this);
-            this._view.select();
-            this._canvas.svg.classList.add("isaMode");
-        }
     };
 
     Entity.prototype.fitToContents = function() {
@@ -3311,6 +3343,7 @@ DBSDM.Control.Entity = (function(){
         if (ns.View.EditableText.shown) { return; }
         switch(e.keyCode) {
             case 46: this.delete(); break; // del
+            case 27: this.deactivate(); break; // esc
         }
         switch(e.key.toLowerCase()) {
             case "a": this._createAttribute(); break; // "a"
@@ -3383,6 +3416,13 @@ DBSDM.Control.Relation = (function() {
     Relation.prototype.import = function() {
         this._setupEntities();
         this._moveToEntity();
+    };
+
+    Relation.prototype.cancel = function() {
+        if (!this._new) { return; }
+        this._new = false;
+        this._view.clear();
+        this._canvas.Mouse.detachObject();
     };
 
     //

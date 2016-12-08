@@ -86,6 +86,8 @@ DBSDM.Mouse = (function(){
     };
 
     Mouse.prototype.down = function(e, object, params) {
+        ns.Diagram.lastCanvas = this._canvas;
+
         this._targetObject = object;
 
         if (this._canvas.ui.shown() && !this._canvas.ui.inTutorial) {

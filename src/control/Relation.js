@@ -61,6 +61,13 @@ DBSDM.Control.Relation = (function() {
         this._moveToEntity();
     };
 
+    Relation.prototype.cancel = function() {
+        if (!this._new) { return; }
+        this._new = false;
+        this._view.clear();
+        this._canvas.Mouse.detachObject();
+    };
+
     //
 
     Relation.prototype.getCanvas = function() {
