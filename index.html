@@ -84,7 +84,7 @@
         var json4 = JSON.parse('{"entities": [{"name": "Entity_1","parent": null,"attr": []},{"name": "Entity_2","parent": null,"attr": []},{"name": "Entity_3","parent": null,"attr": []},{"name": "Entity_4","parent": null,"attr": []},{"name": "Entity_5","parent": null,"attr": []}],"relations": [[{"entity": "Entity_1","identifying": false,"optional": false,"cardinality": 0,"xor": "1c46bf16a2864ba5a2864ba5c26b54d5"},{"entity": "Entity_3","identifying": true,"optional": true,"cardinality": 0,"xor": null}],[{"entity": "Entity_1","identifying": false,"optional": false,"cardinality": 0,"xor": "1c46bf16a2864ba5a2864ba5c26b54d5"},{"entity": "Entity_4","identifying": true,"optional": true,"cardinality": 0,"xor": null}],[{"entity": "Entity_1","identifying": false,"optional": false,"cardinality": 0,"xor": null},{"entity": "Entity_2","identifying": true,"optional": true,"cardinality": 0,"xor": null}],[{"entity": "Entity_1","identifying": false,"optional": false,"cardinality": 0,"xor": null},{"entity": "Entity_5","identifying": true,"optional": true,"cardinality": 0,"xor": null}]]}');
         canvas.import(json3);
 
-        for (var i=0; i<0; i++) {
+        for (var i=0; i<2; i++) {
             var c = new DBSDM.Canvas();
             c.create();
             c.import(json);

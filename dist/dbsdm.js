@@ -2712,7 +2712,6 @@ DBSDM.Control.Entity = (function(){
         };
 
         this._model.setPosition(x, y);
-        this.notifyDrag(delta.x, delta.y);
         return delta;
     };
 
@@ -2723,7 +2722,7 @@ DBSDM.Control.Entity = (function(){
         var delta;
         if (this._parent != null) {
             var transform = this._model.getTransform();
-            this._setPosition(
+            delta = this._setPosition(
                 transform.x + mouse.rx,
                 transform.y + mouse.ry
             );
@@ -2733,8 +2732,8 @@ DBSDM.Control.Entity = (function(){
                 x: mouse.rx,
                 y: mouse.ry
             };
-            this.notifyDrag(delta.x, delta.y);
         }
+        this.notifyDrag(delta.x, delta.y);
     };
 
     Entity.prototype.notifyDrag = function(x, y) {
@@ -2810,7 +2809,8 @@ DBSDM.Control.Entity = (function(){
 
     Entity.prototype.resetPosition = function() {
         var t = this._model.getTransform();
-        this._setPosition(t.x, t.y);
+        var delta = this._setPosition(t.x, t.y);
+        this.notifyDrag(delta.x, delta.y);
         this._view.redraw();
     };
 
@@ -3007,6 +3007,10 @@ DBSDM.Control.Entity = (function(){
         this._view.defaultMark();
 
         if (this._parent == parent) { return; }
+
+        var oldEdges = this._model.getEdges();
+        var newEdges;
+
         if (this._parent != null) {
             this._parent.removeChild(this);
             this._model.setParent(null);
@@ -3020,6 +3024,9 @@ DBSDM.Control.Entity = (function(){
             this._canvas.addEntity(this);
 
             this._setPosition(mouse.x, mouse.y);
+
+            newEdges = this._model.getEdges();
+            this.notifyDrag(newEdges.left - oldEdges.left, newEdges.top - oldEdges.top);
         } else {
             var parentTransform = parent._model.getTransform();
             this._setPosition(mouse.x - parentTransform.x, mouse.y - parentTransform.y);
@@ -3027,6 +3034,9 @@ DBSDM.Control.Entity = (function(){
             this._model.setParent(parent._model);
             this._view.setParent(parent.getDom());
             this._canvas.removeEntity(this);
+
+            newEdges = this._model.getEdges();
+            this.notifyDrag(newEdges.left - oldEdges.left, newEdges.top - oldEdges.top);
 
             parent.addChild(this);
         }
@@ -3102,7 +3112,8 @@ DBSDM.Control.Entity = (function(){
                 var child = this._children[i].getMinimalSize();
 
                 this._children[i].fitToContents();
-                this._children[i]._setPosition(offsetLeft, offsetTop);
+                var delta = this._children[i]._setPosition(offsetLeft, offsetTop);
+                this.notifyDrag(delta.x, delta.y);
                 this._children[i]._view.redraw();
 
                 offsetLeft += ns.Consts.EntityPadding + child.width;
