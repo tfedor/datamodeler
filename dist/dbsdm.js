@@ -3662,7 +3662,9 @@ DBSDM.Control.Relation = (function() {
         if (!this._model.hasManualPoints()) {
             this._model.resetAnchors();
         }
-        this.centerMiddlePoint();
+        if (!this.isRecursive()) {
+            this.centerMiddlePoint();
+        }
 
         if (this._legs.source.getModel().inXor) {
             this._sourceEntity.redrawXor(null, this._legs.source);
