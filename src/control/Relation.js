@@ -84,6 +84,11 @@ DBSDM.Control.Relation = (function() {
         this._view.redraw();
     };
 
+    Relation.prototype.redrawType = function() {
+        this._legs.source.redrawType();
+        this._legs.target.redrawType();
+    };
+
     Relation.prototype.clear = function() {
         this._sourceEntity.removeRelationLeg(this._legs.source);
         this._targetEntity.removeRelationLeg(this._legs.target);
@@ -238,6 +243,40 @@ DBSDM.Control.Relation = (function() {
         this._targetEntity.addForce(force.getOpposite());
     };
 
+    // swap
+
+    Relation.prototype._swap = function() {
+        this._swapCardinality();
+        this._swapIdentifying();
+        this._swapRequired();
+    };
+    Relation.prototype._swapCardinality = function() {
+        var s = this._legs.source.getModel();
+        var t = this._legs.target.getModel();
+
+        console.log(s, t);
+
+        var tmp = s.getCardinality();
+        s.setCardinality(t.getCardinality());
+        t.setCardinality(tmp);
+    };
+    Relation.prototype._swapIdentifying = function() {
+        var s = this._legs.source.getModel();
+        var t = this._legs.target.getModel();
+
+        var tmp = s.isIdentifying();
+        s.setIdentifying(t.isIdentifying());
+        t.setIdentifying(tmp);
+    };
+    Relation.prototype._swapRequired = function() {
+        var s = this._legs.source.getModel();
+        var t = this._legs.target.getModel();
+
+        var tmp = s.isOptional();
+        s.setOptional(t.isOptional());
+        t.setOptional(tmp);
+    };
+
     // Events
 
     // handles non-recursive relations
@@ -307,17 +346,23 @@ DBSDM.Control.Relation = (function() {
     // Menu
 
     Relation.prototype.handleMenu = function(action, params) {
+        if (ns.Diagram.allowEdit) {
+            switch(action) {
+                case "swap":       this._swap();            this.redrawType(); return;
+                case "swap-card":  this._swapCardinality(); this.redrawType(); return;
+                case "swap-ident": this._swapIdentifying(); this.redrawType(); return;
+                case "swap-req":   this._swapRequired();    this.redrawType(); return;
+                case "delete":     this.clear();                               return;
+            }
+        }
+
         switch(action) {
             case "reset":      this._model.resetMiddlePoint(); break;
             case "straighten": this.straighten(); break;
             case "toback":     this._view.toBack(); break;
-            case "delete":
-                if (ns.Diagram.allowEdit) {
-                    this.clear();
-                }
-                return;
         }
         this.redraw();
+
     };
 
     return Relation;

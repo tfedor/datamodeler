@@ -60,11 +60,21 @@ DBSDM.Menu = (function(){
             ],
             ["Identifying", "identifying", ["check-square-o", "square-o"], "allowEdit"],
             ["Required", "required", ["check-square-o", "square-o"], "allowEdit"],
-            ["XOR with...", "xor", null, "allowEdit"], // TODO icon
-            ["Remove from XOR", "remove-xor", null, "allowEdit"], // TODO icon
+            ["XOR with...", "xor", null, "allowEdit"],
+            ["Remove from XOR", "remove-xor", null, "allowEdit"],
             ["Toggle Name", "name", ["check-square-o", "square-o"]]
         ],
         relation: [
+            [
+                "Swap",
+                [
+                    ["All", "swap"],
+                    ["Cardinality", "swap-card"],
+                    ["Identifying", "swap-ident"],
+                    ["Required", "swap-req"]
+                ],
+                "exchange"
+            ],
             ["Straighten", "straighten", "compress"],
             ["Send to Back", "toback", "level-down"],
             ["Delete Relation", "delete", "ban", "allowEdit"]

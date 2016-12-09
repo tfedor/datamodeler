@@ -36,6 +36,11 @@ DBSDM.Control.RelationLeg = (function() {
         this._view.updatePoints();
     };
 
+    RelationLeg.prototype.redrawType = function() {
+        this._view.updateType();
+        this._view.updateAnchorType();
+    };
+
     RelationLeg.prototype.getDom = function() {
         return this._view.getDom();
     };
@@ -284,8 +289,7 @@ DBSDM.Control.RelationLeg = (function() {
             case "remove-xor":  this._removeXor(); break;
         }
 
-        this._view.updateType();
-        this._view.updateAnchorType();
+        this.redrawType();
     };
 
     RelationLeg.prototype.getMenuState = function() {
