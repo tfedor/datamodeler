@@ -144,11 +144,17 @@ DBSDM.Control.Entity = (function(){
                 transform.y + mouse.ry
             );
         } else {
-            this._model.translate(mouse.rx, mouse.ry);
             delta = {
                 x: mouse.rx,
                 y: mouse.ry
             };
+            if (this._canvas.snap && (delta.x != 0 || delta.y != 0)) {
+                var tr = this._model.getTransform();
+                if (delta.x != 0) { delta.x -= tr.x % ns.Consts.CanvasGridSize; }
+                if (delta.y != 0) { delta.y -= tr.y % ns.Consts.CanvasGridSize; }
+            }
+
+            this._model.translate(delta.x, delta.y);
         }
         this.notifyDrag(delta.x, delta.y);
     };
