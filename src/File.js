@@ -29,10 +29,13 @@ DBSDM.File = (function() {
     };
 
     self.upload = function(e, canvas) {
-        if (!ns.Diagram.allowFile) { return; }
-
         e.stopPropagation();
         e.preventDefault();
+
+        if (!ns.Diagram.allowFile) {
+            canvas.ui.error("File upload is turned off");
+            return;
+        }
 
         // fetch FileList object
         var files = e.target.files || e.dataTransfer.files;
