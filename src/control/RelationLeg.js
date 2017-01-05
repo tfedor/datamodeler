@@ -127,6 +127,9 @@ DBSDM.Control.RelationLeg = (function() {
             this._view.select();
             this._entity.markRelations(this, this._model.inXor);
             this._inXorCreation = true;
+
+            var that = this;
+            ns.Diagram.cancelAction = function() { that.xor(null); };
         }
     };
 
@@ -134,6 +137,7 @@ DBSDM.Control.RelationLeg = (function() {
         if (!this._inXorCreation) { return; }
         this._entity.unmarkRelations();
 
+        ns.Diagram.cancelAction = null;
         if (!leg) {return;}
 
         if (this == leg) {
