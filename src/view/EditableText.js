@@ -159,6 +159,7 @@ DBSDM.View.EditableText = (function(){
     /** Key press handling */
 
     EditableText.prototype._confirm = function() {
+        this._input.value = this._input.value.trim();
         if (this._input.value == "") {
             if (this._emptyHandler) {
                 this._hideInput();
