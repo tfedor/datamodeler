@@ -18,8 +18,8 @@ DBSDM.Control.Relation = (function() {
         // model
         var source, target;
         if (!model) {
-            source = new ns.Model.RelationLeg(false, false, sourceCardinality);
-            target = new ns.Model.RelationLeg(true, true, targetCardinality);
+            source = new ns.Model.RelationLeg(false, true, sourceCardinality);
+            target = new ns.Model.RelationLeg(true, false, targetCardinality);
             this._model = new ns.Model.Relation(source, target);
         } else {
             this._model = model;
