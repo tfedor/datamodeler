@@ -42,7 +42,7 @@ DBSDM.Canvas = (function() {
         this.inCorrectionMode = false;
     }
 
-    Canvas.prototype.create = function() {
+    Canvas.prototype.create = function(parent) {
         ns.Diagram.registerCanvas(this);
 
         this._container = document.createElement("div");
@@ -51,7 +51,9 @@ DBSDM.Canvas = (function() {
         this.ui = new ns.UI(this._container, this);
         this.svg = this._container.appendChild(ns.Element.el("svg"));
 
-        if (document.currentScript) {
+        if (parent && parent instanceof Node) {
+            parent.appendChild(this._container);
+        } else if (document.currentScript) {
             document.currentScript.parentNode.insertBefore(this._container, document.currentScript);
         } else {
             document.body.appendChild(this._container);

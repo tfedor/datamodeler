@@ -43,7 +43,7 @@ DBSDM.Canvas = (function() {
         this.inCorrectionMode = false;
     }
 
-    Canvas.prototype.create = function() {
+    Canvas.prototype.create = function(parent) {
         ns.Diagram.registerCanvas(this);
 
         this._container = document.createElement("div");
@@ -52,7 +52,9 @@ DBSDM.Canvas = (function() {
         this.ui = new ns.UI(this._container, this);
         this.svg = this._container.appendChild(ns.Element.el("svg"));
 
-        if (document.currentScript) {
+        if (parent && parent instanceof Node) {
+            parent.appendChild(this._container);
+        } else if (document.currentScript) {
             document.currentScript.parentNode.insertBefore(this._container, document.currentScript);
         } else {
             document.body.appendChild(this._container);
@@ -116,6 +118,33 @@ DBSDM.Canvas = (function() {
     Canvas.prototype.getSharedHTMLElement = function(name) {
         if (!this.hasSharedHTMLElement(name)) { return null; }
         return document.getElementById(this._sharedElementName(name));
+    };
+
+    // mode
+
+    /**
+     * Sets mode of the canvas
+     * "Mode" is automatically added to the class name, e.g. mode "isa" will set canvas' class to "isaMode"
+     * @param mode  string  name of the mode, e.g. "isa" or "correction"
+     */
+    Canvas.prototype.setMode = function(mode) {
+        this.svg.classList.toggle(mode + "Mode");
+    };
+
+    /**
+     * Unsets mode of the canvas
+     * @param mode  string  name of the mode, e.g. "isa" or "correction"
+     */
+    Canvas.prototype.unsetMode = function(mode) {
+        this.svg.classList.toggle(mode + "Mode");
+    };
+
+    /**
+     * Checks whether canvas is in set mode
+     * @param mode  string  name of the mode, e.g. "isa" or "correction"
+     */
+    Canvas.prototype.isInMode = function(mode) {
+        return this.svg.classList.contains(mode + "Mode");
     };
 
     // canvas
@@ -563,16 +592,12 @@ DBSDM.Diagram = (function() {
             };
         }
 
-        window.addEventListener('keypress',function(e){
+        window.addEventListener('keydown', function(e) {
             if (self.lastCanvas) {
                 if (e.keyCode == 112) { // F1
                     self.lastCanvas.ui.toggleHelp();
+                    e.preventDefault();
                     return;
-                }
-                switch(e.key) {
-                    case "+": self.lastCanvas.zoomIn(); return;
-                    case "-": self.lastCanvas.zoomOut(); return;
-                    case "*": self.lastCanvas.zoomReset(); return;
                 }
             }
             if (e.keyCode == 27 && self.cancelAction) { // ESC
@@ -580,6 +605,15 @@ DBSDM.Diagram = (function() {
                 self.cancelAction = null;
             } else if (ns.Control.Entity.activeEntity) {
                 ns.Control.Entity.activeEntity.onKeyPress(e);
+            }
+        });
+        window.addEventListener('keypress',function(e){
+            if (self.lastCanvas) {
+                switch(e.key) {
+                    case "+": self.lastCanvas.zoomIn(); return;
+                    case "-": self.lastCanvas.zoomOut(); return;
+                    case "*": self.lastCanvas.zoomReset(); return;
+                }
             }
         });
         window.addEventListener("mousedown", function(e) {
@@ -1995,7 +2029,9 @@ DBSDM.Mouse = (function(){
     };
 
     Mouse.prototype.move = function(e) {
-        timer = 0;
+        if (this.rx != 0 || this.ry != 0) {
+            timer = 0;
+        }
 
         e.stopPropagation();
         if (!this._attachedObject) { return; }
@@ -2004,7 +2040,7 @@ DBSDM.Mouse = (function(){
 
         this.update(e);
 
-        this._move = true;
+        this._move = this._move || this.rx != 0 || this.ry != 0;
         this.dx = this.x - this.ox;
         this.dy = this.y - this.oy;
 
@@ -2353,13 +2389,13 @@ DBSDM.UI = (function() {
         this._canvas.inCorrectionMode = !this._canvas.inCorrectionMode;
         if (this._canvas.inCorrectionMode) {
             this._cModeSwitch.classList.add("active");
-            this._canvas.svg.classList.add("correctionMode");
+            this._canvas.setMode("correction");
 
             var that = this;
             ns.Diagram.cancelAction = function() { that._toggleCorrectionMode(); }
         } else {
             this._cModeSwitch.classList.remove("active");
-            this._canvas.svg.classList.remove("correctionMode");
+            this._canvas.unsetMode("correction");
             ns.Diagram.cancelAction = null;
         }
     };
@@ -3076,7 +3112,7 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype._isa = function(parent) {
         if (!ns.Diagram.allowEdit) { return; }
 
-        this._canvas.svg.classList.remove("isaMode");
+        this._canvas.unsetMode("isa");
         this._view.defaultMark();
 
         if (this._parent == parent) { return; }
@@ -3135,7 +3171,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.cancelIsa = function() {
-        this._canvas.svg.classList.remove("isaMode");
+        this._canvas.unsetMode("isa");
         this._view.defaultMark();
         this._canvas.Mouse.detachObject();
     };
@@ -3421,6 +3457,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.onMouseDblClick = function(e, mouse) {
+        if (this.inCorrectionMode) { return; }
         if (this._new) {
             var w = ns.Consts.EntityDefaultWidth;
             var h = ns.Consts.EntityDefaultHeight;
@@ -3509,6 +3546,7 @@ DBSDM.Control.Relation = (function() {
         this._legs.target.setEntityControl(this._targetEntity);
 
         this._canvas.addRelation(this);
+        this._model.middleManual = (this._sourceEntity == this._targetEntity);
     };
 
     Relation.prototype.import = function() {
@@ -3641,9 +3679,9 @@ DBSDM.Control.Relation = (function() {
     Relation.prototype._moveToSameEntity = function() {
         // rotate and position anchor
         var sourceModel = this._model.getSource();
-        var posSource = this._sourceEntity.getEdgePosition(Enum.Edge.BOTTOM);
-        var sourcePoint = { x: posSource.x, y: posSource.y + RecursiveEntityOffset };
-        sourceModel.setAnchor(posSource.x, posSource.y, Enum.Edge.BOTTOM);
+        var posSource = this._sourceEntity.getEdgePosition(Enum.Edge.TOP);
+        var sourcePoint = { x: posSource.x, y: posSource.y - RecursiveEntityOffset };
+        sourceModel.setAnchor(posSource.x, posSource.y, Enum.Edge.TOP);
         if (sourceModel.getPointsCount() == 2) {
             sourceModel.addPoint(1, sourcePoint);
         } else {
@@ -3661,7 +3699,7 @@ DBSDM.Control.Relation = (function() {
             targetModel.setPoint(1, targetPoint.x, targetPoint.y);
         }
 
-        this._model.setMiddlePointPosition(posTarget.x - RecursiveEntityOffset, posSource.y + RecursiveEntityOffset);
+        this._model.setMiddlePointPosition(posTarget.x - RecursiveEntityOffset, posSource.y - RecursiveEntityOffset);
 
         // update view
         this.redraw();
@@ -5336,7 +5374,10 @@ DBSDM.View.Attribute = (function(){
         }
 
         var mouse = this._canvas.Mouse;
-        this._svg.addEventListener("mousedown", function(e) { mouse.down(e, control); });
+        this._svg.addEventListener("mousedown", function(e) {
+            if (that._canvas.isInMode("isa")) { return; }
+            mouse.down(e, control);
+        });
         this._svg.addEventListener("contextmenu", function(e) { ns.Menu.attach(control, "attribute"); });
     };
 
@@ -5422,13 +5463,8 @@ DBSDM.View.EditableText = (function(){
             this._text.classList.add("editable");
 
             this._text.addEventListener("mousedown", function(e) {
-                if (!that._canvas.inCorrectionMode) {
-                    e.stopPropagation();
-                }
-            }); // won't work in Chrome for Relation names otherwise
-            this._text.addEventListener("click", function(e) {
-                if (!that._canvas.inCorrectionMode) {
-                    that.showInput(); e.stopPropagation();
+                if (!that._canvas.inCorrectionMode && !that._canvas.isInMode("isa")) {
+                    that._canvas.Mouse.down(e, that);
                 }
             });
         }
@@ -5536,7 +5572,9 @@ DBSDM.View.EditableText = (function(){
     };
 
     EditableText.prototype.onMouseUp = function(e, mouse) {
-        this.showInput();
+        if (!this._canvas.inCorrectionMode) {
+            this.showInput();
+        }
     };
 
     /** Key press handling */
