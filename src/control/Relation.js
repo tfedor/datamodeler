@@ -54,6 +54,7 @@ DBSDM.Control.Relation = (function() {
         this._legs.target.setEntityControl(this._targetEntity);
 
         this._canvas.addRelation(this);
+        this._model.middleManual = (this._sourceEntity == this._targetEntity);
     };
 
     Relation.prototype.import = function() {
