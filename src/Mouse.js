@@ -8,7 +8,9 @@ var DBSDM = DBSDM || {};
 DBSDM.Mouse = (function(){
     var ns = DBSDM;
 
-    var timer = 0; // timer for handling double clicks
+    // double click handling
+    var timer = 0;
+    var first = {x: 0, y: 0};
 
     function Mouse(canvas) {
         this._canvas = canvas;
@@ -132,10 +134,6 @@ DBSDM.Mouse = (function(){
     };
 
     Mouse.prototype.move = function(e) {
-        if (this.rx != 0 || this.ry != 0) {
-            timer = 0;
-        }
-
         e.stopPropagation();
         if (!this._attachedObject) { return; }
         var x = this.x;
@@ -167,11 +165,13 @@ DBSDM.Mouse = (function(){
 
         if (this._attachedObject.onMouseDblClick) {
             if (this.button == 0) {
-                if (Date.now() - timer < ns.Consts.DoubleClickInterval) {
+                if (first.x == this.x && first.y == this.y && Date.now() - timer < ns.Consts.DoubleClickInterval) {
                     timer = 0;
                     this._attachedObject.onMouseDblClick(e, this);
                 } else {
                     timer = Date.now();
+                    first.x = this.x;
+                    first.y = this.y;
                 }
             } else {
                 timer = 0;
