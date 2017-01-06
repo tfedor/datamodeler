@@ -120,6 +120,7 @@ div.dbsdmCanvas div.help {
     box-shadow: 0 1px 3px 0 rgba(0,0,0,0.5);
     position:absolute;z-index:999;
     right:0;top:2.1em;
+    max-width:300px;
 }
 
 div.dbsdmCanvas table {
@@ -132,6 +133,7 @@ div.dbsdmCanvas table:last-of-type {
 div.dbsdmCanvas td:first-child {
     padding-right:1em;
     font-weight:bold;
+    white-space: nowrap;
 }
 div.dbsdmCanvas td {
     font-size:0.9em;

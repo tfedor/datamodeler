@@ -221,17 +221,21 @@ DBSDM.UI = (function() {
         this._helpSwitch.classList.add("active");
 
         var data = {
+            "Basics": [
+                ["Import", "Drag JSON file or zip of SQL Developer DMD onto canvas"],
+                ["New entity", "Click and drag or double click"]
+            ],
             "Shortcuts on selected Entity": [
                 ["DEL", "Delete Entity"],
-                ["a", "Add new Attribute"],
+                ["a, [Dbl click]", "Add new attribute"],
                 ["r", "Create new 1:N relation"],
                 ["f", "Fit to contents"],
                 ["i", "Initiate ISA creation"]
             ],
             "When editing Attribute": [
-                ["TAB", "Select next"],
+                ["TAB", "Select next or create new"],
                 ["SHIFT + TAB", "Select previous"],
-                ["[Leave empty]", "Delete Attribute"]
+                ["[Leave empty]", "Delete attribute"]
             ]
         };
 
