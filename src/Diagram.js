@@ -49,16 +49,12 @@ DBSDM.Diagram = (function() {
             };
         }
 
-        window.addEventListener('keypress',function(e){
+        window.addEventListener('keydown', function(e) {
             if (self.lastCanvas) {
                 if (e.keyCode == 112) { // F1
                     self.lastCanvas.ui.toggleHelp();
+                    e.preventDefault();
                     return;
-                }
-                switch(e.key) {
-                    case "+": self.lastCanvas.zoomIn(); return;
-                    case "-": self.lastCanvas.zoomOut(); return;
-                    case "*": self.lastCanvas.zoomReset(); return;
                 }
             }
             if (e.keyCode == 27 && self.cancelAction) { // ESC
@@ -66,6 +62,15 @@ DBSDM.Diagram = (function() {
                 self.cancelAction = null;
             } else if (ns.Control.Entity.activeEntity) {
                 ns.Control.Entity.activeEntity.onKeyPress(e);
+            }
+        });
+        window.addEventListener('keypress',function(e){
+            if (self.lastCanvas) {
+                switch(e.key) {
+                    case "+": self.lastCanvas.zoomIn(); return;
+                    case "-": self.lastCanvas.zoomOut(); return;
+                    case "*": self.lastCanvas.zoomReset(); return;
+                }
             }
         });
         window.addEventListener("mousedown", function(e) {
