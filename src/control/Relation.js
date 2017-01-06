@@ -187,9 +187,9 @@ DBSDM.Control.Relation = (function() {
     Relation.prototype._moveToSameEntity = function() {
         // rotate and position anchor
         var sourceModel = this._model.getSource();
-        var posSource = this._sourceEntity.getEdgePosition(Enum.Edge.BOTTOM);
-        var sourcePoint = { x: posSource.x, y: posSource.y + RecursiveEntityOffset };
-        sourceModel.setAnchor(posSource.x, posSource.y, Enum.Edge.BOTTOM);
+        var posSource = this._sourceEntity.getEdgePosition(Enum.Edge.TOP);
+        var sourcePoint = { x: posSource.x, y: posSource.y - RecursiveEntityOffset };
+        sourceModel.setAnchor(posSource.x, posSource.y, Enum.Edge.TOP);
         if (sourceModel.getPointsCount() == 2) {
             sourceModel.addPoint(1, sourcePoint);
         } else {
@@ -207,7 +207,7 @@ DBSDM.Control.Relation = (function() {
             targetModel.setPoint(1, targetPoint.x, targetPoint.y);
         }
 
-        this._model.setMiddlePointPosition(posTarget.x - RecursiveEntityOffset, posSource.y + RecursiveEntityOffset);
+        this._model.setMiddlePointPosition(posTarget.x - RecursiveEntityOffset, posSource.y - RecursiveEntityOffset);
 
         // update view
         this.redraw();
