@@ -132,7 +132,9 @@ DBSDM.Mouse = (function(){
     };
 
     Mouse.prototype.move = function(e) {
-        timer = 0;
+        if (this.rx != 0 || this.ry != 0) {
+            timer = 0;
+        }
 
         e.stopPropagation();
         if (!this._attachedObject) { return; }
@@ -141,7 +143,7 @@ DBSDM.Mouse = (function(){
 
         this.update(e);
 
-        this._move = true;
+        this._move = this._move || this.rx != 0 || this.ry != 0;
         this.dx = this.x - this.ox;
         this.dy = this.y - this.oy;
 
