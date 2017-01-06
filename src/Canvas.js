@@ -85,6 +85,7 @@ DBSDM.Canvas = (function() {
                 ns.Menu.attach(that, "canvas");
             }
             ns.Menu.show(e);
+            that.Mouse.update(e);
         });
 
         this.svg.addEventListener("dragover", function(e) { e.preventDefault(); } );
@@ -187,6 +188,23 @@ DBSDM.Canvas = (function() {
     };
 
     // entities
+
+    /** Initiate creation of entity */
+    Canvas.prototype._createEntity = function() {
+        if (this.inCorrectionMode || !ns.Diagram.allowEdit) { return null; }
+        var ent = new ns.Control.Entity(this, new ns.Model.Entity("Entity_" + (this._entities.length + 1)));
+        ent.create();
+        return ent;
+    };
+
+    /** Create entity of default size */
+    Canvas.prototype._createDefaultEntity = function() {
+        var entity = this._createEntity();
+        if (entity) {
+            entity.place({x: this.Mouse.x, y: this.Mouse.y, dx: ns.Consts.EntityDefaultWidth, dy: ns.Consts.EntityDefaultHeight});
+            entity.finish();
+        }
+    };
 
     Canvas.prototype.addEntity = function(entity) {
         this._entities.push(entity);
@@ -431,13 +449,11 @@ DBSDM.Canvas = (function() {
     // event handlers
 
     Canvas.prototype.onMouseDown = function(e, mouse) {
-        if (this.inCorrectionMode) { return; }
         if (mouse.button != 0) { return; }
-        if (ns.Diagram.allowEdit) {
-            var ent = new ns.Control.Entity(this, new ns.Model.Entity("Entity_" + (this._entities.length + 1)));
-            ent.create();
 
-            this.Mouse.attachObject(ent);
+        var entity = this._createEntity();
+        if (entity) {
+            this.Mouse.attachObject(entity);
         }
     };
 
@@ -448,6 +464,7 @@ DBSDM.Canvas = (function() {
 
     Canvas.prototype.handleMenu = function(action) {
         switch(action) {
+            case "entity": this._createDefaultEntity(); break;
             case "snap": this._switchSnap(); break;
             case "export": this.export(true, true); break;
             case "zoom-in": this.zoomIn(); break;

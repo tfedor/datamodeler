@@ -4,6 +4,8 @@ DBSDM.Consts = {
     SnappingLimit: 5,
     CanvasGridSize: 15,
 
+    EntityDefaultWidth: 90,
+    EntityDefaultHeight: 70,
     EntityAttributesOffset: 20,
     EntityStrokeWidth: 1,
     EntityPadding: 10,

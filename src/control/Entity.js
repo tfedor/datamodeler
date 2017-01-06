@@ -43,7 +43,8 @@ DBSDM.Control.Entity = (function(){
     };
 
     /**
-     * Create empty entity
+     * Create empty entity at mouse coordinates
+     * Creation is finished by method finish()
      */
     Entity.prototype.create = function() {
         var x = this._canvas.Mouse.x;
@@ -53,7 +54,10 @@ DBSDM.Control.Entity = (function(){
         this._view.createEmpty();
     };
 
-    Entity.prototype._finishCreation = function() {
+    /**
+     * Finish creation of entity
+     */
+    Entity.prototype.finish = function() {
         this._view.create(this);
         this._canvas.addEntity(this);
         this._new = false;
@@ -61,10 +65,12 @@ DBSDM.Control.Entity = (function(){
         this._canvas.ui.acceptTutorialAction("Entity");
     };
 
-    /** Draw from current model data (after import) */
-    Entity.prototype.import = function(parentControl) {
+    /**
+     * Create entity from current model data (after import)
+     * */
+    Entity.prototype.import = function() {
         this._view.createEmpty();
-        this._finishCreation();
+        this.finish();
 
         this._attributeList.draw();
 
@@ -73,17 +79,21 @@ DBSDM.Control.Entity = (function(){
     };
 
     /**
-     * Place entity during creation
-     * Set up initial position during canvas drag'n'drop creation
+     * Update position and size of an entity
+     * It is used during creation of the entity, where both position and size are updated at the same time
+     * @param obj  Object containing position and size of the entity.
+     *             'x','y' properties defines position,
+     *             'dx','dy' properties define size
      */
-    Entity.prototype.place = function(mouse) {
-        if (mouse.dx < 0) {
-            this._model.setPosition(mouse.x);
+    Entity.prototype.place = function(obj) {
+        if (obj.dx < 0) {
+            this._model.setPosition(obj.x);
         }
-        if (mouse.dy < 0) {
-            this._model.setPosition(null, mouse.y);
+        if (obj.dy < 0) {
+            this._model.setPosition(null, obj.y);
         }
-        this._model.setSize(Math.abs(mouse.dx), Math.abs(mouse.dy));
+        this._model.setSize(Math.abs(obj.dx), Math.abs(obj.dy));
+        this._view.redraw();
     };
 
     Entity.prototype.setName = function(name) {
@@ -734,9 +744,8 @@ DBSDM.Control.Entity = (function(){
             } else {
                 this.drag(mouse);
             }
+            this._view.redraw();
         }
-
-        this._view.redraw();
     };
 
     Entity.prototype.onMouseUp = function(e, mouse) {
@@ -754,7 +763,7 @@ DBSDM.Control.Entity = (function(){
                     Entity.activeEntity.deactivate();
                 }
             } else {
-                this._finishCreation();
+                this.finish();
                 this.encompassContent();
             }
         } else if (!mouse.didMove()) {

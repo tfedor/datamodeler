@@ -60,7 +60,10 @@ DBSDM.Mouse = (function(){
         return this._targetObject;
     };
 
-    Mouse.prototype._update = function(e) {
+    /**
+     * Set current coordinates from mouse event
+     */
+    Mouse.prototype.update = function(e) {
         var offset = this._node.getBoundingClientRect();
         this.x = (e.clientX - offset.left) / this._canvas._zoom;
         this.y = (e.clientY - offset.top) / this._canvas._zoom;
@@ -112,7 +115,7 @@ DBSDM.Mouse = (function(){
             return;
         }
         this._down = true;
-        this._update(e);
+        this.update(e);
 
         this.ox = this.x;
         this.oy = this.y;
@@ -132,7 +135,7 @@ DBSDM.Mouse = (function(){
         var x = this.x;
         var y = this.y;
 
-        this._update(e);
+        this.update(e);
 
         this._move = true;
         this.dx = this.x - this.ox;
@@ -150,7 +153,7 @@ DBSDM.Mouse = (function(){
         e.stopPropagation();
         if (!this._attachedObject) { return; }
 
-        this._update(e);
+        this.update(e);
 
         if (this._attachedObject.onMouseUp) {
             this._attachedObject.onMouseUp(e, this);
