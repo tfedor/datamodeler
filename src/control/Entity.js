@@ -437,7 +437,7 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype._isa = function(parent) {
         if (!ns.Diagram.allowEdit) { return; }
 
-        this._canvas.svg.classList.remove("isaMode");
+        this._canvas.unsetMode("isa");
         this._view.defaultMark();
 
         if (this._parent == parent) { return; }
@@ -496,7 +496,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.cancelIsa = function() {
-        this._canvas.svg.classList.remove("isaMode");
+        this._canvas.unsetMode("isa");
         this._view.defaultMark();
         this._canvas.Mouse.detachObject();
     };

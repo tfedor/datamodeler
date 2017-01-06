@@ -117,6 +117,33 @@ DBSDM.Canvas = (function() {
         return document.getElementById(this._sharedElementName(name));
     };
 
+    // mode
+
+    /**
+     * Sets mode of the canvas
+     * "Mode" is automatically added to the class name, e.g. mode "isa" will set canvas' class to "isaMode"
+     * @param mode  string  name of the mode, e.g. "isa" or "correction"
+     */
+    Canvas.prototype.setMode = function(mode) {
+        this.svg.classList.toggle(mode + "Mode");
+    };
+
+    /**
+     * Unsets mode of the canvas
+     * @param mode  string  name of the mode, e.g. "isa" or "correction"
+     */
+    Canvas.prototype.unsetMode = function(mode) {
+        this.svg.classList.toggle(mode + "Mode");
+    };
+
+    /**
+     * Checks whether canvas is in set mode
+     * @param mode  string  name of the mode, e.g. "isa" or "correction"
+     */
+    Canvas.prototype.isInMode = function(mode) {
+        return this.svg.classList.contains(mode + "Mode");
+    };
+
     // canvas
 
     Canvas.prototype._switchSnap = function() {

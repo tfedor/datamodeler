@@ -104,7 +104,10 @@ DBSDM.View.Attribute = (function(){
         }
 
         var mouse = this._canvas.Mouse;
-        this._svg.addEventListener("mousedown", function(e) { mouse.down(e, control); });
+        this._svg.addEventListener("mousedown", function(e) {
+            if (that._canvas.isInMode("isa")) { return; }
+            mouse.down(e, control);
+        });
         this._svg.addEventListener("contextmenu", function(e) { ns.Menu.attach(control, "attribute"); });
     };
 

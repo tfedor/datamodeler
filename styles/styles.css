@@ -19,7 +19,8 @@ div.dbsdmCanvas > svg {
     pointer-events: all;
     font-size:15px;
 }
-div.dbsdmCanvas > svg.isaMode {
+div.dbsdmCanvas > svg.isaMode,
+div.dbsdmCanvas > svg.isaMode * {
     cursor: alias;
 }
 div.dbsdmCanvas > svg.correctionMode {

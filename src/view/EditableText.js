@@ -39,7 +39,7 @@ DBSDM.View.EditableText = (function(){
             this._text.classList.add("editable");
 
             this._text.addEventListener("mousedown", function(e) {
-                if (!that._canvas.inCorrectionMode) {
+                if (!that._canvas.inCorrectionMode && !that._canvas.isInMode("isa")) {
                     that._canvas.Mouse.down(e, that);
                 }
             });

@@ -262,13 +262,13 @@ DBSDM.UI = (function() {
         this._canvas.inCorrectionMode = !this._canvas.inCorrectionMode;
         if (this._canvas.inCorrectionMode) {
             this._cModeSwitch.classList.add("active");
-            this._canvas.svg.classList.add("correctionMode");
+            this._canvas.setMode("correction");
 
             var that = this;
             ns.Diagram.cancelAction = function() { that._toggleCorrectionMode(); }
         } else {
             this._cModeSwitch.classList.remove("active");
-            this._canvas.svg.classList.remove("correctionMode");
+            this._canvas.unsetMode("correction");
             ns.Diagram.cancelAction = null;
         }
     };
