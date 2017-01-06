@@ -782,6 +782,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.onMouseDblClick = function(e, mouse) {
+        if (this.inCorrectionMode) { return; }
         if (this._new) {
             var w = ns.Consts.EntityDefaultWidth;
             var h = ns.Consts.EntityDefaultHeight;

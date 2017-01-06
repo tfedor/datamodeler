@@ -40,12 +40,7 @@ DBSDM.View.EditableText = (function(){
 
             this._text.addEventListener("mousedown", function(e) {
                 if (!that._canvas.inCorrectionMode) {
-                    e.stopPropagation();
-                }
-            }); // won't work in Chrome for Relation names otherwise
-            this._text.addEventListener("click", function(e) {
-                if (!that._canvas.inCorrectionMode) {
-                    that.showInput(); e.stopPropagation();
+                    that._canvas.Mouse.down(e, that);
                 }
             });
         }
@@ -153,7 +148,9 @@ DBSDM.View.EditableText = (function(){
     };
 
     EditableText.prototype.onMouseUp = function(e, mouse) {
-        this.showInput();
+        if (!this._canvas.inCorrectionMode) {
+            this.showInput();
+        }
     };
 
     /** Key press handling */
