@@ -8,6 +8,8 @@ var DBSDM = DBSDM || {};
 DBSDM.Mouse = (function(){
     var ns = DBSDM;
 
+    var timer = 0; // timer for handling double clicks
+
     function Mouse(canvas) {
         this._canvas = canvas;
         this._node = canvas.svg; // dom element coordinates are related to
@@ -130,6 +132,8 @@ DBSDM.Mouse = (function(){
     };
 
     Mouse.prototype.move = function(e) {
+        timer = 0;
+
         e.stopPropagation();
         if (!this._attachedObject) { return; }
         var x = this.x;
@@ -158,6 +162,20 @@ DBSDM.Mouse = (function(){
         if (this._attachedObject.onMouseUp) {
             this._attachedObject.onMouseUp(e, this);
         }
+
+        if (this._attachedObject.onMouseDblClick) {
+            if (this.button == 0) {
+                if (Date.now() - timer < ns.Consts.DoubleClickInterval) {
+                    timer = 0;
+                    this._attachedObject.onMouseDblClick(e, this);
+                } else {
+                    timer = Date.now();
+                }
+            } else {
+                timer = 0;
+            }
+        }
+
         this.detachObject();
 
         this._down = false;

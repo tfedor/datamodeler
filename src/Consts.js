@@ -1,6 +1,8 @@
 var DBSDM = DBSDM || {};
 
 DBSDM.Consts = {
+    DoubleClickInterval: 500, // interval in milliseconds during which double clicks are accepted
+
     SnappingLimit: 5,
     CanvasGridSize: 15,
 

@@ -86,6 +86,7 @@ DBSDM.Canvas = (function() {
                 ns.Menu.attach(that, "canvas");
             }
             ns.Menu.show(e);
+            that.Mouse.update(e);
         });
 
         this.svg.addEventListener("dragover", function(e) { e.preventDefault(); } );
@@ -188,6 +189,23 @@ DBSDM.Canvas = (function() {
     };
 
     // entities
+
+    /** Initiate creation of entity */
+    Canvas.prototype._createEntity = function() {
+        if (this.inCorrectionMode || !ns.Diagram.allowEdit) { return null; }
+        var ent = new ns.Control.Entity(this, new ns.Model.Entity("Entity_" + (this._entities.length + 1)));
+        ent.create();
+        return ent;
+    };
+
+    /** Create entity of default size */
+    Canvas.prototype._createDefaultEntity = function() {
+        var entity = this._createEntity();
+        if (entity) {
+            entity.place({x: this.Mouse.x, y: this.Mouse.y, dx: ns.Consts.EntityDefaultWidth, dy: ns.Consts.EntityDefaultHeight});
+            entity.finish();
+        }
+    };
 
     Canvas.prototype.addEntity = function(entity) {
         this._entities.push(entity);
@@ -432,13 +450,11 @@ DBSDM.Canvas = (function() {
     // event handlers
 
     Canvas.prototype.onMouseDown = function(e, mouse) {
-        if (this.inCorrectionMode) { return; }
         if (mouse.button != 0) { return; }
-        if (ns.Diagram.allowEdit) {
-            var ent = new ns.Control.Entity(this, new ns.Model.Entity("Entity_" + (this._entities.length + 1)));
-            ent.create();
 
-            this.Mouse.attachObject(ent);
+        var entity = this._createEntity();
+        if (entity) {
+            this.Mouse.attachObject(entity);
         }
     };
 
@@ -449,6 +465,7 @@ DBSDM.Canvas = (function() {
 
     Canvas.prototype.handleMenu = function(action) {
         switch(action) {
+            case "entity": this._createDefaultEntity(); break;
             case "snap": this._switchSnap(); break;
             case "export": this.export(true, true); break;
             case "zoom-in": this.zoomIn(); break;
@@ -470,9 +487,13 @@ DBSDM.Canvas = (function() {
 /** src/Consts.js */
 
 DBSDM.Consts = {
+    DoubleClickInterval: 500, // interval in milliseconds during which double clicks are accepted
+
     SnappingLimit: 5,
     CanvasGridSize: 15,
 
+    EntityDefaultWidth: 90,
+    EntityDefaultHeight: 70,
     EntityAttributesOffset: 20,
     EntityStrokeWidth: 1,
     EntityPadding: 10,
@@ -1605,6 +1626,7 @@ DBSDM.Menu = (function(){
         ],
 
         canvas: [
+            ["New entity", "entity", "list-alt", "allowEdit"],
             ["Snap to grid", "snap", "th"],
             ["Zoom", [
                 ["In", "zoom-in", "search-plus"],
@@ -1849,6 +1871,8 @@ DBSDM.Menu = (function(){
 DBSDM.Mouse = (function(){
     var ns = DBSDM;
 
+    var timer = 0; // timer for handling double clicks
+
     function Mouse(canvas) {
         this._canvas = canvas;
         this._node = canvas.svg; // dom element coordinates are related to
@@ -1901,7 +1925,10 @@ DBSDM.Mouse = (function(){
         return this._targetObject;
     };
 
-    Mouse.prototype._update = function(e) {
+    /**
+     * Set current coordinates from mouse event
+     */
+    Mouse.prototype.update = function(e) {
         var offset = this._node.getBoundingClientRect();
         this.x = (e.clientX - offset.left) / this._canvas._zoom;
         this.y = (e.clientY - offset.top) / this._canvas._zoom;
@@ -1953,7 +1980,7 @@ DBSDM.Mouse = (function(){
             return;
         }
         this._down = true;
-        this._update(e);
+        this.update(e);
 
         this.ox = this.x;
         this.oy = this.y;
@@ -1968,12 +1995,14 @@ DBSDM.Mouse = (function(){
     };
 
     Mouse.prototype.move = function(e) {
+        timer = 0;
+
         e.stopPropagation();
         if (!this._attachedObject) { return; }
         var x = this.x;
         var y = this.y;
 
-        this._update(e);
+        this.update(e);
 
         this._move = true;
         this.dx = this.x - this.ox;
@@ -1991,11 +2020,25 @@ DBSDM.Mouse = (function(){
         e.stopPropagation();
         if (!this._attachedObject) { return; }
 
-        this._update(e);
+        this.update(e);
 
         if (this._attachedObject.onMouseUp) {
             this._attachedObject.onMouseUp(e, this);
         }
+
+        if (this._attachedObject.onMouseDblClick) {
+            if (this.button == 0) {
+                if (Date.now() - timer < ns.Consts.DoubleClickInterval) {
+                    timer = 0;
+                    this._attachedObject.onMouseDblClick(e, this);
+                } else {
+                    timer = Date.now();
+                }
+            } else {
+                timer = 0;
+            }
+        }
+
         this.detachObject();
 
         this._down = false;
@@ -2639,7 +2682,8 @@ DBSDM.Control.Entity = (function(){
     };
 
     /**
-     * Create empty entity
+     * Create empty entity at mouse coordinates
+     * Creation is finished by method finish()
      */
     Entity.prototype.create = function() {
         var x = this._canvas.Mouse.x;
@@ -2649,18 +2693,25 @@ DBSDM.Control.Entity = (function(){
         this._view.createEmpty();
     };
 
-    Entity.prototype._finishCreation = function() {
+    /**
+     * Finish creation of entity
+     */
+    Entity.prototype.finish = function() {
         this._view.create(this);
         this._canvas.addEntity(this);
         this._new = false;
 
         this._canvas.ui.acceptTutorialAction("Entity");
+
+        this.computeNeededSize();
     };
 
-    /** Draw from current model data (after import) */
-    Entity.prototype.import = function(parentControl) {
+    /**
+     * Create entity from current model data (after import)
+     * */
+    Entity.prototype.import = function() {
         this._view.createEmpty();
-        this._finishCreation();
+        this.finish();
 
         this._attributeList.draw();
 
@@ -2669,17 +2720,20 @@ DBSDM.Control.Entity = (function(){
     };
 
     /**
-     * Place entity during creation
-     * Set up initial position during canvas drag'n'drop creation
+     * Update position and size of an entity during its creation
+     * @param obj  Object containing position and size of the entity.
+     *             'x','y' properties defines position,
+     *             'dx','dy' properties define size
      */
-    Entity.prototype.place = function(mouse) {
-        if (mouse.dx < 0) {
-            this._model.setPosition(mouse.x);
+    Entity.prototype.place = function(obj) {
+        if (obj.dx < 0) {
+            this._model.setPosition(obj.x);
         }
-        if (mouse.dy < 0) {
-            this._model.setPosition(null, mouse.y);
+        if (obj.dy < 0) {
+            this._model.setPosition(null, obj.y);
         }
-        this._model.setSize(Math.abs(mouse.dx), Math.abs(mouse.dy));
+        this._model.setSize(Math.abs(obj.dx), Math.abs(obj.dy));
+        this._view.redraw();
     };
 
     Entity.prototype.setName = function(name) {
@@ -3330,9 +3384,8 @@ DBSDM.Control.Entity = (function(){
             } else {
                 this.drag(mouse);
             }
+            this._view.redraw();
         }
-
-        this._view.redraw();
     };
 
     Entity.prototype.onMouseUp = function(e, mouse) {
@@ -3350,7 +3403,7 @@ DBSDM.Control.Entity = (function(){
                     Entity.activeEntity.deactivate();
                 }
             } else {
-                this._finishCreation();
+                this.finish();
                 this.encompassContent();
             }
         } else if (!mouse.didMove()) {
@@ -3365,6 +3418,21 @@ DBSDM.Control.Entity = (function(){
         }
 
         this._ignoredInput = {x:0, y:0};
+    };
+
+    Entity.prototype.onMouseDblClick = function(e, mouse) {
+        if (this._new) {
+            var w = ns.Consts.EntityDefaultWidth;
+            var h = ns.Consts.EntityDefaultHeight;
+
+            this.create();
+            this._model.setPosition(mouse.x - w*0.5, mouse.y - h * 0.5);
+            this._model.setSize(w, h);
+            this._view.redraw();
+            this.finish();
+        } else {
+            this._createAttribute();
+        }
     };
 
     Entity.prototype.onKeyPress = function(e) {
@@ -3405,8 +3473,8 @@ DBSDM.Control.Relation = (function() {
         // model
         var source, target;
         if (!model) {
-            source = new ns.Model.RelationLeg(false, false, sourceCardinality);
-            target = new ns.Model.RelationLeg(true, true, targetCardinality);
+            source = new ns.Model.RelationLeg(false, true, sourceCardinality);
+            target = new ns.Model.RelationLeg(true, false, targetCardinality);
             this._model = new ns.Model.Relation(source, target);
         } else {
             this._model = model;
@@ -3885,6 +3953,9 @@ DBSDM.Control.RelationLeg = (function() {
             this._view.select();
             this._entity.markRelations(this, this._model.inXor);
             this._inXorCreation = true;
+
+            var that = this;
+            ns.Diagram.cancelAction = function() { that.xor(null); };
         }
     };
 
@@ -3892,6 +3963,7 @@ DBSDM.Control.RelationLeg = (function() {
         if (!this._inXorCreation) { return; }
         this._entity.unmarkRelations();
 
+        ns.Diagram.cancelAction = null;
         if (!leg) {return;}
 
         if (this == leg) {
@@ -5470,6 +5542,7 @@ DBSDM.View.EditableText = (function(){
     /** Key press handling */
 
     EditableText.prototype._confirm = function() {
+        this._input.value = this._input.value.trim();
         if (this._input.value == "") {
             if (this._emptyHandler) {
                 this._hideInput();

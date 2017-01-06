@@ -63,6 +63,8 @@ DBSDM.Control.Entity = (function(){
         this._new = false;
 
         this._canvas.ui.acceptTutorialAction("Entity");
+
+        this.computeNeededSize();
     };
 
     /**
@@ -79,8 +81,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     /**
-     * Update position and size of an entity
-     * It is used during creation of the entity, where both position and size are updated at the same time
+     * Update position and size of an entity during its creation
      * @param obj  Object containing position and size of the entity.
      *             'x','y' properties defines position,
      *             'dx','dy' properties define size
@@ -778,6 +779,21 @@ DBSDM.Control.Entity = (function(){
         }
 
         this._ignoredInput = {x:0, y:0};
+    };
+
+    Entity.prototype.onMouseDblClick = function(e, mouse) {
+        if (this._new) {
+            var w = ns.Consts.EntityDefaultWidth;
+            var h = ns.Consts.EntityDefaultHeight;
+
+            this.create();
+            this._model.setPosition(mouse.x - w*0.5, mouse.y - h * 0.5);
+            this._model.setSize(w, h);
+            this._view.redraw();
+            this.finish();
+        } else {
+            this._createAttribute();
+        }
     };
 
     Entity.prototype.onKeyPress = function(e) {
