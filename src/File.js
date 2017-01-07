@@ -45,7 +45,7 @@ DBSDM.File = (function() {
             var file = files[0];
             if (file.type == "application/x-zip-compressed" || file.type == "application/zip") {
                 self._processZip(canvas, file);
-            } else if (file.type == "application/json") {
+            } else if (file.type == "application/json" || /\.json$/.test(file.name)) {
                 self._processJson(canvas, file);
             } else {
                 canvas.ui.error("File couldn't be imported: unsupported file type. Import either json with exported data or SQLDeveloper zip");
@@ -63,7 +63,7 @@ DBSDM.File = (function() {
                 canvas.import(data);
                 canvas.ui.success("File was imported", ns.Consts.UIDefaultSuccessDuration);
             } catch(e) {
-                canvas.ui.error("File couldn't be parsed properly - are you sure it has correct format?");
+                canvas.ui.error("File couldn't be parsed properly - make sure it is valid JSON file");
                 console.log(e);
             }
         };
