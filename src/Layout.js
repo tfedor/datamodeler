@@ -1,5 +1,8 @@
 var DBSDM = DBSDM || {};
 
+/**
+ * Diagram layout (sort) handler
+ */
 DBSDM.Layout = (function() {
     var ns = DBSDM;
 

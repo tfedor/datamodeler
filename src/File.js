@@ -6,7 +6,7 @@ DBSDM.File = (function() {
     var self = {};
 
     /**
-     * http://stackoverflow.com/a/30832210/4705537
+     * See http://stackoverflow.com/a/30832210/4705537
      */
     self.download = function(data, filename, type) {
         if (!ns.Diagram.allowFile) { return; }

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>DataModeler</title>
+    <link rel="stylesheet" type="text/css" href="styles/reset.css">
+    <link rel="stylesheet" type="text/css" href="styles/styles.css">
+    <link rel="stylesheet" href="libs/font-awesome-4.6.3/css/font-awesome.min.css">
+    <script src="libs/saveSvgAsPng-gh-pages/saveSvgAsPng.js"></script>
+    <script src="libs/jszip/dist/jszip.min.js"></script>
+
+    <script type="application/javascript" src="src/Enums.js"></script>
+    <script type="application/javascript" src="src/Consts.js"></script>
+
+    <!-- model -->
+    <script type="application/javascript" src="src/model/Entity.js"></script>
+    <script type="application/javascript" src="src/model/Attribute.js"></script>
+    <script type="application/javascript" src="src/model/AttributeList.js"></script>
+    <script type="application/javascript" src="src/model/Relation.js"></script>
+    <script type="application/javascript" src="src/model/RelationLeg.js"></script>
+
+    <!-- view -->
+    <script type="application/javascript" src="src/view/EditableText.js"></script>
+    <script type="application/javascript" src="src/view/Entity.js"></script>
+    <script type="application/javascript" src="src/view/Attribute.js"></script>
+    <script type="application/javascript" src="src/view/Relation.js"></script>
+    <script type="application/javascript" src="src/view/RelationLeg.js"></script>
+    <script type="application/javascript" src="src/view/Arc.js"></script>
+
+    <!-- control -->
+    <script type="application/javascript" src="src/control/Entity.js"></script>
+    <script type="application/javascript" src="src/control/Attribute.js"></script>
+    <script type="application/javascript" src="src/control/AttributeList.js"></script>
+    <script type="application/javascript" src="src/control/Relation.js"></script>
+    <script type="application/javascript" src="src/control/RelationLeg.js"></script>
+
+    <script type="application/javascript" src="src/Random.js"></script>
+    <script type="application/javascript" src="src/Hash.js"></script>
+    <script type="application/javascript" src="src/Diagram.js"></script>
+    <script type="application/javascript" src="src/UI.js"></script>
+    <script type="application/javascript" src="src/Canvas.js"></script>
+    <script type="application/javascript" src="src/Layout.js"></script>
+    <script type="application/javascript" src="src/Mouse.js"></script>
+    <script type="application/javascript" src="src/Element.js"></script>
+    <script type="application/javascript" src="src/Geometry.js"></script>
+    <script type="application/javascript" src="src/Vector.js"></script>
+    <script type="application/javascript" src="src/File.js"></script>
+    <script type="application/javascript" src="src/Fullscreen.js"></script>
+    <script type="application/javascript" src="src/MenuController.js"></script>
+</head>
+<body>
+
+    <div id="modelerContainer"></div>
+
+    <script>
+        DBSDM.Diagram.init({
+            showTutorial: false,
+            confirmLeave: false
+        });
+
+        var parent = document.getElementById("modelerContainer");
+        var canvas = new DBSDM.Canvas();
+        canvas.create(parent);
+    </script>
+
+</body>
+</html>

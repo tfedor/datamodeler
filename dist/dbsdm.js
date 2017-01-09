@@ -3,7 +3,7 @@ var DBSDM = DBSDM || {};
 
 /**
  * Canvas controller
- * Creates canvas which is used to manipulate other elements
+ * Creates and handles canvas which is used to manipulate other elements
  */
 DBSDM.Canvas = (function() {
     var ns = DBSDM;
@@ -43,6 +43,10 @@ DBSDM.Canvas = (function() {
         this.inCorrectionMode = false;
     }
 
+    /**
+     * Create canvas. If parent is specified, canvas will be created as a child of parent
+     * @param   parent    Node    Optional parent of the new canvas
+     */
     Canvas.prototype.create = function(parent) {
         ns.Diagram.registerCanvas(this);
 
@@ -544,8 +548,7 @@ DBSDM.Consts = {
 /** src/Diagram.js */
 
 /**
- * Canvas controller
- * Creates canvas which is used to manipulate other elements
+ * Diagram, manager class for all canvases created at one page
  */
 DBSDM.Diagram = (function() {
     var ns = DBSDM;
@@ -562,6 +565,16 @@ DBSDM.Diagram = (function() {
     self._lastCanvas = null;
     self.cancelAction = null;
 
+    /**
+     * Initialize diagram. Takes one argument, an object with settings.
+     * @param options   Object      Settings object, possible options are:
+     *                              allowEdit           Allow changes to the data of the diagram
+     *                              allowFile           Allow import and export actions from the interface
+     *                              allowCorrectMode    Allow switching to marking mode
+     *                              showTutorial        Determines whether the tutorial will be shown or not
+     *                              confirmLeave        Ask user to confirm leaving the page if there is a diagram with unsaved changes
+     *
+     */
     self.init = function(options){
         options = options || {};
         if (typeof options.allowEdit == "boolean") { self.allowEdit = options.allowEdit; }
@@ -805,6 +818,9 @@ DBSDM.Diagram = (function() {
 })();
 /** src/Element.js */
 
+/**
+ * Support class for generating SVG elements and their manipulation
+ */
 DBSDM.Element = (function() {
     var svgNS = 'http://www.w3.org/2000/svg';
     var xlinkNS = 'http://www.w3.org/1999/xlink';
@@ -815,10 +831,21 @@ DBSDM.Element = (function() {
         return document.createElementNS(svgNS, element);
     };
 
+    /**
+     * Create SVG element
+     * @param element   string  Name of the element
+     * @param attr      object  Optional attributes of the element, see `attr` method for more information
+     */
     self.el = function(element, attr) {
         return self.attr(create(element), attr);
     };
 
+    /**
+     * Set attributes for given SVG element. Attributes are automatically converted from camelCase to lisp-case.
+     * If the value of the property is null, attribute is removed from the element
+     * @param node          SVGelement
+     * @param attributes    object  Object of name-value pairs of element's attributes.
+     */
     self.attr = function(node, attributes) {
         for (var name in attributes) {
             if (!attributes.hasOwnProperty(name)) { continue; }
@@ -864,7 +891,9 @@ DBSDM.Element = (function() {
         self.attr(node, {transform: tran.join(" ")});
     };
 
-    /** Element creation helpers */
+    /**
+     * Element creation helpers for common elements
+     */
 
     self.use = function(id, attrs) {
         attrs = attrs || {};
@@ -923,6 +952,10 @@ DBSDM.Element = (function() {
             return this._str == "";
         };
 
+        /**
+         * Generate path element
+         * @param attr  object  Object of SVG element attributes, see `attr` method
+         */
         Path.prototype.path = function(attr) {
             attr = attr || {};
             var prop = Object.assign(attr, {d: this._str});
@@ -943,7 +976,6 @@ DBSDM.Element = (function() {
 
         Path.prototype.C = function(x1,y1, x2,y2, x,y) { this._str += "C"+x1+" "+y1+","+x2+" "+y2+","+x+" "+y; return this; };
         Path.prototype.c = function(x1,y1, x2,y2, x,y) { this._str += "c"+x1+" "+y1+","+x2+" "+y2+","+x+" "+y; return this; };
-
 
         return Path;
     })();
@@ -973,7 +1005,7 @@ DBSDM.File = (function() {
     var self = {};
 
     /**
-     * http://stackoverflow.com/a/30832210/4705537
+     * See http://stackoverflow.com/a/30832210/4705537
      */
     self.download = function(data, filename, type) {
         if (!ns.Diagram.allowFile) { return; }
@@ -1453,6 +1485,9 @@ DBSDM.Hash = (function(){
     return self;
 })();/** src/Layout.js */
 
+/**
+ * Diagram layout (sort) handler
+ */
 DBSDM.Layout = (function() {
     var ns = DBSDM;
 
@@ -1900,7 +1935,7 @@ DBSDM.Menu = (function(){
 /**
  * Mouse controller
  * Attached to given canvas, handles current mouse position and fires event to attached objects
- * Object is attached either on mouse down, or programatically.
+ * Object is attached either on mouse down event, or programatically.
  */
 DBSDM.Mouse = (function(){
     var ns = DBSDM;
@@ -2128,14 +2163,14 @@ DBSDM.Random = {
 };/** src/UI.js */
 
 /**
- * Canvas controller
- * Creates canvas which is used to manipulate other elements
+ * General UI controller
  */
+// TODO refactor to three separate classes for messages, zoom and information window control?
 DBSDM.UI = (function() {
     var ns = DBSDM;
 
     var tutorial = {
-        Entity: "Start by <strong>drawing</strong> an entity or <strong>dragging</strong> an exported json or SQLDeveloper zip file into canvas",
+        Entity: "Start by <strong>drawing</strong> an entity or <strong>dragging</strong> an exported JSON or SQL Developer zip file into canvas",
         Select: "<strong>Click</strong> on <i>Entity</i> to select it",
         Menu: "<strong>Right click</strong> on <i>any element</i> of the canvas to get more options",
         Scroll: "Click and drag <strong>middle mouse button</strong> to move the layout"
@@ -5432,6 +5467,19 @@ DBSDM.View = DBSDM.View ||{};
 DBSDM.View.EditableText = (function(){
     var ns = DBSDM;
 
+    /**
+     * Create new editable text in view
+     * @param canvas     Canvas          Canvas in which editable text is created
+     * @param x          number|string   x coordinate of text, may be either number of pixels
+     *                                   or percent string (and possibly all other CSS options).
+     *                                   Has no effect when creating `tspan` element (leave null)
+     * @param y          number|string   y coordinate of text, see @x
+     * @param properties object          Object of element's SVG attributes
+     * @param getHandler function        Function used to get current content
+     * @param setHandler function        Function used to set new content
+     * @param el         string          Name of the SVG element to be created. Currently only "tspan" is supported,
+     *                                   all other values generate `text` element
+     */
     function EditableText(canvas, x, y, properties, getHandler, setHandler, el) {
         this._canvas = canvas;
 

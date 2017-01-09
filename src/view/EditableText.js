@@ -4,6 +4,19 @@ DBSDM.View = DBSDM.View ||{};
 DBSDM.View.EditableText = (function(){
     var ns = DBSDM;
 
+    /**
+     * Create new editable text in view
+     * @param canvas     Canvas          Canvas in which editable text is created
+     * @param x          number|string   x coordinate of text, may be either number of pixels
+     *                                   or percent string (and possibly all other CSS options).
+     *                                   Has no effect when creating `tspan` element (leave null)
+     * @param y          number|string   y coordinate of text, see @x
+     * @param properties object          Object of element's SVG attributes
+     * @param getHandler function        Function used to get current content
+     * @param setHandler function        Function used to set new content
+     * @param el         string          Name of the SVG element to be created. Currently only "tspan" is supported,
+     *                                   all other values generate `text` element
+     */
     function EditableText(canvas, x, y, properties, getHandler, setHandler, el) {
         this._canvas = canvas;
 

@@ -1,8 +1,7 @@
 var DBSDM = DBSDM || {};
 
 /**
- * Canvas controller
- * Creates canvas which is used to manipulate other elements
+ * Diagram, manager class for all canvases created at one page
  */
 DBSDM.Diagram = (function() {
     var ns = DBSDM;
@@ -19,6 +18,16 @@ DBSDM.Diagram = (function() {
     self._lastCanvas = null;
     self.cancelAction = null;
 
+    /**
+     * Initialize diagram. Takes one argument, an object with settings.
+     * @param options   Object      Settings object, possible options are:
+     *                              allowEdit           Allow changes to the data of the diagram
+     *                              allowFile           Allow import and export actions from the interface
+     *                              allowCorrectMode    Allow switching to marking mode
+     *                              showTutorial        Determines whether the tutorial will be shown or not
+     *                              confirmLeave        Ask user to confirm leaving the page if there is a diagram with unsaved changes
+     *
+     */
     self.init = function(options){
         options = options || {};
         if (typeof options.allowEdit == "boolean") { self.allowEdit = options.allowEdit; }

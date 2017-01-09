@@ -1,9 +1,9 @@
 var DBSDM = DBSDM || {};
 
 /**
- * Canvas controller
- * Creates canvas which is used to manipulate other elements
+ * General UI controller
  */
+// TODO refactor to three separate classes for messages, zoom and information window control?
 DBSDM.UI = (function() {
     var ns = DBSDM;
 

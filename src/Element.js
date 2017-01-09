@@ -1,5 +1,8 @@
 var DBSDM = DBSDM || {};
 
+/**
+ * Support class for generating SVG elements and their manipulation
+ */
 DBSDM.Element = (function() {
     var svgNS = 'http://www.w3.org/2000/svg';
     var xlinkNS = 'http://www.w3.org/1999/xlink';
@@ -10,10 +13,21 @@ DBSDM.Element = (function() {
         return document.createElementNS(svgNS, element);
     };
 
+    /**
+     * Create SVG element
+     * @param element   string  Name of the element
+     * @param attr      object  Optional attributes of the element, see `attr` method for more information
+     */
     self.el = function(element, attr) {
         return self.attr(create(element), attr);
     };
 
+    /**
+     * Set attributes for given SVG element. Attributes are automatically converted from camelCase to lisp-case.
+     * If the value of the property is null, attribute is removed from the element
+     * @param node          SVGelement
+     * @param attributes    object  Object of name-value pairs of element's attributes.
+     */
     self.attr = function(node, attributes) {
         for (var name in attributes) {
             if (!attributes.hasOwnProperty(name)) { continue; }
@@ -59,7 +73,9 @@ DBSDM.Element = (function() {
         self.attr(node, {transform: tran.join(" ")});
     };
 
-    /** Element creation helpers */
+    /**
+     * Element creation helpers for common elements
+     */
 
     self.use = function(id, attrs) {
         attrs = attrs || {};
@@ -118,6 +134,10 @@ DBSDM.Element = (function() {
             return this._str == "";
         };
 
+        /**
+         * Generate path element
+         * @param attr  object  Object of SVG element attributes, see `attr` method
+         */
         Path.prototype.path = function(attr) {
             attr = attr || {};
             var prop = Object.assign(attr, {d: this._str});
@@ -138,7 +158,6 @@ DBSDM.Element = (function() {
 
         Path.prototype.C = function(x1,y1, x2,y2, x,y) { this._str += "C"+x1+" "+y1+","+x2+" "+y2+","+x+" "+y; return this; };
         Path.prototype.c = function(x1,y1, x2,y2, x,y) { this._str += "c"+x1+" "+y1+","+x2+" "+y2+","+x+" "+y; return this; };
-
 
         return Path;
     })();

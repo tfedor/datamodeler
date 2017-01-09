@@ -2,7 +2,7 @@ var DBSDM = DBSDM || {};
 
 /**
  * Canvas controller
- * Creates canvas which is used to manipulate other elements
+ * Creates and handles canvas which is used to manipulate other elements
  */
 DBSDM.Canvas = (function() {
     var ns = DBSDM;
@@ -42,6 +42,10 @@ DBSDM.Canvas = (function() {
         this.inCorrectionMode = false;
     }
 
+    /**
+     * Create canvas. If parent is specified, canvas will be created as a child of parent
+     * @param   parent    Node    Optional parent of the new canvas
+     */
     Canvas.prototype.create = function(parent) {
         ns.Diagram.registerCanvas(this);
 

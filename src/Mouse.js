@@ -3,7 +3,7 @@ var DBSDM = DBSDM || {};
 /**
  * Mouse controller
  * Attached to given canvas, handles current mouse position and fires event to attached objects
- * Object is attached either on mouse down, or programatically.
+ * Object is attached either on mouse down event, or programatically.
  */
 DBSDM.Mouse = (function(){
     var ns = DBSDM;
