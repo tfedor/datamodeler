@@ -8,7 +8,7 @@ DBSDM.UI = (function() {
     var ns = DBSDM;
 
     var tutorial = {
-        Entity: "Start by <strong>drawing</strong> an entity or <strong>dragging</strong> an exported json or SQLDeveloper zip file into canvas",
+        Entity: "Start by <strong>drawing</strong> an entity or <strong>dragging</strong> an exported JSON or SQL Developer zip file into canvas",
         Select: "<strong>Click</strong> on <i>Entity</i> to select it",
         Menu: "<strong>Right click</strong> on <i>any element</i> of the canvas to get more options",
         Scroll: "Click and drag <strong>middle mouse button</strong> to move the layout"
