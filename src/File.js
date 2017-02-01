@@ -173,10 +173,12 @@ DBSDM.File = (function() {
             var identifyingNode = node.querySelector("identifying");
             var optionalSourceNode = node.querySelector("optionalSource");
             var sourceCardinalityNode = node.querySelector("sourceCardinality");
+            var nameOnSource = node.querySelector("nameOnSource");
 
             var targetEntityIdNode = node.querySelector("targetEntity");
             var optionalTargetNode = node.querySelector("optionalTarget");
             var targetCardinalityNode = node.querySelector("targetCardinalityString");
+            var nameOnTarget = node.querySelector("nameOnTarget");
 
             if (!sourceEntityIdNode || !targetEntityIdNode) { return; }
 
@@ -186,13 +188,15 @@ DBSDM.File = (function() {
                     identifying: false,
                     optional: (optionalSourceNode ? optionalSourceNode.innerHTML == "true" : false),
                     cardinality: (sourceCardinalityNode && sourceCardinalityNode.innerHTML == "*" ? 0 : 1),
-                    xor: null
+                    xor: null,
+                    name: nameOnSource && nameOnSource.innerHTML != "" ? nameOnSource.innerHTML : null
                 }, {
                     entity: targetEntityIdNode.innerHTML,
                     identifying: (identifyingNode ? identifyingNode.innerHTML == "true" : false),
                     optional: (optionalTargetNode ? optionalTargetNode.innerHTML == "true" : false),
                     cardinality: (targetCardinalityNode && targetCardinalityNode.innerHTML == "*" ? 0 : 1),
-                    xor: null
+                    xor: null,
+                    name: nameOnTarget && nameOnTarget.innerHTML != "" ? nameOnTarget.innerHTML : null
                 }
             ]);
             relationsRef[node.getAttribute("id")] = relationsMap.length-1;

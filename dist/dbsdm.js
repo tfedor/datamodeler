@@ -321,8 +321,11 @@ DBSDM.Canvas = (function() {
      * prettify         boolean    When true, prettify resulting data
      * saveRef          boolean    When true, save the data reference for future check of changes
      *                             Default depends on confirmLeave setting of Diagram
+     * properties       object     Additional properties for export, e.g. saveRelationNames
      */
-    Canvas.prototype.export = function(promptDownload, prettify, saveRef) {
+    Canvas.prototype.export = function(promptDownload, prettify, saveRef, properties) {
+        properties = properties || {};
+
         var entityModels = [];
         var relationModels = [];
         saveRef = (typeof saveRef == "boolean" ? saveRef : ns.Diagram.confirmLeave);
@@ -350,7 +353,7 @@ DBSDM.Canvas = (function() {
 
         count = relationModels.length;
         for (i=0; i<count; i++) {
-            result.relations.push(relationModels[i].getExportData());
+            result.relations.push(relationModels[i].getExportData(properties));
         }
 
         this._sortData(result);
@@ -500,7 +503,7 @@ DBSDM.Canvas = (function() {
         switch(action) {
             case "entity": this._createDefaultEntity(); break;
             case "snap": this._switchSnap(); break;
-            case "export": this.export(true, true); break;
+            case "export": this.export(true, true, null, {saveRelationNames: true}); break;
             case "zoom-in": this.zoomIn(); break;
             case "zoom-reset": this.zoomReset(); break;
             case "zoom-out": this.zoomOut(); break;
@@ -1172,10 +1175,12 @@ DBSDM.File = (function() {
             var identifyingNode = node.querySelector("identifying");
             var optionalSourceNode = node.querySelector("optionalSource");
             var sourceCardinalityNode = node.querySelector("sourceCardinality");
+            var nameOnSource = node.querySelector("nameOnSource");
 
             var targetEntityIdNode = node.querySelector("targetEntity");
             var optionalTargetNode = node.querySelector("optionalTarget");
             var targetCardinalityNode = node.querySelector("targetCardinalityString");
+            var nameOnTarget = node.querySelector("nameOnTarget");
 
             if (!sourceEntityIdNode || !targetEntityIdNode) { return; }
 
@@ -1185,13 +1190,15 @@ DBSDM.File = (function() {
                     identifying: false,
                     optional: (optionalSourceNode ? optionalSourceNode.innerHTML == "true" : false),
                     cardinality: (sourceCardinalityNode && sourceCardinalityNode.innerHTML == "*" ? 0 : 1),
-                    xor: null
+                    xor: null,
+                    name: nameOnSource && nameOnSource.innerHTML != "" ? nameOnSource.innerHTML : null
                 }, {
                     entity: targetEntityIdNode.innerHTML,
                     identifying: (identifyingNode ? identifyingNode.innerHTML == "true" : false),
                     optional: (optionalTargetNode ? optionalTargetNode.innerHTML == "true" : false),
                     cardinality: (targetCardinalityNode && targetCardinalityNode.innerHTML == "*" ? 0 : 1),
-                    xor: null
+                    xor: null,
+                    name: nameOnTarget && nameOnTarget.innerHTML != "" ? nameOnTarget.innerHTML : null
                 }
             ]);
             relationsRef[node.getAttribute("id")] = relationsMap.length-1;
@@ -3919,6 +3926,11 @@ DBSDM.Control.RelationLeg = (function() {
         this._view = new ns.View.RelationLeg(canvas, this._model, this);
         this._view.draw();
 
+        var name = model.getName();
+        if (name) {
+            this._view.toggleName();
+        }
+
         this._inXorCreation = false;
     }
 
@@ -4725,6 +4737,9 @@ DBSDM.Model.Relation = (function(){
         if (typeof data == "object") {
             this._source = new ns.Model.RelationLeg(data[0].identifying, data[0].optional, data[0].cardinality, data[0].incorrect);
             this._target = new ns.Model.RelationLeg(data[1].identifying, data[1].optional, data[1].cardinality, data[1].incorrect);
+
+            if (data[0].name) { this._source.setName(data[0].name); }
+            if (data[1].name) { this._target.setName(data[1].name); }
         } else {
             this._source = source;
             this._target = target;
@@ -4868,19 +4883,19 @@ DBSDM.Model.Relation = (function(){
         return src + " -> " + tgt;
     };
 
-    Relation.prototype.getExportData = function() {
+    Relation.prototype.getExportData = function(properties) {
         var src = this._source.toString();
         var tgt = this._target.toString();
 
         if (src.localeCompare(tgt) > 0) {
             return [
-                this._target.getExportData(),
-                this._source.getExportData()
+                this._target.getExportData(properties),
+                this._source.getExportData(properties)
             ];
         }
         return [
-            this._source.getExportData(),
-            this._target.getExportData()
+            this._source.getExportData(properties),
+            this._target.getExportData(properties)
         ];
     };
 
@@ -5095,7 +5110,7 @@ DBSDM.Model.RelationLeg = (function(){
         ]).toString(16);
     };
 
-    RelationLeg.prototype.getExportData = function() {
+    RelationLeg.prototype.getExportData = function(properties) {
         var data = {
             entity: this._entity.getName(), // TODO maybe setName first, to force normalization, just to be sure? Shouldnt be needed, since entities are exported first, but who knows...
                 identifying: this._identifying,
@@ -5103,6 +5118,11 @@ DBSDM.Model.RelationLeg = (function(){
             cardinality: this._cardinality,
             xor: this._entity.getXorHash(this)
         };
+
+        if (properties['saveRelationNames']) {
+            data.name = this._name;
+        }
+
         if (this.incorrect) {
             data.incorrect = true;
         }

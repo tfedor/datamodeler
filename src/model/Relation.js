@@ -12,6 +12,9 @@ DBSDM.Model.Relation = (function(){
         if (typeof data == "object") {
             this._source = new ns.Model.RelationLeg(data[0].identifying, data[0].optional, data[0].cardinality, data[0].incorrect);
             this._target = new ns.Model.RelationLeg(data[1].identifying, data[1].optional, data[1].cardinality, data[1].incorrect);
+
+            if (data[0].name) { this._source.setName(data[0].name); }
+            if (data[1].name) { this._target.setName(data[1].name); }
         } else {
             this._source = source;
             this._target = target;
@@ -155,19 +158,19 @@ DBSDM.Model.Relation = (function(){
         return src + " -> " + tgt;
     };
 
-    Relation.prototype.getExportData = function() {
+    Relation.prototype.getExportData = function(properties) {
         var src = this._source.toString();
         var tgt = this._target.toString();
 
         if (src.localeCompare(tgt) > 0) {
             return [
-                this._target.getExportData(),
-                this._source.getExportData()
+                this._target.getExportData(properties),
+                this._source.getExportData(properties)
             ];
         }
         return [
-            this._source.getExportData(),
-            this._target.getExportData()
+            this._source.getExportData(properties),
+            this._target.getExportData(properties)
         ];
     };
 

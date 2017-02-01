@@ -16,6 +16,11 @@ DBSDM.Control.RelationLeg = (function() {
         this._view = new ns.View.RelationLeg(canvas, this._model, this);
         this._view.draw();
 
+        var name = model.getName();
+        if (name) {
+            this._view.toggleName();
+        }
+
         this._inXorCreation = false;
     }
 

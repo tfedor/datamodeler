@@ -204,7 +204,7 @@ DBSDM.Model.RelationLeg = (function(){
         ]).toString(16);
     };
 
-    RelationLeg.prototype.getExportData = function() {
+    RelationLeg.prototype.getExportData = function(properties) {
         var data = {
             entity: this._entity.getName(), // TODO maybe setName first, to force normalization, just to be sure? Shouldnt be needed, since entities are exported first, but who knows...
                 identifying: this._identifying,
@@ -212,6 +212,11 @@ DBSDM.Model.RelationLeg = (function(){
             cardinality: this._cardinality,
             xor: this._entity.getXorHash(this)
         };
+
+        if (properties['saveRelationNames']) {
+            data.name = this._name;
+        }
+
         if (this.incorrect) {
             data.incorrect = true;
         }

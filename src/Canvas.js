@@ -320,8 +320,11 @@ DBSDM.Canvas = (function() {
      * prettify         boolean    When true, prettify resulting data
      * saveRef          boolean    When true, save the data reference for future check of changes
      *                             Default depends on confirmLeave setting of Diagram
+     * properties       object     Additional properties for export, e.g. saveRelationNames
      */
-    Canvas.prototype.export = function(promptDownload, prettify, saveRef) {
+    Canvas.prototype.export = function(promptDownload, prettify, saveRef, properties) {
+        properties = properties || {};
+
         var entityModels = [];
         var relationModels = [];
         saveRef = (typeof saveRef == "boolean" ? saveRef : ns.Diagram.confirmLeave);
@@ -349,7 +352,7 @@ DBSDM.Canvas = (function() {
 
         count = relationModels.length;
         for (i=0; i<count; i++) {
-            result.relations.push(relationModels[i].getExportData());
+            result.relations.push(relationModels[i].getExportData(properties));
         }
 
         this._sortData(result);
@@ -499,7 +502,7 @@ DBSDM.Canvas = (function() {
         switch(action) {
             case "entity": this._createDefaultEntity(); break;
             case "snap": this._switchSnap(); break;
-            case "export": this.export(true, true); break;
+            case "export": this.export(true, true, null, {saveRelationNames: true}); break;
             case "zoom-in": this.zoomIn(); break;
             case "zoom-reset": this.zoomReset(); break;
             case "zoom-out": this.zoomOut(); break;
