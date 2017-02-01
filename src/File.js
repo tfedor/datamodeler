@@ -54,6 +54,22 @@ DBSDM.File = (function() {
         }
     };
 
+    /**
+     * Programmatic upload of files/blobs to specific canvas
+     * canvas   Canvas      Canvas to which to import blob
+     * blob     Blob        Blob or File to be imported, e.g. loaded via xmlHttpRequest
+     */
+    self.loadBlob = function(canvas, blob) {
+        if (blob.type == "application/x-zip-compressed" || blob.type == "application/zip") {
+            self._processZip(canvas, blob);
+        } else if (blob.type == "application/json") {
+            self._processJson(canvas, file);
+        } else {
+            console.log("File couldn't be imported: unsupported file type. Import either json with exported data or SQLDeveloper zip");
+            console.log(e);
+        }
+    };
+
     self._processJson = function(canvas, jsonfile) {
         var reader = new FileReader();
         reader.onload = function(e) {
