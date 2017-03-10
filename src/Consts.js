@@ -24,5 +24,7 @@ DBSDM.Consts = {
 
     UIMessageTransition: 0.4,
     UIDefaultSuccessDuration: 2,
-    UIDefaultErrorDuration: 2
+    UIDefaultErrorDuration: 2,
+
+    LocalStoragePrefix: "DBSDM_"
 };

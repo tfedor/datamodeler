@@ -4,6 +4,31 @@ DBSDM.Menu = (function(){
     var ns = DBSDM;
     var self = {};
 
+    self._loadLocalStorage = function() {
+        if (!ns.Diagram.allowRecent) {
+            return "";
+        }
+
+        var prefix = ns.Consts.LocalStoragePrefix;
+
+        var local = [];
+        for (var i=0; i<localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if ((new RegExp("^"+prefix)).test(key)) {
+                local.push(localStorage.key(i));
+            }
+        }
+        local.sort();
+
+        var result = [];
+        for (i=0; i<Math.min(local.length, 10); i++) {
+            result.push([local[i].substring(prefix.length), "local#"+local[i], null, "allowRecent"])
+        }
+
+        result.push(["Clear local storage", "clear-local", "trash-o", "allowRecent"]);
+        return result;
+    };
+
     /**
      * Menu is defined in sections, each section can be independently hidden or shown, based on when user invokes menu
      * Each section has a name, which also servers for attaching menu handlers.
@@ -95,21 +120,32 @@ DBSDM.Menu = (function(){
                 ["Data (JSON)", "save-data", "file-code-o", "allowFile"],
                 ["Image (PNG)", "save-image", "file-image-o", "allowFile"]
             ], "floppy-o", "allowFile"],
+            ["Recent...", self._loadLocalStorage, "folder-open-o", "allowRecent"],
             ["Clear", "clear", "eraser", "allowEdit"]
         ]
     };
 
-    self._dom = {
-        menu: null,
-        sections: {}
-    };
-    self._handlers = {
-        attached: {},
-        active: {}
-    };
-    self._params = {};
+    self._dom = null;
+    self._handlers = null;
+    self._params = null;
 
     self.build = function() {
+        // remove menu if already exists
+        if (self._dom && self._dom.menu) {
+            self._dom.menu.remove();
+        }
+
+        // reset state
+        self._dom = {
+            menu: null,
+            sections: {}
+        };
+        self._handlers = {
+            attached: {},
+            active: {}
+        };
+        self._params = {};
+
         function createIconElement(icon) {
             var dom = document.createElement("i");
 
@@ -144,6 +180,10 @@ DBSDM.Menu = (function(){
                 var options = menu[i][1]; // options or action
                 var icon = menu[i][2] || null;
                 var enabled = (menu[i][3] ? self.checkPermission(menu[i][3]) : parentEnabled);
+
+                if ((typeof options) == "function") {
+                    options = options();
+                }
 
                 //
                 var itemDom = document.createElement("li");

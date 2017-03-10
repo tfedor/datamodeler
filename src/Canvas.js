@@ -326,9 +326,9 @@ DBSDM.Canvas = (function() {
      */
     Canvas.prototype.export = function(promptDownload, prettify, saveRef, properties) {
         properties = {
-            saveRelationNames: typeof(properties.saveRelationNames) == "boolean" ? properties.saveRelationNames : false,
-            saveTransform:     typeof(properties.saveTransform)     == "boolean" ? properties.saveTransform     : false,
-            sortAttributes:    typeof(properties.sortAttributes)    == "boolean" ? properties.sortAttributes    : true
+            saveRelationNames: properties && typeof(properties.saveRelationNames) == "boolean" ? properties.saveRelationNames : false,
+            saveTransform:     properties && typeof(properties.saveTransform)     == "boolean" ? properties.saveTransform     : false,
+            sortAttributes:    properties && typeof(properties.sortAttributes)    == "boolean" ? properties.sortAttributes    : true
         };
 
         var entityModels = [];
@@ -504,6 +504,29 @@ DBSDM.Canvas = (function() {
         cloneDefs.remove();
     };
 
+    Canvas.prototype._loadLocal = function(key) {
+        if (!ns.Diagram.allowRecent) { return; }
+
+        this.import(JSON.parse(localStorage.getItem(key)));
+    };
+
+    Canvas.prototype.saveLocal = function(suffix) {
+        if (!ns.Diagram.allowRecent) { return; }
+
+        var name = ns.Consts.LocalStoragePrefix + (new Date()).toISOString();
+        if (suffix) {
+            name += " - "+suffix;
+        }
+        localStorage.setItem(name, this.export(false, false, null, {
+            saveRelationNames: true,
+            saveTransform: true,
+            sortAttributes: false
+        }));
+
+        // rebuild menu with new options
+        ns.Menu.build();
+    };
+
     // event handlers
 
     Canvas.prototype.onMouseDown = function(e, mouse) {
@@ -533,10 +556,20 @@ DBSDM.Canvas = (function() {
             case "save-image": this.saveAsImage(); break;
             case "fullscreen": this.fullscreen(); break;
             case "clear":
-                if (ns.Diagram.allowEdit && window.confirm("Are you sure you want to clear the model?")) {
+                if (this._entities.length != 0 && ns.Diagram.allowEdit && window.confirm("Are you sure you want to clear the model?")) {
+                    this.saveLocal();
                     this.clear();
                 }
                 break;
+            case "clear-local":
+                if (ns.Diagram.allowRecent) {
+                    ns.Diagram.clearLocal()
+                }
+                break;
+        }
+
+        if (/^local#(.+)/.test(action)) {
+            this._loadLocal(action.split("#")[1]);
         }
     };
 

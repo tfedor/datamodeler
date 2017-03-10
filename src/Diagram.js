@@ -11,6 +11,7 @@ DBSDM.Diagram = (function() {
     self.allowEdit = true;
     self.allowFile = true;
     self.allowCorrectMode = false;
+    self.allowRecent = true;
     self.showTutorial = true;
     self.confirmLeave = false;
 
@@ -24,6 +25,7 @@ DBSDM.Diagram = (function() {
      *                              allowEdit           Allow changes to the data of the diagram
      *                              allowFile           Allow import and export actions from the interface
      *                              allowCorrectMode    Allow switching to marking mode
+     *                              allowRecent         Allow saving and loading recent models from local storage
      *                              showTutorial        Determines whether the tutorial will be shown or not
      *                              confirmLeave        Ask user to confirm leaving the page if there is a diagram with unsaved changes
      *
@@ -33,6 +35,7 @@ DBSDM.Diagram = (function() {
         if (typeof options.allowEdit == "boolean") { self.allowEdit = options.allowEdit; }
         if (typeof options.allowFile == "boolean") { self.allowFile = options.allowFile; }
         if (typeof options.allowCorrectMode == "boolean") { self.allowCorrectMode = options.allowCorrectMode; }
+        if (typeof options.allowRecent == "boolean") { self.allowRecent = options.allowRecent; }
         if (typeof options.showTutorial == "boolean") { self.showTutorial = options.showTutorial; }
         if (typeof options.confirmLeave == "boolean") { self.confirmLeave = options.confirmLeave; }
 
@@ -48,15 +51,20 @@ DBSDM.Diagram = (function() {
         this._createRelationLegElements();
 
         // global events
-        if (self.confirmLeave) {
-            window.onbeforeunload = function(e) {
+
+        window.onbeforeunload = function(e) {
+            if (self.allowRecent) {
+                self.saveLocal();
+            }
+
+            if (self.confirmLeave) {
                 if (self.didAnyCanvasChange()) {
                     var dialog = "Are you sure you want to leave? Your model may not have been saved.";
                     e.returnValue = dialog;
                     return dialog;
                 }
-            };
-        }
+            }
+        };
 
         window.addEventListener('keydown', function(e) {
             if (self.lastCanvas) {
@@ -115,6 +123,30 @@ DBSDM.Diagram = (function() {
             }
         }
         return changed;
+    };
+
+    // localStorage
+    self.saveLocal = function() {
+        var count = self._canvasList.length;
+        for (var i=0; i<count; i++) {
+            if (self._canvasList[i].didDataChange()) {
+                var suffix = (count > 1 ? "Canvas "+(i+1) : null);
+                self._canvasList[i].saveLocal(suffix);
+            }
+        }
+    };
+
+    self.clearLocal = function() {
+        var prefix = ns.Consts.LocalStoragePrefix;
+
+        for (var i=0; i<localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if ((new RegExp("^"+prefix)).test(key)) {
+                localStorage.removeItem(key);
+            }
+        }
+
+        ns.Menu.build();
     };
 
     // svg elements
