@@ -19,6 +19,7 @@ DBSDM.Canvas = (function() {
 
         this._offset = {x:0, y:0};
         this._zoom = 1;
+        this._namesShown = false;
 
         /**
          * Check when exiting the site, to compare current with imported data
@@ -132,7 +133,7 @@ DBSDM.Canvas = (function() {
      * @param mode  string  name of the mode, e.g. "isa" or "correction"
      */
     Canvas.prototype.setMode = function(mode) {
-        this.svg.classList.toggle(mode + "Mode");
+        this.svg.classList.add(mode + "Mode");
     };
 
     /**
@@ -140,7 +141,7 @@ DBSDM.Canvas = (function() {
      * @param mode  string  name of the mode, e.g. "isa" or "correction"
      */
     Canvas.prototype.unsetMode = function(mode) {
-        this.svg.classList.toggle(mode + "Mode");
+        this.svg.classList.remove(mode + "Mode");
     };
 
     /**
@@ -152,6 +153,17 @@ DBSDM.Canvas = (function() {
     };
 
     // canvas
+
+    Canvas.prototype._toggleRelationNames = function() {
+        for (var i=0; i<this._relations.length; i++) {
+            if (!this._namesShown) {
+                this._relations[i].showNames();
+            } else {
+                this._relations[i].hideNames();
+            }
+        }
+        this._namesShown = !this._namesShown;
+    };
 
     Canvas.prototype._switchSnap = function() {
         this.snap = !this.snap;
@@ -298,13 +310,15 @@ DBSDM.Canvas = (function() {
         return JSON.stringify(a).localeCompare(JSON.stringify(b));
     };
 
-    Canvas.prototype._sortData = function(data) {
-        var count,i;
+    Canvas.prototype._sortData = function(data, sortAttributes) {
+        var count, i;
 
         // entities
-        count = data.entities.length;
-        for (i=0; i<count; i++) {
-            data.entities[i].attr.sort(this._sortAttributes);
+        if (sortAttributes) {
+            count = data.entities.length;
+            for (i = 0; i < count; i++) {
+                data.entities[i].attr.sort(this._sortAttributes);
+            }
         }
         data.entities.sort(this._sortEntities);
 
@@ -321,10 +335,14 @@ DBSDM.Canvas = (function() {
      * prettify         boolean    When true, prettify resulting data
      * saveRef          boolean    When true, save the data reference for future check of changes
      *                             Default depends on confirmLeave setting of Diagram
-     * properties       object     Additional properties for export, e.g. saveRelationNames
+     * properties       object     Additional properties for export
      */
     Canvas.prototype.export = function(promptDownload, prettify, saveRef, properties) {
-        properties = properties || {};
+        properties = {
+            saveRelationNames: properties && typeof(properties.saveRelationNames) == "boolean" ? properties.saveRelationNames : false,
+            saveTransform:     properties && typeof(properties.saveTransform)     == "boolean" ? properties.saveTransform     : false,
+            sortAttributes:    properties && typeof(properties.sortAttributes)    == "boolean" ? properties.sortAttributes    : true
+        };
 
         var entityModels = [];
         var relationModels = [];
@@ -348,7 +366,7 @@ DBSDM.Canvas = (function() {
 
         count = entityModels.length;
         for (i=0; i<count; i++) {
-            result.entities = result.entities.concat(entityModels[i].getExportData());
+            result.entities = result.entities.concat(entityModels[i].getExportData(properties));
         }
 
         count = relationModels.length;
@@ -356,7 +374,7 @@ DBSDM.Canvas = (function() {
             result.relations.push(relationModels[i].getExportData(properties));
         }
 
-        this._sortData(result);
+        this._sortData(result, properties.sortAttributes);
 
         var jsonData;
         if (prettify) {
@@ -375,9 +393,12 @@ DBSDM.Canvas = (function() {
         return jsonData;
     };
 
-    Canvas.prototype.import = function(data) {
+    Canvas.prototype.import = function(data, forceSort) {
         this.clear();
-        this._sortData(data);
+
+        if (forceSort) {
+            this._sortData(data);
+        }
 
         if (ns.Diagram.confirmLeave) {
             this._dataRef = JSON.stringify(data);
@@ -395,7 +416,12 @@ DBSDM.Canvas = (function() {
 
         count = data.relations.length;
         for (i=0; i<count; i++) {
-            relationModels.push(new ns.Model.Relation(null, null, data.relations[i]));
+            relationModels.push(
+                new ns.Model.Relation(
+                    (new ns.Model.RelationLeg()).import(data.relations[i][0]),
+                    (new ns.Model.RelationLeg()).import(data.relations[i][1])
+                )
+            );
         }
 
         // create controls and view for data
@@ -409,41 +435,47 @@ DBSDM.Canvas = (function() {
         }
 
         // set ISA
+        var sort = false;
         count = data.entities.length;
         for (i=0; i<count; i++) {
             var entity = data.entities[i].name;
             var parent = data.entities[i].parent;
             if (parent) {
-                entityControlsMap[entity]._isa(entityControlsMap[parent]);
+                entityControlsMap[entity].importIsa(entityControlsMap[parent]);
             }
 
-            entityControlsMap[entity].fitToContents();
+            if (forceSort || !data.entities[i].transform) {
+                entityControlsMap[entity].fitToContents();
+                sort = true;
+            }
         }
 
         // place entites
-        count = this._entities.length;
-        var perRow = Math.ceil(Math.sqrt(count));
-        var r=0,c=0;
-        for (i=0; i<count; i++) {
-            control = this._entities[i];
-            control._model.setPosition(c*200, r*150);
-            control._view.redraw();
+        if (forceSort || sort) {
+            count = this._entities.length;
+            var perRow = Math.ceil(Math.sqrt(count));
+            var r=0,c=0;
+            for (i=0; i<count; i++) {
+                control = this._entities[i];
+                control._model.setPosition(c*200, r*150);
+                control._view.redraw();
 
-            c++;
-            if (c == perRow) {
-                r++;
-                c = 0;
+                c++;
+                if (c == perRow) {
+                    r++;
+                    c = 0;
+                }
             }
         }
 
         // set relations
         var xorMap = {};
-        function makeXor(xorId, legControl) {
+        function makeXor(xorId, legControl, entityControl) {
             if (!xorId) { return; }
             if (!xorMap[xorId]) {
                 xorMap[xorId] = legControl;
             } else {
-                xorMap[xorId].xor(legControl);
+                entityControl.xorWith(xorMap[xorId], legControl);
             }
         }
 
@@ -455,13 +487,15 @@ DBSDM.Canvas = (function() {
             var targetEntityControl = entityControlsMap[relation[1].entity];
 
             control = new ns.Control.Relation(this, sourceEntityControl, targetEntityControl, null, null, model);
-            control.import();
+            control.import((forceSort || !relation[0].transform || !relation[1].transform));
 
-            makeXor(relation[0].xor, control._legs.source);
-            makeXor(relation[1].xor, control._legs.target);
+            makeXor(relation[0].xor, control._legs.source, sourceEntityControl);
+            makeXor(relation[1].xor, control._legs.target, targetEntityControl);
         }
 
-        this.sort();
+        if (forceSort || sort) {
+            this.sort();
+        }
     };
 
     Canvas.prototype.didDataChange = function() {
@@ -483,6 +517,29 @@ DBSDM.Canvas = (function() {
         cloneDefs.remove();
     };
 
+    Canvas.prototype._loadLocal = function(key) {
+        if (!ns.Diagram.allowRecent) { return; }
+
+        this.import(JSON.parse(localStorage.getItem(key)));
+    };
+
+    Canvas.prototype.saveLocal = function(suffix) {
+        if (!ns.Diagram.allowRecent) { return; }
+
+        var name = ns.Consts.LocalStoragePrefix + (new Date()).toISOString();
+        if (suffix) {
+            name += " - "+suffix;
+        }
+        localStorage.setItem(name, this.export(false, false, null, {
+            saveRelationNames: true,
+            saveTransform: true,
+            sortAttributes: false
+        }));
+
+        // rebuild menu with new options
+        ns.Menu.build();
+    };
+
     // event handlers
 
     Canvas.prototype.onMouseDown = function(e, mouse) {
@@ -502,19 +559,37 @@ DBSDM.Canvas = (function() {
     Canvas.prototype.handleMenu = function(action) {
         switch(action) {
             case "entity": this._createDefaultEntity(); break;
+            case "rel-names": this._toggleRelationNames(); break;
             case "snap": this._switchSnap(); break;
-            case "export": this.export(true, true, null, {saveRelationNames: true}); break;
             case "zoom-in": this.zoomIn(); break;
             case "zoom-reset": this.zoomReset(); break;
-            case "zoom-out": this.zoomOut(); break;
+            case "zoom-out":   this.zoomOut(); break;
             case "reset-view": this.resetView(); break;
-            case "image": this.saveAsImage(); break;
+            case "save-model": this.export(true, true, null, {saveRelationNames: true, saveTransform: true, sortAttributes: false}); break;
+            case "save-data": this.export(true, true); break;
+            case "save-image": this.saveAsImage(); break;
             case "fullscreen": this.fullscreen(); break;
             case "clear":
-                if (ns.Diagram.allowEdit && window.confirm("Are you sure you want to clear the model?")) {
+                if (this._entities.length != 0 && ns.Diagram.allowEdit && window.confirm("Are you sure you want to clear the model?")) {
+                    this.saveLocal();
                     this.clear();
                 }
                 break;
+            case "clear-local":
+                if (ns.Diagram.allowRecent) {
+                    ns.Diagram.clearLocal()
+                }
+                break;
+        }
+
+        if (/^local#(.+)/.test(action)) {
+            this._loadLocal(action.split("#")[1]);
+        }
+    };
+
+    Canvas.prototype.getMenuState = function() {
+        return {
+            "rel-names": this._namesShown
         }
     };
 
@@ -546,7 +621,9 @@ DBSDM.Consts = {
 
     UIMessageTransition: 0.4,
     UIDefaultSuccessDuration: 2,
-    UIDefaultErrorDuration: 2
+    UIDefaultErrorDuration: 2,
+
+    LocalStoragePrefix: "DBSDM_"
 };
 /** src/Diagram.js */
 
@@ -561,6 +638,7 @@ DBSDM.Diagram = (function() {
     self.allowEdit = true;
     self.allowFile = true;
     self.allowCorrectMode = false;
+    self.allowRecent = true;
     self.showTutorial = true;
     self.confirmLeave = false;
 
@@ -574,6 +652,7 @@ DBSDM.Diagram = (function() {
      *                              allowEdit           Allow changes to the data of the diagram
      *                              allowFile           Allow import and export actions from the interface
      *                              allowCorrectMode    Allow switching to marking mode
+     *                              allowRecent         Allow saving and loading recent models from local storage
      *                              showTutorial        Determines whether the tutorial will be shown or not
      *                              confirmLeave        Ask user to confirm leaving the page if there is a diagram with unsaved changes
      *
@@ -583,6 +662,7 @@ DBSDM.Diagram = (function() {
         if (typeof options.allowEdit == "boolean") { self.allowEdit = options.allowEdit; }
         if (typeof options.allowFile == "boolean") { self.allowFile = options.allowFile; }
         if (typeof options.allowCorrectMode == "boolean") { self.allowCorrectMode = options.allowCorrectMode; }
+        if (typeof options.allowRecent == "boolean") { self.allowRecent = options.allowRecent; }
         if (typeof options.showTutorial == "boolean") { self.showTutorial = options.showTutorial; }
         if (typeof options.confirmLeave == "boolean") { self.confirmLeave = options.confirmLeave; }
 
@@ -598,15 +678,20 @@ DBSDM.Diagram = (function() {
         this._createRelationLegElements();
 
         // global events
-        if (self.confirmLeave) {
-            window.onbeforeunload = function(e) {
+
+        window.onbeforeunload = function(e) {
+            if (self.allowRecent) {
+                self.saveLocal();
+            }
+
+            if (self.confirmLeave) {
                 if (self.didAnyCanvasChange()) {
                     var dialog = "Are you sure you want to leave? Your model may not have been saved.";
                     e.returnValue = dialog;
                     return dialog;
                 }
-            };
-        }
+            }
+        };
 
         window.addEventListener('keydown', function(e) {
             if (self.lastCanvas) {
@@ -665,6 +750,30 @@ DBSDM.Diagram = (function() {
             }
         }
         return changed;
+    };
+
+    // localStorage
+    self.saveLocal = function() {
+        var count = self._canvasList.length;
+        for (var i=0; i<count; i++) {
+            if (self._canvasList[i].didDataChange()) {
+                var suffix = (count > 1 ? "Canvas "+(i+1) : null);
+                self._canvasList[i].saveLocal(suffix);
+            }
+        }
+    };
+
+    self.clearLocal = function() {
+        var prefix = ns.Consts.LocalStoragePrefix;
+
+        for (var i=0; i<localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if ((new RegExp("^"+prefix)).test(key)) {
+                localStorage.removeItem(key);
+            }
+        }
+
+        ns.Menu.build();
     };
 
     // svg elements
@@ -1232,11 +1341,118 @@ DBSDM.File = (function() {
             }
         }
 
+        function parseTransforms(node, map) {
+
+            map.entities = {};
+            map.relations = {};
+
+            var vid = {};
+
+            // entities
+            var objects = node.querySelectorAll("OView");
+            for (var i=0; i<objects.length; i++) {
+                var id = objects[i].getAttribute("oid");
+                var bounds = objects[i].querySelector("bounds");
+
+                map.entities[id] = {
+                    x: parseInt(bounds.getAttribute("x")),
+                    y: parseInt(bounds.getAttribute("y")),
+                    width: parseInt(bounds.getAttribute("width")),
+                    height: parseInt(bounds.getAttribute("height")),
+                };
+
+                vid[objects[i].getAttribute("vid")] = id;
+            }
+
+            // relations
+            var connectors = node.querySelectorAll("Connector");
+            for (i=0; i<connectors.length; i++) {
+                id = connectors[i].getAttribute("oid");
+                var pointNodes = connectors[i].querySelectorAll("point");
+
+                // read points
+                var points = [];
+                for (var j=0; j<pointNodes.length; j++) {
+                    var point = pointNodes[j];
+                    points.push({
+                        x: parseInt(point.getAttribute("x")),
+                        y: parseInt(point.getAttribute("y"))
+                    });
+                }
+
+                // add middle point if relation is specified only by anchors
+                if (points.length == 2) {
+                    points.splice(1, 0, {
+                        x: (points[0].x+points[1].x)*0.5,
+                        y: (points[0].y+points[1].y)*0.5
+                    });
+                }
+
+                // set up transform
+                var transform = [{}, {}];
+
+                // set source points
+                transform[0] = {
+                    anchor: {
+                        x: points[0].x,
+                        y: points[0].y,
+                        edge: null
+                    },
+                    points: [],
+                    manual: true
+                };
+                for (var p=1; p<points.length-1; p++) {
+                    transform[0].points.push({
+                        x: points[p].x,
+                        y: points[p].y
+                    });
+                }
+
+                // set target points
+                var last = points.length - 1;
+                transform[1] = {
+                    anchor: {
+                        x: points[last].x,
+                        y: points[last].y,
+                        edge: null
+                    },
+                    points: [{
+                        x: points[last-1].x,
+                        y: points[last-1].y
+                    }],
+                    manual: true
+                };
+
+                // set anchor edges
+                function computeEdge(anchor, entity) {
+                    console.log(anchor, entity);
+                    if (anchor.x < entity.x+1) {
+                        return ns.Enums.Edge.LEFT;
+                    } else if (anchor.x > entity.x + entity.width-1) {
+                        return ns.Enums.Edge.RIGHT;
+                    } else if (anchor.y < entity.y+1) {
+                        return ns.Enums.Edge.TOP;
+                    } else {
+                        return ns.Enums.Edge.BOTTOM;
+                    }
+                }
+
+                var vidSource = connectors[i].getAttribute("vid_source");
+                transform[0].anchor.edge = computeEdge(transform[0].anchor, map.entities[vid[vidSource]]);
+
+                var vidTarget = connectors[i].getAttribute("vid_target");
+                transform[1].anchor.edge = computeEdge(transform[1].anchor, map.entities[vid[vidTarget]]);
+
+                //
+                map.relations[id] = transform;
+            }
+        }
+
         var zip = new JSZip();
         zip.loadAsync(zipfile)
             .then(function(contents) {
                 var toPromise = [];
-                var files = zip.file(/(\W|^)logical\/(entity|relation|arc)\/seg_0\/.*?\.xml$/);
+                var files = zip.file(/(\W|^)logical\/((entity|relation|arc)\/seg_0|subviews)\/.*?\.xml$/);
                 for (var i=0; i<files.length; i++) {
                     toPromise.push(files[i].async("string"));
                 }
@@ -1247,6 +1463,7 @@ DBSDM.File = (function() {
                     var relationsMap = [];
                     var relationsRef = {}; // map of {relation ID} => {relationsMap index}
                     var arcMap = {};
+                    var transformsMap = {};
 
                     var parser = new DOMParser();
                     for (var i=0; i<result.length; i++) {
@@ -1261,6 +1478,9 @@ DBSDM.File = (function() {
                                 break;
                             case "Arc":
                                 parseArc(xml.documentElement, arcMap);
+                                break;
+                            case "Diagram":
+                                parseTransforms(xml.documentElement, transformsMap);
                                 break;
                         }
 
@@ -1290,6 +1510,20 @@ DBSDM.File = (function() {
                                 rel[1].xor = arcID;
                             }
                         }
+                    }
+
+                    // add transforms
+                    for (var entID in transformsMap.entities) {
+                        if (!transformsMap.entities.hasOwnProperty(entID)) { continue; }
+                        entityMap[entID].transform = transformsMap.entities[entID];
+                    }
+
+                    for (var relID in transformsMap.relations) {
+                        if (!transformsMap.relations.hasOwnProperty(relID)) { continue; }
+                        var ref = relationsRef[relID];
+                        console.log(transformsMap.relations[relID]);
+                        relationsMap[ref][0].transform = transformsMap.relations[relID][0];
+                        relationsMap[ref][1].transform = transformsMap.relations[relID][1];
                     }
 
                     // convert relations' entity ids to names
@@ -1641,6 +1875,31 @@ DBSDM.Menu = (function(){
     var ns = DBSDM;
     var self = {};
 
+    self._loadLocalStorage = function() {
+        if (!ns.Diagram.allowRecent) {
+            return "";
+        }
+
+        var prefix = ns.Consts.LocalStoragePrefix;
+
+        var local = [];
+        for (var i=0; i<localStorage.length; i++) {
+            var key = localStorage.key(i);
+            if ((new RegExp("^"+prefix)).test(key)) {
+                local.push(localStorage.key(i));
+            }
+        }
+        local.sort().reverse();
+
+        var result = [];
+        for (i=0; i<Math.min(local.length, 10); i++) {
+            result.push([local[i].substring(prefix.length), "local#"+local[i], null, "allowRecent"])
+        }
+
+        result.push(["Clear local storage", "clear-local", "trash-o", "allowRecent"]);
+        return result;
+    };
+
     /**
      * Menu is defined in sections, each section can be independently hidden or shown, based on when user invokes menu
      * Each section has a name, which also servers for attaching menu handlers.
@@ -1719,6 +1978,9 @@ DBSDM.Menu = (function(){
 
         canvas: [
             ["New entity", "entity", "list-alt", "allowEdit"],
+            ["Show...", [
+                ["Relation names", "rel-names", ["check-square-o", "square-o"]]
+            ]],
             ["Snap to grid", "snap", "th"],
             ["Zoom", [
                 ["In", "zoom-in", "search-plus"],
@@ -1727,23 +1989,37 @@ DBSDM.Menu = (function(){
             ], "search"],
             ["Reset view", "reset-view", "arrows-alt"],
             ["Fullscreen", "fullscreen", "desktop"],
-            ["Export", "export", "external-link-square", "allowFile"],
-            ["Save as image", "image", "file-image-o", "allowFile"],
+            ["Save as...", [
+                ["Model (JSON)", "save-model", "file-text-o", "allowFile"],
+                ["Data (JSON)", "save-data", "file-code-o", "allowFile"],
+                ["Image (PNG)", "save-image", "file-image-o", "allowFile"]
+            ], "floppy-o", "allowFile"],
+            ["Recent...", self._loadLocalStorage, "folder-open-o", "allowRecent"],
             ["Clear", "clear", "eraser", "allowEdit"]
         ]
     };
 
-    self._dom = {
-        menu: null,
-        sections: {}
-    };
-    self._handlers = {
-        attached: {},
-        active: {}
-    };
-    self._params = {};
+    self._dom = null;
+    self._handlers = null;
+    self._params = null;
 
     self.build = function() {
+        // remove menu if already exists
+        if (self._dom && self._dom.menu) {
+            self._dom.menu.remove();
+        }
+
+        // reset state
+        self._dom = {
+            menu: null,
+            sections: {}
+        };
+        self._handlers = {
+            attached: {},
+            active: {}
+        };
+        self._params = {};
+
         function createIconElement(icon) {
             var dom = document.createElement("i");
 
@@ -1778,6 +2054,10 @@ DBSDM.Menu = (function(){
                 var options = menu[i][1]; // options or action
                 var icon = menu[i][2] || null;
                 var enabled = (menu[i][3] ? self.checkPermission(menu[i][3]) : parentEnabled);
+
+                if ((typeof options) == "function") {
+                    options = options();
+                }
 
                 //
                 var itemDom = document.createElement("li");
@@ -3171,6 +3451,18 @@ DBSDM.Control.Entity = (function(){
     };
 
     // ISA
+
+    Entity.prototype.importIsa = function(parentControl) {
+        this._parent = parentControl;
+
+        this._model.setParent(parentControl.getModel());
+        this._view.setParent(parentControl.getDom());
+        this._canvas.removeEntity(this);
+
+        parentControl.addChild(this);
+        this._view.redraw();
+    };
+
     Entity.prototype._isa = function(parent) {
         if (!ns.Diagram.allowEdit) { return; }
 
@@ -3611,9 +3903,12 @@ DBSDM.Control.Relation = (function() {
         this._model.middleManual = (this._sourceEntity == this._targetEntity);
     };
 
-    Relation.prototype.import = function() {
+    Relation.prototype.import = function(manageRelations) {
         this._setupEntities();
-        this._moveToEntity();
+        if (manageRelations) {
+            this._moveToEntity();
+        }
+        this.redraw();
     };
 
     Relation.prototype.cancel = function() {
@@ -3830,6 +4125,16 @@ DBSDM.Control.Relation = (function() {
         var tmp = s.isOptional();
         s.setOptional(t.isOptional());
         t.setOptional(tmp);
+    };
+
+    // names
+    Relation.prototype.showNames = function() {
+        this._legs.source.showName();
+        this._legs.target.showName();
+    };
+    Relation.prototype.hideNames = function() {
+        this._legs.source.hideName();
+        this._legs.target.hideName();
     };
 
     // Events
@@ -4066,6 +4371,7 @@ DBSDM.Control.RelationLeg = (function() {
 
     RelationLeg.prototype.xor = function(leg) {
         if (!this._inXorCreation) { return; }
+        this._inXorCreation = false;
         this._entity.unmarkRelations();
 
         ns.Diagram.cancelAction = null;
@@ -4120,6 +4426,18 @@ DBSDM.Control.RelationLeg = (function() {
         } else {
             this._view.markCorrect();
         }
+    };
+
+    // Names
+
+    RelationLeg.prototype.showName = function() {
+        this._view.showName();
+    };
+    RelationLeg.prototype.hideName = function() {
+        this._view.hideName();
+    };
+    RelationLeg.prototype.toggleName = function() {
+        this._view.toggleName();
     };
 
     // Events
@@ -4210,7 +4528,7 @@ DBSDM.Control.RelationLeg = (function() {
                 }
                 break;
             case "name":
-                this._view.toggleName();
+                this.toggleName();
                 break;
         }
 
@@ -4398,24 +4716,8 @@ DBSDM.Model.AttributeList = (function(){
         return str;
     };
 
-    AttributeList.prototype._sortAttributes = function(a, b) {
-        var cmp = b.isPrimary() - a.isPrimary();
-        if (cmp != 0) { return cmp; }
-
-        cmp = b.isUnique() - a.isUnique();
-        if (cmp != 0) { return cmp; }
-
-        cmp = a.isNullable() - b.isNullable();
-        if (cmp != 0) { return cmp; }
-
-        cmp = a.getName().localeCompare(b.getName());
-        return cmp;
-    };
-
     AttributeList.prototype.getExportData = function() {
         var list = Object.assign([], this._list);
-        list.sort(this._sortAttributes);
-
         var result = [];
         for (var i=0; i<list.length; i++) {
             result.push(list[i].getData());
@@ -4712,7 +5014,7 @@ DBSDM.Model.Entity = (function(){
         return str;
     };
 
-    Entity.prototype.getExportData = function() {
+    Entity.prototype.getExportData = function(properties) {
         this.setName(this._name); // force normalization
 
         var data = [{
@@ -4721,11 +5023,15 @@ DBSDM.Model.Entity = (function(){
             attr: this._attributes.getExportData()
         }];
         for (var i=0; i<this._children.length; i++) {
-            data = data.concat(this._children[i].getExportData());
+            data = data.concat(this._children[i].getExportData(properties));
         }
 
         if (this.incorrect) {
             data[0].incorrect = true;
+        }
+
+        if (properties['saveTransform']) {
+            data[0].transform = this._transform;
         }
 
         return data;
@@ -4735,6 +5041,10 @@ DBSDM.Model.Entity = (function(){
         if (data.name) { this._name = data.name; }
         if (data.attr) { this._attributes.import(data.attr); }
         if (typeof data.incorrect == "boolean") { this.incorrect = data.incorrect; }
+        if (data.transform) {
+            this.setPosition(data.transform.x, data.transform.y);
+            this.setSize(data.transform.width, data.transform.height);
+        }
     };
 
     return Entity;
@@ -4749,17 +5059,9 @@ DBSDM.Model.Relation = (function(){
     var ns = DBSDM;
     var Enum = ns.Enums;
 
-    function Relation(source, target, data) {
-        if (typeof data == "object") {
-            this._source = new ns.Model.RelationLeg(data[0].identifying, data[0].optional, data[0].cardinality, data[0].incorrect);
-            this._target = new ns.Model.RelationLeg(data[1].identifying, data[1].optional, data[1].cardinality, data[1].incorrect);
-
-            if (data[0].name) { this._source.setName(data[0].name); }
-            if (data[1].name) { this._target.setName(data[1].name); }
-        } else {
-            this._source = source;
-            this._target = target;
-        }
+    function Relation(source, target) {
+        this._source = source;
+        this._target = target;
 
         this._source.setRelation(this);
         this._target.setRelation(this);
@@ -4930,7 +5232,7 @@ DBSDM.Model.RelationLeg = (function(){
     var ns = DBSDM;
     var Enum = ns.Enums;
 
-    function RelationLeg(identifying, optional, cardinality, incorrect) {
+    function RelationLeg(identifying, optional, cardinality) {
         this._relation = null;
 
         this._entity = null;
@@ -4961,7 +5263,7 @@ DBSDM.Model.RelationLeg = (function(){
 
         this.inXor = false;
 
-        this.incorrect = typeof(incorrect) == "boolean" ? incorrect : false;
+        this.incorrect = false;
     }
 
     RelationLeg.prototype.setRelation = function(relation) {
@@ -4985,6 +5287,7 @@ DBSDM.Model.RelationLeg = (function(){
 
     RelationLeg.prototype.setName = function(name) {
         this._name = name.trim().toLocaleLowerCase() || null;
+        return this;
     };
 
     RelationLeg.prototype.isIdentifying = function() {
@@ -5129,7 +5432,7 @@ DBSDM.Model.RelationLeg = (function(){
     RelationLeg.prototype.getExportData = function(properties) {
         var data = {
             entity: this._entity.getName(), // TODO maybe setName first, to force normalization, just to be sure? Shouldnt be needed, since entities are exported first, but who knows...
-                identifying: this._identifying,
+            identifying: this._identifying,
             optional: this._optional,
             cardinality: this._cardinality,
             xor: this._entity.getXorHash(this)
@@ -5139,10 +5442,48 @@ DBSDM.Model.RelationLeg = (function(){
             data.name = this._name;
         }
 
+        if (properties['saveTransform']) {
+            data.transform = {
+                anchor: this._anchor,
+                points: this._points.slice(1),
+                manual: this.pointsManual
+            };
+        }
+
         if (this.incorrect) {
             data.incorrect = true;
         }
         return data;
+    };
+
+    RelationLeg.prototype.import = function(data) {
+
+        this.setIdentifying(data.identifying)
+            .setOptional(data.optional)
+            .setCardinality(data.cardinality);
+
+        if (data.name) {
+            this.setName(data.name);
+        }
+
+        if (data.transform) {
+            // sets anchor position as well as first point's position
+            this.setAnchor(data.transform.anchor.x, data.transform.anchor.y, data.transform.anchor.edge);
+
+            var pts = data.transform.points;
+            this.setPoint(1, pts[pts.length-1].x, pts[pts.length-1].y); // set middle point first
+
+            for (var i=0; i<pts.length-1; i++) {
+                this.addPoint(i+1, pts[i]);
+            }
+            this.pointsManual = data.transform.manual;
+        }
+
+        if (data.incorrect && typeof(data.incorrect) == "boolean") {
+            this.incorrect = data.incorrect
+        }
+
+        return this;
     };
 
     return RelationLeg;

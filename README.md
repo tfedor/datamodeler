@@ -6,9 +6,10 @@ Data Modeler is a Entity-Relationship web component for drawing diagrams in Bark
 
 - support for drawing logical models in the Barker notation, including XOR relationships and ISA hierarchy
 - automatic diagram layout, which ensures that equivalent diagrams are displayed in the same way
+- save to local storage to preserve your work
 - marking mode, used to mark incorrect parts of the diagram
 - import and export to JSON, which may also be used to compare models as strings 
-- import of Oracle SQL Developer Data Modeler Design, in form of zip file
+- import of Oracle SQL Developer Data Modeler Design, in form of a zip file
 - support for multiple diagrams on one page
 - tutorial for new users
 - option to set up permissions and restrict certain functionality (e.g. export and import, which can not be used during exams)
@@ -36,6 +37,7 @@ Option           | Default | Description |
 allowEdit        | true    | Allow changes to the data of the diagram |
 allowFile        | true    | Allow import and export actions from the interface |
 allowCorrectMode | false   | Allow switching to marking mode |
+allowRecent      | true    | Allow saving and loading recent models from local storage |
 showTutorial     | true    | Determines whether the tutorial will be shown or not |
 confirmLeave     | false   | Ask user to confirm leaving the page if there is a diagram with unsaved changes |
   
