@@ -281,6 +281,16 @@ DBSDM.Control.Relation = (function() {
         t.setOptional(tmp);
     };
 
+    // names
+    Relation.prototype.showNames = function() {
+        this._legs.source.showName();
+        this._legs.target.showName();
+    };
+    Relation.prototype.hideNames = function() {
+        this._legs.source.hideName();
+        this._legs.target.hideName();
+    };
+
     // Events
 
     // handles non-recursive relations

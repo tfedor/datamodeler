@@ -197,6 +197,18 @@ DBSDM.Control.RelationLeg = (function() {
         }
     };
 
+    // Names
+
+    RelationLeg.prototype.showName = function() {
+        this._view.showName();
+    };
+    RelationLeg.prototype.hideName = function() {
+        this._view.hideName();
+    };
+    RelationLeg.prototype.toggleName = function() {
+        this._view.toggleName();
+    };
+
     // Events
 
     RelationLeg.prototype.onEntityDrag = function(dx, dy) {
@@ -285,7 +297,7 @@ DBSDM.Control.RelationLeg = (function() {
                 }
                 break;
             case "name":
-                this._view.toggleName();
+                this.toggleName();
                 break;
         }
 

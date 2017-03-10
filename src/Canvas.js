@@ -18,6 +18,7 @@ DBSDM.Canvas = (function() {
 
         this._offset = {x:0, y:0};
         this._zoom = 1;
+        this._namesShown = false;
 
         /**
          * Check when exiting the site, to compare current with imported data
@@ -151,6 +152,17 @@ DBSDM.Canvas = (function() {
     };
 
     // canvas
+
+    Canvas.prototype._toggleRelationNames = function() {
+        for (var i=0; i<this._relations.length; i++) {
+            if (!this._namesShown) {
+                this._relations[i].showNames();
+            } else {
+                this._relations[i].hideNames();
+            }
+        }
+        this._namesShown = !this._namesShown;
+    };
 
     Canvas.prototype._switchSnap = function() {
         this.snap = !this.snap;
@@ -546,6 +558,7 @@ DBSDM.Canvas = (function() {
     Canvas.prototype.handleMenu = function(action) {
         switch(action) {
             case "entity": this._createDefaultEntity(); break;
+            case "rel-names": this._toggleRelationNames(); break;
             case "snap": this._switchSnap(); break;
             case "zoom-in": this.zoomIn(); break;
             case "zoom-reset": this.zoomReset(); break;
@@ -570,6 +583,12 @@ DBSDM.Canvas = (function() {
 
         if (/^local#(.+)/.test(action)) {
             this._loadLocal(action.split("#")[1]);
+        }
+    };
+
+    Canvas.prototype.getMenuState = function() {
+        return {
+            "rel-names": this._namesShown
         }
     };
 

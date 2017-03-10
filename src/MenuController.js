@@ -107,6 +107,9 @@ DBSDM.Menu = (function(){
 
         canvas: [
             ["New entity", "entity", "list-alt", "allowEdit"],
+            ["Show...", [
+                ["Relation names", "rel-names", ["check-square-o", "square-o"]]
+            ]],
             ["Snap to grid", "snap", "th"],
             ["Zoom", [
                 ["In", "zoom-in", "search-plus"],
