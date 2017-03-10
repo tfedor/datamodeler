@@ -230,11 +230,118 @@ DBSDM.File = (function() {
             }
         }
 
+        function parseTransforms(node, map) {
+
+            map.entities = {};
+            map.relations = {};
+
+            var vid = {};
+
+            // entities
+            var objects = node.querySelectorAll("OView");
+            for (var i=0; i<objects.length; i++) {
+                var id = objects[i].getAttribute("oid");
+                var bounds = objects[i].querySelector("bounds");
+
+                map.entities[id] = {
+                    x: parseInt(bounds.getAttribute("x")),
+                    y: parseInt(bounds.getAttribute("y")),
+                    width: parseInt(bounds.getAttribute("width")),
+                    height: parseInt(bounds.getAttribute("height")),
+                };
+
+                vid[objects[i].getAttribute("vid")] = id;
+            }
+
+            // relations
+            var connectors = node.querySelectorAll("Connector");
+            for (i=0; i<connectors.length; i++) {
+                id = connectors[i].getAttribute("oid");
+                var pointNodes = connectors[i].querySelectorAll("point");
+
+                // read points
+                var points = [];
+                for (var j=0; j<pointNodes.length; j++) {
+                    var point = pointNodes[j];
+                    points.push({
+                        x: parseInt(point.getAttribute("x")),
+                        y: parseInt(point.getAttribute("y"))
+                    });
+                }
+
+                // add middle point if relation is specified only by anchors
+                if (points.length == 2) {
+                    points.splice(1, 0, {
+                        x: (points[0].x+points[1].x)*0.5,
+                        y: (points[0].y+points[1].y)*0.5
+                    });
+                }
+
+                // set up transform
+                var transform = [{}, {}];
+
+                // set source points
+                transform[0] = {
+                    anchor: {
+                        x: points[0].x,
+                        y: points[0].y,
+                        edge: null
+                    },
+                    points: [],
+                    manual: true
+                };
+                for (var p=1; p<points.length-1; p++) {
+                    transform[0].points.push({
+                        x: points[p].x,
+                        y: points[p].y
+                    });
+                }
+
+                // set target points
+                var last = points.length - 1;
+                transform[1] = {
+                    anchor: {
+                        x: points[last].x,
+                        y: points[last].y,
+                        edge: null
+                    },
+                    points: [{
+                        x: points[last-1].x,
+                        y: points[last-1].y
+                    }],
+                    manual: true
+                };
+
+                // set anchor edges
+                function computeEdge(anchor, entity) {
+                    console.log(anchor, entity);
+                    if (anchor.x < entity.x+1) {
+                        return ns.Enums.Edge.LEFT;
+                    } else if (anchor.x > entity.x + entity.width-1) {
+                        return ns.Enums.Edge.RIGHT;
+                    } else if (anchor.y < entity.y+1) {
+                        return ns.Enums.Edge.TOP;
+                    } else {
+                        return ns.Enums.Edge.BOTTOM;
+                    }
+                }
+
+                var vidSource = connectors[i].getAttribute("vid_source");
+                transform[0].anchor.edge = computeEdge(transform[0].anchor, map.entities[vid[vidSource]]);
+
+                var vidTarget = connectors[i].getAttribute("vid_target");
+                transform[1].anchor.edge = computeEdge(transform[1].anchor, map.entities[vid[vidTarget]]);
+
+                //
+                map.relations[id] = transform;
+            }
+        }
+
         var zip = new JSZip();
         zip.loadAsync(zipfile)
             .then(function(contents) {
                 var toPromise = [];
-                var files = zip.file(/(\W|^)logical\/(entity|relation|arc)\/seg_0\/.*?\.xml$/);
+                var files = zip.file(/(\W|^)logical\/((entity|relation|arc)\/seg_0|subviews)\/.*?\.xml$/);
                 for (var i=0; i<files.length; i++) {
                     toPromise.push(files[i].async("string"));
                 }
@@ -245,6 +352,7 @@ DBSDM.File = (function() {
                     var relationsMap = [];
                     var relationsRef = {}; // map of {relation ID} => {relationsMap index}
                     var arcMap = {};
+                    var transformsMap = {};
 
                     var parser = new DOMParser();
                     for (var i=0; i<result.length; i++) {
@@ -259,6 +367,9 @@ DBSDM.File = (function() {
                                 break;
                             case "Arc":
                                 parseArc(xml.documentElement, arcMap);
+                                break;
+                            case "Diagram":
+                                parseTransforms(xml.documentElement, transformsMap);
                                 break;
                         }
 
@@ -288,6 +399,20 @@ DBSDM.File = (function() {
                                 rel[1].xor = arcID;
                             }
                         }
+                    }
+
+                    // add transforms
+                    for (var entID in transformsMap.entities) {
+                        if (!transformsMap.entities.hasOwnProperty(entID)) { continue; }
+                        entityMap[entID].transform = transformsMap.entities[entID];
+                    }
+
+                    for (var relID in transformsMap.relations) {
+                        if (!transformsMap.relations.hasOwnProperty(relID)) { continue; }
+                        var ref = relationsRef[relID];
+                        console.log(transformsMap.relations[relID]);
+                        relationsMap[ref][0].transform = transformsMap.relations[relID][0];
+                        relationsMap[ref][1].transform = transformsMap.relations[relID][1];
                     }
 
                     // convert relations' entity ids to names

@@ -474,7 +474,7 @@ DBSDM.Canvas = (function() {
             var targetEntityControl = entityControlsMap[relation[1].entity];
 
             control = new ns.Control.Relation(this, sourceEntityControl, targetEntityControl, null, null, model);
-            control.import((!relation[0].transform || !relation[1].transform));
+            control.import((forceSort || !relation[0].transform || !relation[1].transform));
 
             makeXor(relation[0].xor, control._legs.source, sourceEntityControl);
             makeXor(relation[1].xor, control._legs.target, targetEntityControl);

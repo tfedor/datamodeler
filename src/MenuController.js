@@ -18,7 +18,7 @@ DBSDM.Menu = (function(){
                 local.push(localStorage.key(i));
             }
         }
-        local.sort();
+        local.sort().reverse();
 
         var result = [];
         for (i=0; i<Math.min(local.length, 10); i++) {

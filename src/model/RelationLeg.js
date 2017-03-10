@@ -221,7 +221,7 @@ DBSDM.Model.RelationLeg = (function(){
         if (properties['saveTransform']) {
             data.transform = {
                 anchor: this._anchor,
-                points: this._points,
+                points: this._points.slice(1),
                 manual: this.pointsManual
             };
         }
@@ -249,8 +249,8 @@ DBSDM.Model.RelationLeg = (function(){
             var pts = data.transform.points;
             this.setPoint(1, pts[pts.length-1].x, pts[pts.length-1].y); // set middle point first
 
-            for (var i=1; i<pts.length-1; i++) { // skip first and last point - special cases
-                this.addPoint(i, pts[i]);
+            for (var i=0; i<pts.length-1; i++) {
+                this.addPoint(i+1, pts[i]);
             }
             this.pointsManual = data.transform.manual;
         }
