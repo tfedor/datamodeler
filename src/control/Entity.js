@@ -434,6 +434,18 @@ DBSDM.Control.Entity = (function(){
     };
 
     // ISA
+
+    Entity.prototype.importIsa = function(parentControl) {
+        this._parent = parentControl;
+
+        this._model.setParent(parentControl.getModel());
+        this._view.setParent(parentControl.getDom());
+        this._canvas.removeEntity(this);
+
+        parentControl.addChild(this);
+        this._view.redraw();
+    };
+
     Entity.prototype._isa = function(parent) {
         if (!ns.Diagram.allowEdit) { return; }
 

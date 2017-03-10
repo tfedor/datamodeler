@@ -90,8 +90,11 @@ DBSDM.Menu = (function(){
             ], "search"],
             ["Reset view", "reset-view", "arrows-alt"],
             ["Fullscreen", "fullscreen", "desktop"],
-            ["Export", "export", "external-link-square", "allowFile"],
-            ["Save as image", "image", "file-image-o", "allowFile"],
+            ["Save as...", [
+                ["Model (JSON)", "save-model", "file-text-o", "allowFile"],
+                ["Data (JSON)", "save-data", "file-code-o", "allowFile"],
+                ["Image (PNG)", "save-image", "file-image-o", "allowFile"]
+            ], "floppy-o", "allowFile"],
             ["Clear", "clear", "eraser", "allowEdit"]
         ]
     };

@@ -57,9 +57,12 @@ DBSDM.Control.Relation = (function() {
         this._model.middleManual = (this._sourceEntity == this._targetEntity);
     };
 
-    Relation.prototype.import = function() {
+    Relation.prototype.import = function(manageRelations) {
         this._setupEntities();
-        this._moveToEntity();
+        if (manageRelations) {
+            this._moveToEntity();
+        }
+        this.redraw();
     };
 
     Relation.prototype.cancel = function() {

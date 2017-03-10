@@ -269,7 +269,7 @@ DBSDM.Model.Entity = (function(){
         return str;
     };
 
-    Entity.prototype.getExportData = function() {
+    Entity.prototype.getExportData = function(properties) {
         this.setName(this._name); // force normalization
 
         var data = [{
@@ -278,11 +278,15 @@ DBSDM.Model.Entity = (function(){
             attr: this._attributes.getExportData()
         }];
         for (var i=0; i<this._children.length; i++) {
-            data = data.concat(this._children[i].getExportData());
+            data = data.concat(this._children[i].getExportData(properties));
         }
 
         if (this.incorrect) {
             data[0].incorrect = true;
+        }
+
+        if (properties['saveTransform']) {
+            data[0].transform = this._transform;
         }
 
         return data;
@@ -292,6 +296,10 @@ DBSDM.Model.Entity = (function(){
         if (data.name) { this._name = data.name; }
         if (data.attr) { this._attributes.import(data.attr); }
         if (typeof data.incorrect == "boolean") { this.incorrect = data.incorrect; }
+        if (data.transform) {
+            this.setPosition(data.transform.x, data.transform.y);
+            this.setSize(data.transform.width, data.transform.height);
+        }
     };
 
     return Entity;

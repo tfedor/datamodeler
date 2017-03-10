@@ -8,7 +8,7 @@ DBSDM.Model.RelationLeg = (function(){
     var ns = DBSDM;
     var Enum = ns.Enums;
 
-    function RelationLeg(identifying, optional, cardinality, incorrect) {
+    function RelationLeg(identifying, optional, cardinality) {
         this._relation = null;
 
         this._entity = null;
@@ -39,7 +39,7 @@ DBSDM.Model.RelationLeg = (function(){
 
         this.inXor = false;
 
-        this.incorrect = typeof(incorrect) == "boolean" ? incorrect : false;
+        this.incorrect = false;
     }
 
     RelationLeg.prototype.setRelation = function(relation) {
@@ -63,6 +63,7 @@ DBSDM.Model.RelationLeg = (function(){
 
     RelationLeg.prototype.setName = function(name) {
         this._name = name.trim().toLocaleLowerCase() || null;
+        return this;
     };
 
     RelationLeg.prototype.isIdentifying = function() {
@@ -207,7 +208,7 @@ DBSDM.Model.RelationLeg = (function(){
     RelationLeg.prototype.getExportData = function(properties) {
         var data = {
             entity: this._entity.getName(), // TODO maybe setName first, to force normalization, just to be sure? Shouldnt be needed, since entities are exported first, but who knows...
-                identifying: this._identifying,
+            identifying: this._identifying,
             optional: this._optional,
             cardinality: this._cardinality,
             xor: this._entity.getXorHash(this)
@@ -217,10 +218,48 @@ DBSDM.Model.RelationLeg = (function(){
             data.name = this._name;
         }
 
+        if (properties['saveTransform']) {
+            data.transform = {
+                anchor: this._anchor,
+                points: this._points,
+                manual: this.pointsManual
+            };
+        }
+
         if (this.incorrect) {
             data.incorrect = true;
         }
         return data;
+    };
+
+    RelationLeg.prototype.import = function(data) {
+
+        this.setIdentifying(data.identifying)
+            .setOptional(data.optional)
+            .setCardinality(data.cardinality);
+
+        if (data.name) {
+            this.setName(data.name);
+        }
+
+        if (data.transform) {
+            // sets anchor position as well as first point's position
+            this.setAnchor(data.transform.anchor.x, data.transform.anchor.y, data.transform.anchor.edge);
+
+            var pts = data.transform.points;
+            this.setPoint(1, pts[pts.length-1].x, pts[pts.length-1].y); // set middle point first
+
+            for (var i=1; i<pts.length-1; i++) { // skip first and last point - special cases
+                this.addPoint(i, pts[i]);
+            }
+            this.pointsManual = data.transform.manual;
+        }
+
+        if (data.incorrect && typeof(data.incorrect) == "boolean") {
+            this.incorrect = data.incorrect
+        }
+
+        return this;
     };
 
     return RelationLeg;

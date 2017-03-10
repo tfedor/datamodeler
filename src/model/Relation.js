@@ -8,17 +8,9 @@ DBSDM.Model.Relation = (function(){
     var ns = DBSDM;
     var Enum = ns.Enums;
 
-    function Relation(source, target, data) {
-        if (typeof data == "object") {
-            this._source = new ns.Model.RelationLeg(data[0].identifying, data[0].optional, data[0].cardinality, data[0].incorrect);
-            this._target = new ns.Model.RelationLeg(data[1].identifying, data[1].optional, data[1].cardinality, data[1].incorrect);
-
-            if (data[0].name) { this._source.setName(data[0].name); }
-            if (data[1].name) { this._target.setName(data[1].name); }
-        } else {
-            this._source = source;
-            this._target = target;
-        }
+    function Relation(source, target) {
+        this._source = source;
+        this._target = target;
 
         this._source.setRelation(this);
         this._target.setRelation(this);

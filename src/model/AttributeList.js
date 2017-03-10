@@ -49,24 +49,8 @@ DBSDM.Model.AttributeList = (function(){
         return str;
     };
 
-    AttributeList.prototype._sortAttributes = function(a, b) {
-        var cmp = b.isPrimary() - a.isPrimary();
-        if (cmp != 0) { return cmp; }
-
-        cmp = b.isUnique() - a.isUnique();
-        if (cmp != 0) { return cmp; }
-
-        cmp = a.isNullable() - b.isNullable();
-        if (cmp != 0) { return cmp; }
-
-        cmp = a.getName().localeCompare(b.getName());
-        return cmp;
-    };
-
     AttributeList.prototype.getExportData = function() {
         var list = Object.assign([], this._list);
-        list.sort(this._sortAttributes);
-
         var result = [];
         for (var i=0; i<list.length; i++) {
             result.push(list[i].getData());

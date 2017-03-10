@@ -140,6 +140,7 @@ DBSDM.Control.RelationLeg = (function() {
 
     RelationLeg.prototype.xor = function(leg) {
         if (!this._inXorCreation) { return; }
+        this._inXorCreation = false;
         this._entity.unmarkRelations();
 
         ns.Diagram.cancelAction = null;

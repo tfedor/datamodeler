@@ -131,7 +131,7 @@ DBSDM.Canvas = (function() {
      * @param mode  string  name of the mode, e.g. "isa" or "correction"
      */
     Canvas.prototype.setMode = function(mode) {
-        this.svg.classList.toggle(mode + "Mode");
+        this.svg.classList.add(mode + "Mode");
     };
 
     /**
@@ -139,7 +139,7 @@ DBSDM.Canvas = (function() {
      * @param mode  string  name of the mode, e.g. "isa" or "correction"
      */
     Canvas.prototype.unsetMode = function(mode) {
-        this.svg.classList.toggle(mode + "Mode");
+        this.svg.classList.remove(mode + "Mode");
     };
 
     /**
@@ -297,13 +297,15 @@ DBSDM.Canvas = (function() {
         return JSON.stringify(a).localeCompare(JSON.stringify(b));
     };
 
-    Canvas.prototype._sortData = function(data) {
-        var count,i;
+    Canvas.prototype._sortData = function(data, sortAttributes) {
+        var count, i;
 
         // entities
-        count = data.entities.length;
-        for (i=0; i<count; i++) {
-            data.entities[i].attr.sort(this._sortAttributes);
+        if (sortAttributes) {
+            count = data.entities.length;
+            for (i = 0; i < count; i++) {
+                data.entities[i].attr.sort(this._sortAttributes);
+            }
         }
         data.entities.sort(this._sortEntities);
 
@@ -320,10 +322,14 @@ DBSDM.Canvas = (function() {
      * prettify         boolean    When true, prettify resulting data
      * saveRef          boolean    When true, save the data reference for future check of changes
      *                             Default depends on confirmLeave setting of Diagram
-     * properties       object     Additional properties for export, e.g. saveRelationNames
+     * properties       object     Additional properties for export
      */
     Canvas.prototype.export = function(promptDownload, prettify, saveRef, properties) {
-        properties = properties || {};
+        properties = {
+            saveRelationNames: typeof(properties.saveRelationNames) == "boolean" ? properties.saveRelationNames : false,
+            saveTransform:     typeof(properties.saveTransform)     == "boolean" ? properties.saveTransform     : false,
+            sortAttributes:    typeof(properties.sortAttributes)    == "boolean" ? properties.sortAttributes    : true
+        };
 
         var entityModels = [];
         var relationModels = [];
@@ -347,7 +353,7 @@ DBSDM.Canvas = (function() {
 
         count = entityModels.length;
         for (i=0; i<count; i++) {
-            result.entities = result.entities.concat(entityModels[i].getExportData());
+            result.entities = result.entities.concat(entityModels[i].getExportData(properties));
         }
 
         count = relationModels.length;
@@ -355,7 +361,7 @@ DBSDM.Canvas = (function() {
             result.relations.push(relationModels[i].getExportData(properties));
         }
 
-        this._sortData(result);
+        this._sortData(result, properties.sortAttributes);
 
         var jsonData;
         if (prettify) {
@@ -374,9 +380,12 @@ DBSDM.Canvas = (function() {
         return jsonData;
     };
 
-    Canvas.prototype.import = function(data) {
+    Canvas.prototype.import = function(data, forceSort) {
         this.clear();
-        this._sortData(data);
+
+        if (forceSort) {
+            this._sortData(data);
+        }
 
         if (ns.Diagram.confirmLeave) {
             this._dataRef = JSON.stringify(data);
@@ -394,7 +403,12 @@ DBSDM.Canvas = (function() {
 
         count = data.relations.length;
         for (i=0; i<count; i++) {
-            relationModels.push(new ns.Model.Relation(null, null, data.relations[i]));
+            relationModels.push(
+                new ns.Model.Relation(
+                    (new ns.Model.RelationLeg()).import(data.relations[i][0]),
+                    (new ns.Model.RelationLeg()).import(data.relations[i][1])
+                )
+            );
         }
 
         // create controls and view for data
@@ -408,41 +422,47 @@ DBSDM.Canvas = (function() {
         }
 
         // set ISA
+        var sort = false;
         count = data.entities.length;
         for (i=0; i<count; i++) {
             var entity = data.entities[i].name;
             var parent = data.entities[i].parent;
             if (parent) {
-                entityControlsMap[entity]._isa(entityControlsMap[parent]);
+                entityControlsMap[entity].importIsa(entityControlsMap[parent]);
             }
 
-            entityControlsMap[entity].fitToContents();
+            if (forceSort || !data.entities[i].transform) {
+                entityControlsMap[entity].fitToContents();
+                sort = true;
+            }
         }
 
         // place entites
-        count = this._entities.length;
-        var perRow = Math.ceil(Math.sqrt(count));
-        var r=0,c=0;
-        for (i=0; i<count; i++) {
-            control = this._entities[i];
-            control._model.setPosition(c*200, r*150);
-            control._view.redraw();
+        if (forceSort || sort) {
+            count = this._entities.length;
+            var perRow = Math.ceil(Math.sqrt(count));
+            var r=0,c=0;
+            for (i=0; i<count; i++) {
+                control = this._entities[i];
+                control._model.setPosition(c*200, r*150);
+                control._view.redraw();
 
-            c++;
-            if (c == perRow) {
-                r++;
-                c = 0;
+                c++;
+                if (c == perRow) {
+                    r++;
+                    c = 0;
+                }
             }
         }
 
         // set relations
         var xorMap = {};
-        function makeXor(xorId, legControl) {
+        function makeXor(xorId, legControl, entityControl) {
             if (!xorId) { return; }
             if (!xorMap[xorId]) {
                 xorMap[xorId] = legControl;
             } else {
-                xorMap[xorId].xor(legControl);
+                entityControl.xorWith(xorMap[xorId], legControl);
             }
         }
 
@@ -454,13 +474,15 @@ DBSDM.Canvas = (function() {
             var targetEntityControl = entityControlsMap[relation[1].entity];
 
             control = new ns.Control.Relation(this, sourceEntityControl, targetEntityControl, null, null, model);
-            control.import();
+            control.import((!relation[0].transform || !relation[1].transform));
 
-            makeXor(relation[0].xor, control._legs.source);
-            makeXor(relation[1].xor, control._legs.target);
+            makeXor(relation[0].xor, control._legs.source, sourceEntityControl);
+            makeXor(relation[1].xor, control._legs.target, targetEntityControl);
         }
 
-        this.sort();
+        if (forceSort || sort) {
+            this.sort();
+        }
     };
 
     Canvas.prototype.didDataChange = function() {
@@ -502,12 +524,13 @@ DBSDM.Canvas = (function() {
         switch(action) {
             case "entity": this._createDefaultEntity(); break;
             case "snap": this._switchSnap(); break;
-            case "export": this.export(true, true, null, {saveRelationNames: true}); break;
             case "zoom-in": this.zoomIn(); break;
             case "zoom-reset": this.zoomReset(); break;
-            case "zoom-out": this.zoomOut(); break;
+            case "zoom-out":   this.zoomOut(); break;
             case "reset-view": this.resetView(); break;
-            case "image": this.saveAsImage(); break;
+            case "save-model": this.export(true, true, null, {saveRelationNames: true, saveTransform: true, sortAttributes: false}); break;
+            case "save-data": this.export(true, true); break;
+            case "save-image": this.saveAsImage(); break;
             case "fullscreen": this.fullscreen(); break;
             case "clear":
                 if (ns.Diagram.allowEdit && window.confirm("Are you sure you want to clear the model?")) {
