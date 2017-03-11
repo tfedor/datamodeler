@@ -247,7 +247,7 @@ DBSDM.File = (function() {
                     x: parseInt(bounds.getAttribute("x")),
                     y: parseInt(bounds.getAttribute("y")),
                     width: parseInt(bounds.getAttribute("width")),
-                    height: parseInt(bounds.getAttribute("height")),
+                    height: parseInt(bounds.getAttribute("height"))
                 };
 
                 vid[objects[i].getAttribute("vid")] = id;
@@ -256,8 +256,9 @@ DBSDM.File = (function() {
             // relations
             var connectors = node.querySelectorAll("Connector");
             for (i=0; i<connectors.length; i++) {
-                id = connectors[i].getAttribute("oid");
                 var pointNodes = connectors[i].querySelectorAll("point");
+                if (pointNodes.length == 0) { continue; }
+                id = connectors[i].getAttribute("oid");
 
                 // read points
                 var points = [];
@@ -314,7 +315,6 @@ DBSDM.File = (function() {
 
                 // set anchor edges
                 function computeEdge(anchor, entity) {
-                    console.log(anchor, entity);
                     if (anchor.x < entity.x+1) {
                         return ns.Enums.Edge.LEFT;
                     } else if (anchor.x > entity.x + entity.width-1) {
@@ -410,7 +410,6 @@ DBSDM.File = (function() {
                     for (var relID in transformsMap.relations) {
                         if (!transformsMap.relations.hasOwnProperty(relID)) { continue; }
                         var ref = relationsRef[relID];
-                        console.log(transformsMap.relations[relID]);
                         relationsMap[ref][0].transform = transformsMap.relations[relID][0];
                         relationsMap[ref][1].transform = transformsMap.relations[relID][1];
                     }
