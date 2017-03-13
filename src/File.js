@@ -238,7 +238,7 @@ DBSDM.File = (function() {
             var vid = {};
 
             // entities
-            var objects = node.querySelectorAll("OView");
+            var objects = node.querySelectorAll("OView[otype=Entity]");
             for (var i=0; i<objects.length; i++) {
                 var id = objects[i].getAttribute("oid");
                 var bounds = objects[i].querySelector("bounds");
@@ -404,11 +404,13 @@ DBSDM.File = (function() {
                     // add transforms
                     for (var entID in transformsMap.entities) {
                         if (!transformsMap.entities.hasOwnProperty(entID)) { continue; }
+                        if (!entityMap.hasOwnProperty(entID)) { continue; }
                         entityMap[entID].transform = transformsMap.entities[entID];
                     }
 
                     for (var relID in transformsMap.relations) {
                         if (!transformsMap.relations.hasOwnProperty(relID)) { continue; }
+                        if (!relationsRef.hasOwnProperty(relID)) { continue; }
                         var ref = relationsRef[relID];
                         relationsMap[ref][0].transform = transformsMap.relations[relID][0];
                         relationsMap[ref][1].transform = transformsMap.relations[relID][1];
