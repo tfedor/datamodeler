@@ -12,6 +12,7 @@ DBSDM.Control.CanvasObject = (function(){
         this._view = null; // specify in subclass
 
         this._neededSize = {width:0,height:0}; // size needed to encompass all content with it's current size
+        this._force = new ns.Geometry.Vector();
 
         if (CanvasObject.active) {
             CanvasObject.active.deactivate();
@@ -20,6 +21,10 @@ DBSDM.Control.CanvasObject = (function(){
 
     CanvasObject.prototype.getDom = function() {
         return this._view.getDom();
+    };
+
+    CanvasObject.prototype.getEdges = function() {
+        return this._model.getEdges();
     };
 
     CanvasObject.prototype.drag = function(mouse) {
@@ -67,6 +72,11 @@ DBSDM.Control.CanvasObject = (function(){
 
         this._setConstrainedTransform(x, y, width, height);
     };
+
+    CanvasObject.prototype.notifyDrag = function(x, y) {
+        // intentionally empty
+    };
+
     /**
      * Update position and size of element with regards to constraints
      */
@@ -113,6 +123,38 @@ DBSDM.Control.CanvasObject = (function(){
             return true;
         }
         return false;
+    };
+
+
+    /**
+     * Layout forces
+     */
+
+    CanvasObject.prototype.getCenter = function() {
+        var transform = this._model.getTransform();
+        return {
+            x: transform.x + transform.width * 0.5,
+            y: transform.y + transform.height * 0.5
+        }
+    };
+
+    CanvasObject.prototype.resetForce = function() {
+        this._force.reset();
+    };
+
+    CanvasObject.prototype.addForce = function(force) {
+        this._force.add(force);
+    };
+
+    CanvasObject.prototype.applyForce = function(modifier) {
+        if (modifier && modifier != 1) {
+            this._force.multiply(modifier);
+        }
+
+        this._model.translate(this._force.x, this._force.y);
+        this.notifyDrag(this._force.x, this._force.y);
+        this._view.redraw();
+        this.resetForce();
     };
 
     /**

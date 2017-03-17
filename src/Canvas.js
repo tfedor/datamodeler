@@ -99,7 +99,6 @@ DBSDM.Canvas = (function() {
         });
 
         this.svg.addEventListener("dragover", function(e) { e.preventDefault(); } );
-        //this.svg.addEventListener("dragleave", function() { console.log("dragleave"); } );
         this.svg.addEventListener("drop", function(e) { ns.File.upload(e, that); }, false);
 
         // tutorial
@@ -317,10 +316,13 @@ DBSDM.Canvas = (function() {
         while (this._entities.length != 0) {
             this._entities[0].delete();
         }
+        while (this._notes.length != 0) {
+            this._notes[0].delete();
+        }
     };
 
     Canvas.prototype.sort = function() {
-        this.Layout.sort(this._entities, this._relations);
+        this.Layout.sort([].concat(this._entities, this._notes), this._relations);
     };
 
     // save/load, export/import
@@ -374,41 +376,32 @@ DBSDM.Canvas = (function() {
      *                             Default depends on confirmLeave setting of Diagram
      * properties       object     Additional properties for export
      */
-    Canvas.prototype.export = function(promptDownload, prettify, saveRef, properties) {
+    Canvas.prototype.export = function(promptDownload, prettify, saveRef, properties, filename) {
         properties = {
+            saveNotes:         properties && typeof(properties.saveNotes)         == "boolean" ? properties.saveNotes         : false,
             saveRelationNames: properties && typeof(properties.saveRelationNames) == "boolean" ? properties.saveRelationNames : false,
             saveTransform:     properties && typeof(properties.saveTransform)     == "boolean" ? properties.saveTransform     : false,
             sortAttributes:    properties && typeof(properties.sortAttributes)    == "boolean" ? properties.sortAttributes    : true
         };
 
-        var entityModels = [];
-        var relationModels = [];
-        saveRef = (typeof saveRef == "boolean" ? saveRef : ns.Diagram.confirmLeave);
-
-        // get models for entities and relations
-        var count = this._entities.length;
-        for (var i=0; i<count; i++) {
-            entityModels.push(this._entities[i].getModel());
+        function getExportData(list, flatten) {
+            var count = list.length;
+            var a = [];
+            for (var i=0; i<count; i++) {
+                var data = list[i].getModel().getExportData(properties);
+                if (flatten) {
+                    a = a.concat(data);
+                } else {
+                    a.push(data);
+                }
+            }
+            return a;
         }
-        count = this._relations.length;
-        for (i=0; i<count; i++) {
-            relationModels.push(this._relations[i].getModel());
-        }
-
-        // get resulting object
-        var result = {
-            entities: [],
-            relations: []
-        };
-
-        count = entityModels.length;
-        for (i=0; i<count; i++) {
-            result.entities = result.entities.concat(entityModels[i].getExportData(properties));
-        }
-
-        count = relationModels.length;
-        for (i=0; i<count; i++) {
-            result.relations.push(relationModels[i].getExportData(properties));
+        var result = {};
+        result.entities =  getExportData(this._entities, true);
+        result.relations = getExportData(this._relations);
+        if (properties.saveNotes) {
+            result.notes = getExportData(this._notes);
         }
 
         this._sortData(result, properties.sortAttributes);
@@ -420,12 +413,13 @@ DBSDM.Canvas = (function() {
             jsonData = JSON.stringify(result);
         }
 
-        if (saveRef) {
+        if (   (typeof saveRef == "boolean" && saveRef)
+            || (typeof saveRef != "boolean" && ns.Diagram.confirmLeave)) {
             this._dataRef = JSON.stringify(result);
         }
 
         if (ns.Diagram.allowFile && promptDownload) {
-            ns.File.download(jsonData, "model-data.json", "application/json");
+            ns.File.download(jsonData, (filename || "model.json"), "application/json");
         }
         return jsonData;
     };
@@ -441,43 +435,18 @@ DBSDM.Canvas = (function() {
             this._dataRef = JSON.stringify(data);
         }
 
-        // create models from data
-        var entityModels = [];
-        var relationModels = [];
+        var i,control,model;
 
-        var i;
-        var count = data.entities.length;
-        for (i=0; i<count; i++) {
-            entityModels.push(new ns.Model.Entity(data.entities[i]));
-        }
-
-        count = data.relations.length;
-        for (i=0; i<count; i++) {
-            if (!this._namesShown && (data.relations[i][0].name || data.relations[i][1].name)) {
-                this._namesShown = true;
-            }
-            relationModels.push(
-                new ns.Model.Relation(
-                    (new ns.Model.RelationLeg()).import(data.relations[i][0]),
-                    (new ns.Model.RelationLeg()).import(data.relations[i][1])
-                )
-            );
-        }
-
-        // create controls and view for data
+        // create entities
         var entityControlsMap = {};
-
-        count = entityModels.length;
-        for (i=0; i<count; i++) {
-            var name = entityModels[i].getName();
-            var control = new ns.Control.Entity(this, entityModels[i]);
-            entityControlsMap[name] = control.import();
+        for (i=0; i<data.entities.length; i++) {
+            model = new ns.Model.Entity(data.entities[i]);
+            entityControlsMap[model.getName()] = (new ns.Control.Entity(this, model)).import();
         }
 
         // set ISA
         var sort = false;
-        count = data.entities.length;
-        for (i=0; i<count; i++) {
+        for (i=0; i<data.entities.length; i++) {
             var entity = data.entities[i].name;
             var parent = data.entities[i].parent;
             if (parent) {
@@ -490,22 +459,28 @@ DBSDM.Canvas = (function() {
             }
         }
 
-        // place entites
+        // create notes
+        if (data.notes) {
+            for (i=0; i<data.notes.length; i++) {
+                model = new ns.Model.Note();
+                model.import(data.notes[i]);
+                (new ns.Control.Note(this, model)).import();
+            }
+        }
+
+        // set initial placements of objects for sort
         if (forceSort || sort) {
-            count = this._entities.length;
-            var perRow = Math.ceil(Math.sqrt(count));
+            var list = [].concat(this._entities, this._notes);
+            var perRow = Math.ceil(Math.sqrt(list.count));
             var r=0,c=0;
-            for (i=0; i<count; i++) {
-                control = this._entities[i];
+            list.forEach(function(control){
                 control._model.setPosition(c*200, r*150);
                 control._view.redraw();
 
-                c++;
-                if (c == perRow) {
-                    r++;
-                    c = 0;
+                if (++c == perRow) {
+                    r++;c = 0;
                 }
-            }
+            });
         }
 
         // set relations
@@ -519,9 +494,15 @@ DBSDM.Canvas = (function() {
             }
         }
 
-        count = data.relations.length;
-        for (i=0; i<count; i++) {
-            var model = relationModels[i];
+        for (i=0; i<data.relations.length; i++) {
+            if (!this._namesShown && (data.relations[i][0].name || data.relations[i][1].name)) {
+                this._namesShown = true;
+            }
+            model = new ns.Model.Relation(
+                (new ns.Model.RelationLeg()).import(data.relations[i][0]),
+                (new ns.Model.RelationLeg()).import(data.relations[i][1])
+            );
+
             var relation = data.relations[i];
             var sourceEntityControl = entityControlsMap[relation[0].entity];
             var targetEntityControl = entityControlsMap[relation[1].entity];
@@ -571,6 +552,7 @@ DBSDM.Canvas = (function() {
             name += " - "+suffix;
         }
         localStorage.setItem(name, this.export(false, false, null, {
+            saveNotes: true,
             saveRelationNames: true,
             saveTransform: true,
             sortAttributes: false
@@ -607,12 +589,22 @@ DBSDM.Canvas = (function() {
             case "zoom-reset": this.zoomReset(); break;
             case "zoom-out":   this.zoomOut(); break;
             case "reset-view": this.resetView(); break;
-            case "save-model": this.export(true, true, null, {saveRelationNames: true, saveTransform: true, sortAttributes: false}); break;
-            case "save-data": this.export(true, true); break;
+            case "save-model": this.export(true, true, null, {
+                    saveNotes: true,
+                    saveRelationNames: true,
+                    saveTransform: true,
+                    sortAttributes: false
+                }, "model.json");
+                break;
+            case "save-data": this.export(true, true, null, {
+                    saveNotes: true
+                }, "data.json");
+                break;
             case "save-image": this.saveAsImage(); break;
             case "fullscreen": this.fullscreen(); break;
             case "clear":
-                if (this._entities.length != 0 && ns.Diagram.allowEdit && window.confirm("Are you sure you want to clear the model?")) {
+                if ((this._entities.length != 0 || this._notes.length != 0)
+                    && ns.Diagram.allowEdit && window.confirm("Are you sure you want to clear the model?")) {
                     this.saveLocal();
                     this.clear();
                 }

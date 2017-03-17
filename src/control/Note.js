@@ -8,9 +8,7 @@ DBSDM.Control.Note = (function(){
 
     function Note(canvas, model) {
         Super.call(this, canvas, model);
-
         this._view = new ns.View.Note(this._canvas, this._model, this);
-        this._force = new ns.Geometry.Vector();
     }
     Note.prototype = Object.create(Super.prototype);
     Note.prototype.constructor = Note;
@@ -44,6 +42,7 @@ DBSDM.Control.Note = (function(){
      */
     Note.prototype.import = function() {
         this._view.create();
+        this._canvas.addNote(this);
         return this;
     };
 
@@ -70,35 +69,6 @@ DBSDM.Control.Note = (function(){
         this._model.setSize(size.width, size.height);
         this._view.redraw();
         return this;
-    };
-
-    // Sort
-
-    Note.prototype.getCenter = function() {
-        var transform = this._model.getTransform();
-        return {
-            x: transform.x + transform.width * 0.5,
-            y: transform.y + transform.height * 0.5
-        }
-    };
-
-    Note.prototype.resetForce = function() {
-        this._force.reset();
-    };
-
-    Note.prototype.addForce = function(force) {
-        this._force.add(force);
-    };
-
-    Note.prototype.applyForce = function(modifier) {
-        if (modifier && modifier != 1) {
-            this._force.multiply(modifier);
-        }
-
-        this._model.translate(this._force.x, this._force.y);
-        this.notifyDrag(this._force.x, this._force.y);
-        this._view.redraw();
-        this.resetForce();
     };
 
     Note.prototype._toggleIncorrect = function() {

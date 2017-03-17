@@ -19,12 +19,12 @@ DBSDM.Layout = (function() {
     };
 
     function Layout() {
-        this._entities = null;
+        this._objects = null;
         this._relations = null;
     }
 
-    Layout.prototype.sort = function(entities, relations) {
-        this._entities = entities;
+    Layout.prototype.sort = function(canvasObjects, relations) {
+        this._objects = canvasObjects;
         this._relations = relations;
 
         applyScale = 1;
@@ -32,7 +32,7 @@ DBSDM.Layout = (function() {
         this._fit();
         for (var i=0; i<iterations; i++) {
             this._computeRelationsStrenghts();
-            this._computeEntitiesRepulsions();
+            this._computeObjectsRepulsions();
             this._applyForces();
 
             /*
@@ -46,9 +46,9 @@ DBSDM.Layout = (function() {
     };
 
     Layout.prototype._fit = function() {
-        var count = this._entities.length;
+        var count = this._objects.length;
         for (var i=0; i<count; i++) {
-            this._entities[i].fitToContents();
+            this._objects[i].fitToContents();
         }
     };
 
@@ -72,17 +72,17 @@ DBSDM.Layout = (function() {
         }
     };
 
-    Layout.prototype._computeEntitiesRepulsions = function() {
-        var entities = this._entities;
-        var count = entities.length;
+    Layout.prototype._computeObjectsRepulsions = function() {
+        var objects = this._objects;
+        var count = objects.length;
         for (var i=0; i<count; i++) {
-            if (entities[i].hasParent()) { continue; }
-            var centerA = entities[i].getCenter();
+            if (objects[i].hasParent && objects[i].hasParent()) { continue; }
+            var centerA = objects[i].getCenter();
 
             for (var j=i+1; j<count; j++) {
-                if (entities[j].hasParent()) { continue; }
+                if (objects[j].hasParent && objects[j].hasParent()) { continue; }
 
-                var centerB = entities[j].getCenter();
+                var centerB = objects[j].getCenter();
                 var length = ns.Geometry.pointToPointDistance(centerA, centerB);
                 if (length > optimal*repulsionDistanceScale) { continue; }
 
@@ -90,38 +90,36 @@ DBSDM.Layout = (function() {
                     .multiply(repulsionScale*optimal / (length*length));
 
                 // add repulsive forces to entities
-                entities[i].addForce(force.getOpposite());
-                entities[j].addForce(force);
+                objects[i].addForce(force.getOpposite());
+                objects[j].addForce(force);
             }
         }
     };
 
     Layout.prototype._applyForces = function() {
-        var entities = this._entities;
-        var count = entities.length;
-        for (var i=0; i<count; i++) {
-            entities[i].applyForce(applyScale);
+        for (var i=0; i<this._objects.length; i++) {
+            this._objects[i].applyForce(applyScale);
         }
     };
 
     Layout.prototype._moveToOrigin = function() {
-        var entities = this._entities;
-        var edges = entities[0].getEdges();
+        var objects = this._objects;
+        var edges = objects[0].getEdges();
         var local = {
             x: edges.left,
             y: edges.top
         };
-        var count = entities.length;
+        var count = objects.length;
         for (var i=1; i<count; i++) {
-            edges = entities[i].getEdges();
+            edges = objects[i].getEdges();
             if (edges.left < local.x) { local.x = edges.left; }
             if (edges.top  < local.y) { local.y = edges.top;  }
         }
 
         var vector = (new ns.Geometry.Vector()).fromPoints(local, origin);
         for (i=0; i<count; i++) {
-            entities[i].addForce(vector);
-            entities[i].applyForce(1);
+            objects[i].addForce(vector);
+            objects[i].applyForce(1);
         }
     };
 

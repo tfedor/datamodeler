@@ -132,23 +132,21 @@ DBSDM.Model.Entity = (function(){
         return null;
     };
 
-    /** in Canvas coordinates! */
+    /** @override */
     Entity.prototype.getEdges = function() {
-        var transform = Object.assign({}, this._transform);
+        var edges = Super.prototype.getEdges.call(this);
+
         var parent = this._parent;
         while (parent != null) {
             var parentTransform = parent.getTransform();
-            transform.x += parentTransform.x;
-            transform.y += parentTransform.y;
+            edges.right  += parentTransform.x;
+            edges.left   += parentTransform.x;
+            edges.top    += parentTransform.y;
+            edges.bottom += parentTransform.y;
             parent = parent._parent;
         }
 
-        return {
-            top: transform.y,
-            right: transform.x + transform.width,
-            bottom: transform.y + transform.height,
-            left: transform.x
-        };
+        return edges;
     };
 
     Entity.prototype._pointsOnEdgeCmp = function(a, b) {

@@ -41,6 +41,17 @@ DBSDM.Model.CanvasObject = (function(){
         return this._transform;
     };
 
+    /** in canvas coordinates */
+    CanvasObject.prototype.getEdges = function() {
+        var transform = Object.assign({}, this._transform);
+        return {
+            top: transform.y,
+            right: transform.x + transform.width,
+            bottom: transform.y + transform.height,
+            left: transform.x
+        };
+    };
+
     CanvasObject.prototype.getExportData = function(properties) {
         var data = {};
         if (properties['saveTransform']) {

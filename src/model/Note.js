@@ -3,15 +3,16 @@ DBSDM.Model = DBSDM.Model ||{};
 
 DBSDM.Model.Note = (function(){
     var ns = DBSDM;
-    var Enum = ns.Enums;
     var Consts = ns.Consts;
 
+    var Super = ns.Model.CanvasObject;
+
     function Note() {
-        ns.Model.CanvasObject.call(this);
+        Super.call(this);
         this.setSize(Consts.NoteDefaultWidth, Consts.NoteDefaultHeight);
         this._text = "Click to edit";
     }
-    Note.prototype = Object.create(ns.Model.CanvasObject.prototype);
+    Note.prototype = Object.create(Super.prototype);
     Note.prototype.constructor = Note;
 
     Note.prototype.getText = function(text) {
@@ -31,15 +32,14 @@ DBSDM.Model.Note = (function(){
         var data = {
             text: this._text
         };
-
-        Object.assign(data, Note.prototype.getExportData.call(this, properties));
+        Object.assign(data, Super.prototype.getExportData.call(this, properties));
 
         return data;
     };
 
     Note.prototype.import = function(data) {
         if (data.text) { this.setText(data.text); }
-        Note.prototype.import.call(this, data);
+        Super.prototype.import.call(this, data);
     };
 
     return Note;

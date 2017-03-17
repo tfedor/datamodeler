@@ -20,8 +20,6 @@ DBSDM.Control.Entity = (function(){
 
         this._new = true;
         this._ignoredInput = {x:0,y:0};
-
-        this._force = new ns.Geometry.Vector();
     }
     Entity.prototype = Object.create(Super.prototype);
     Entity.prototype.constructor = Entity;
@@ -265,10 +263,6 @@ DBSDM.Control.Entity = (function(){
         while(this._relationLegList.length > 0) {
             this._relationLegList[0].getRelation().clear();
         }
-    };
-
-    Entity.prototype.getEdges = function() {
-        return this._model.getEdges();
     };
 
     Entity.prototype.getEdgePosition = function(edge) {
@@ -633,34 +627,7 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
-    // Sort
-
-    Entity.prototype.getCenter = function() {
-        var transform = this._model.getTransform();
-        return {
-            x: transform.x + transform.width * 0.5,
-            y: transform.y + transform.height * 0.5
-        }
-    };
-
-    Entity.prototype.resetForce = function() {
-        this._force.reset();
-    };
-
-    Entity.prototype.addForce = function(force) {
-        this._force.add(force);
-    };
-
-    Entity.prototype.applyForce = function(modifier) {
-        if (modifier && modifier != 1) {
-            this._force.multiply(modifier);
-        }
-
-        this._model.translate(this._force.x, this._force.y);
-        this.notifyDrag(this._force.x, this._force.y);
-        this._view.redraw();
-        this.resetForce();
-    };
+    //
 
     Entity.prototype.hasParent = function() {
         return this._model.hasParent();
