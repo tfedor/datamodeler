@@ -19,7 +19,9 @@ DBSDM.Canvas = (function() {
 
         this._offset = {x:0, y:0};
         this._zoom = 1;
+
         this._namesShown = false;
+        this._notesShown = true;
 
         /**
          * Check when exiting the site, to compare current with imported data
@@ -36,6 +38,7 @@ DBSDM.Canvas = (function() {
         this.menu = {};
 
         this._entities = [];
+        this._notes = [];
         this._relations = [];
 
         /**
@@ -97,7 +100,6 @@ DBSDM.Canvas = (function() {
         });
 
         this.svg.addEventListener("dragover", function(e) { e.preventDefault(); } );
-        //this.svg.addEventListener("dragleave", function() { console.log("dragleave"); } );
         this.svg.addEventListener("drop", function(e) { ns.File.upload(e, that); }, false);
 
         // tutorial
@@ -154,17 +156,6 @@ DBSDM.Canvas = (function() {
 
     // canvas
 
-    Canvas.prototype._toggleRelationNames = function() {
-        for (var i=0; i<this._relations.length; i++) {
-            if (!this._namesShown) {
-                this._relations[i].showNames();
-            } else {
-                this._relations[i].hideNames();
-            }
-        }
-        this._namesShown = !this._namesShown;
-    };
-
     Canvas.prototype._switchSnap = function() {
         this.snap = !this.snap;
         if (this.snap) {
@@ -211,6 +202,9 @@ DBSDM.Canvas = (function() {
         this.updateViewbox();
     };
 
+    Canvas.prototype.getZoomLevel = function(){
+        return this._zoom;
+    };
     Canvas.prototype.zoomIn = function() {
         this._zoom = Math.min(2, this._zoom + 0.1);
         this.updateViewbox();
@@ -231,6 +225,39 @@ DBSDM.Canvas = (function() {
     Canvas.prototype.fullscreen = function() {
         if (!ns.Fullscreen.enabled()) { return; }
         ns.Fullscreen.toggle(this._container, this);
+    };
+
+    // notes
+
+    Canvas.prototype._createNote = function() {
+        if (this.inCorrectionMode || !ns.Diagram.allowEdit) { return null; }
+
+        var note = new ns.Control.Note(this, new ns.Model.Note());
+        note.create();
+    };
+    Canvas.prototype.addNote = function(note) {
+        if (!this._notesShown) {
+            this._toggleNotes();
+        }
+        this._notes.push(note);
+    };
+    Canvas.prototype.removeNote =  function(note) {
+        for (var i=0; i<this._notes.length; i++) {
+            if (this._notes[i] == note) {
+                this._notes.splice(i, 1);
+                return;
+            }
+        }
+    };
+    Canvas.prototype._toggleNotes = function() {
+        for (var i=0; i<this._notes.length; i++) {
+            if (!this._notesShown) {
+                this._notes[i].show();
+            } else {
+                this._notes[i].hide();
+            }
+        }
+        this._notesShown = !this._notesShown;
     };
 
     // entities
@@ -275,15 +302,28 @@ DBSDM.Canvas = (function() {
             }
         }
     };
+    Canvas.prototype._toggleRelationNames = function() {
+        for (var i=0; i<this._relations.length; i++) {
+            if (!this._namesShown) {
+                this._relations[i].showNames();
+            } else {
+                this._relations[i].hideNames();
+            }
+        }
+        this._namesShown = !this._namesShown;
+    };
 
     Canvas.prototype.clear = function() {
         while (this._entities.length != 0) {
             this._entities[0].delete();
         }
+        while (this._notes.length != 0) {
+            this._notes[0].delete();
+        }
     };
 
     Canvas.prototype.sort = function() {
-        this.Layout.sort(this._entities, this._relations);
+        this.Layout.sort([].concat(this._entities, this._notes), this._relations);
     };
 
     // save/load, export/import
@@ -337,41 +377,32 @@ DBSDM.Canvas = (function() {
      *                             Default depends on confirmLeave setting of Diagram
      * properties       object     Additional properties for export
      */
-    Canvas.prototype.export = function(promptDownload, prettify, saveRef, properties) {
+    Canvas.prototype.export = function(promptDownload, prettify, saveRef, properties, filename) {
         properties = {
+            saveNotes:         properties && typeof(properties.saveNotes)         == "boolean" ? properties.saveNotes         : false,
             saveRelationNames: properties && typeof(properties.saveRelationNames) == "boolean" ? properties.saveRelationNames : false,
             saveTransform:     properties && typeof(properties.saveTransform)     == "boolean" ? properties.saveTransform     : false,
             sortAttributes:    properties && typeof(properties.sortAttributes)    == "boolean" ? properties.sortAttributes    : true
         };
 
-        var entityModels = [];
-        var relationModels = [];
-        saveRef = (typeof saveRef == "boolean" ? saveRef : ns.Diagram.confirmLeave);
-
-        // get models for entities and relations
-        var count = this._entities.length;
-        for (var i=0; i<count; i++) {
-            entityModels.push(this._entities[i].getModel());
+        function getExportData(list, flatten) {
+            var count = list.length;
+            var a = [];
+            for (var i=0; i<count; i++) {
+                var data = list[i].getModel().getExportData(properties);
+                if (flatten) {
+                    a = a.concat(data);
+                } else {
+                    a.push(data);
+                }
+            }
+            return a;
         }
-        count = this._relations.length;
-        for (i=0; i<count; i++) {
-            relationModels.push(this._relations[i].getModel());
-        }
-
-        // get resulting object
-        var result = {
-            entities: [],
-            relations: []
-        };
-
-        count = entityModels.length;
-        for (i=0; i<count; i++) {
-            result.entities = result.entities.concat(entityModels[i].getExportData(properties));
-        }
-
-        count = relationModels.length;
-        for (i=0; i<count; i++) {
-            result.relations.push(relationModels[i].getExportData(properties));
+        var result = {};
+        result.entities =  getExportData(this._entities, true);
+        result.relations = getExportData(this._relations);
+        if (properties.saveNotes) {
+            result.notes = getExportData(this._notes);
         }
 
         this._sortData(result, properties.sortAttributes);
@@ -383,12 +414,13 @@ DBSDM.Canvas = (function() {
             jsonData = JSON.stringify(result);
         }
 
-        if (saveRef) {
+        if (   (typeof saveRef == "boolean" && saveRef)
+            || (typeof saveRef != "boolean" && ns.Diagram.confirmLeave)) {
             this._dataRef = JSON.stringify(result);
         }
 
         if (ns.Diagram.allowFile && promptDownload) {
-            ns.File.download(jsonData, "model-data.json", "application/json");
+            ns.File.download(jsonData, (filename || "model.json"), "application/json");
         }
         return jsonData;
     };
@@ -404,40 +436,18 @@ DBSDM.Canvas = (function() {
             this._dataRef = JSON.stringify(data);
         }
 
-        // create models from data
-        var entityModels = [];
-        var relationModels = [];
+        var i,control,model;
 
-        var i;
-        var count = data.entities.length;
-        for (i=0; i<count; i++) {
-            entityModels.push(new ns.Model.Entity(data.entities[i]));
-        }
-
-        count = data.relations.length;
-        for (i=0; i<count; i++) {
-            relationModels.push(
-                new ns.Model.Relation(
-                    (new ns.Model.RelationLeg()).import(data.relations[i][0]),
-                    (new ns.Model.RelationLeg()).import(data.relations[i][1])
-                )
-            );
-        }
-
-        // create controls and view for data
+        // create entities
         var entityControlsMap = {};
-
-        count = entityModels.length;
-        for (i=0; i<count; i++) {
-            var name = entityModels[i].getName();
-            var control = new ns.Control.Entity(this, entityModels[i]);
-            entityControlsMap[name] = control.import();
+        for (i=0; i<data.entities.length; i++) {
+            model = new ns.Model.Entity(data.entities[i]);
+            entityControlsMap[model.getName()] = (new ns.Control.Entity(this, model)).import();
         }
 
         // set ISA
         var sort = false;
-        count = data.entities.length;
-        for (i=0; i<count; i++) {
+        for (i=0; i<data.entities.length; i++) {
             var entity = data.entities[i].name;
             var parent = data.entities[i].parent;
             if (parent) {
@@ -450,22 +460,28 @@ DBSDM.Canvas = (function() {
             }
         }
 
-        // place entites
+        // create notes
+        if (data.notes) {
+            for (i=0; i<data.notes.length; i++) {
+                model = new ns.Model.Note();
+                model.import(data.notes[i]);
+                (new ns.Control.Note(this, model)).import();
+            }
+        }
+
+        // set initial placements of objects for sort
         if (forceSort || sort) {
-            count = this._entities.length;
-            var perRow = Math.ceil(Math.sqrt(count));
+            var list = [].concat(this._entities, this._notes);
+            var perRow = Math.ceil(Math.sqrt(list.count));
             var r=0,c=0;
-            for (i=0; i<count; i++) {
-                control = this._entities[i];
+            list.forEach(function(control){
                 control._model.setPosition(c*200, r*150);
                 control._view.redraw();
 
-                c++;
-                if (c == perRow) {
-                    r++;
-                    c = 0;
+                if (++c == perRow) {
+                    r++;c = 0;
                 }
-            }
+            });
         }
 
         // set relations
@@ -479,9 +495,15 @@ DBSDM.Canvas = (function() {
             }
         }
 
-        count = data.relations.length;
-        for (i=0; i<count; i++) {
-            var model = relationModels[i];
+        for (i=0; i<data.relations.length; i++) {
+            if (!this._namesShown && (data.relations[i][0].name || data.relations[i][1].name)) {
+                this._namesShown = true;
+            }
+            model = new ns.Model.Relation(
+                (new ns.Model.RelationLeg()).import(data.relations[i][0]),
+                (new ns.Model.RelationLeg()).import(data.relations[i][1])
+            );
+
             var relation = data.relations[i];
             var sourceEntityControl = entityControlsMap[relation[0].entity];
             var targetEntityControl = entityControlsMap[relation[1].entity];
@@ -531,6 +553,7 @@ DBSDM.Canvas = (function() {
             name += " - "+suffix;
         }
         localStorage.setItem(name, this.export(false, false, null, {
+            saveNotes: true,
             saveRelationNames: true,
             saveTransform: true,
             sortAttributes: false
@@ -558,19 +581,31 @@ DBSDM.Canvas = (function() {
 
     Canvas.prototype.handleMenu = function(action) {
         switch(action) {
-            case "entity": this._createDefaultEntity(); break;
-            case "rel-names": this._toggleRelationNames(); break;
+            case "new-entity": this._createDefaultEntity(); break;
+            case "new-note": this._createNote(); break;
+            case "toggle-rel-names": this._toggleRelationNames(); break;
+            case "toggle-notes": this._toggleNotes(); break;
             case "snap": this._switchSnap(); break;
             case "zoom-in": this.zoomIn(); break;
             case "zoom-reset": this.zoomReset(); break;
             case "zoom-out":   this.zoomOut(); break;
             case "reset-view": this.resetView(); break;
-            case "save-model": this.export(true, true, null, {saveRelationNames: true, saveTransform: true, sortAttributes: false}); break;
-            case "save-data": this.export(true, true); break;
+            case "save-model": this.export(true, true, null, {
+                    saveNotes: true,
+                    saveRelationNames: true,
+                    saveTransform: true,
+                    sortAttributes: false
+                }, "model.json");
+                break;
+            case "save-data": this.export(true, true, null, {
+                    saveNotes: true
+                }, "data.json");
+                break;
             case "save-image": this.saveAsImage(); break;
             case "fullscreen": this.fullscreen(); break;
             case "clear":
-                if (this._entities.length != 0 && ns.Diagram.allowEdit && window.confirm("Are you sure you want to clear the model?")) {
+                if ((this._entities.length != 0 || this._notes.length != 0)
+                    && ns.Diagram.allowEdit && window.confirm("Are you sure you want to clear the model?")) {
                     this.saveLocal();
                     this.clear();
                 }
@@ -589,7 +624,8 @@ DBSDM.Canvas = (function() {
 
     Canvas.prototype.getMenuState = function() {
         return {
-            "rel-names": this._namesShown
+            "toggle-rel-names": this._namesShown,
+            "toggle-notes": this._notesShown
         }
     };
 
@@ -610,6 +646,11 @@ DBSDM.Consts = {
     EntityPadding: 10,
     EntityEdgePadding: 10, // how close to the corner can the relation be placed
     EntityExtraHeight: 5,
+
+    NoteDefaultWidth: 150,
+    NoteDefaultHeight: 100,
+    NoteStrokeWidth: 1,
+    NotePadding: 5,
 
     DefaultAnchorOffset: 11, // how for from edge to start drawing relation leg
     MinAnchorAnchorDistance: 10, // should be half the anchor width
@@ -704,8 +745,8 @@ DBSDM.Diagram = (function() {
             if (e.keyCode == 27 && self.cancelAction) { // ESC
                 self.cancelAction();
                 self.cancelAction = null;
-            } else if (ns.Control.Entity.activeEntity) {
-                ns.Control.Entity.activeEntity.onKeyPress(e);
+            } else if (ns.Control.CanvasObject.active) {
+                ns.Control.CanvasObject.active.onKeyPress(e);
             }
         });
         window.addEventListener('keypress',function(e){
@@ -719,8 +760,8 @@ DBSDM.Diagram = (function() {
         });
         window.addEventListener("mousedown", function(e) {
             ns.Menu.hide();
-            if (ns.Control.Entity.activeEntity) {
-                ns.Control.Entity.activeEntity.deactivate();
+            if (ns.Control.CanvasObject.active) {
+                ns.Control.CanvasObject.active.deactivate();
             }
         });
         ns.Fullscreen.setEvents(function(e) {
@@ -802,6 +843,7 @@ DBSDM.Diagram = (function() {
 
     // create shared svg elements
     self._createEntityElements = function() {
+        // Entity
         self.createSharedElement("Entity.Bg",
             ns.Element.rect(0, 0, "100%", "100%", {
                 rx: 10, ry: 10,
@@ -829,6 +871,23 @@ DBSDM.Diagram = (function() {
             })
         );
 
+        // Note
+        self.createSharedElement("Note.Bg",
+            ns.Element.rect(0, 0, "100%", "100%", {
+                fill: "#fffbb4",
+                stroke: "#f9de4f",
+                strokeWidth: ns.Consts.NoteStrokeWidth
+            })
+        );
+        self.createSharedElement("Note.Bg.Incorrect",
+            ns.Element.rect(0, 0, "100%", "100%", {
+                fill: "#ffaaaa",
+                stroke: "#b62727",
+                strokeWidth: ns.Consts.NoteStrokeWidth
+            })
+        );
+
+        // Controls
         self.createSharedElement("Entity.ControlRectangle",
             ns.Element.rect(0, 0, "100%", "100%", {
                 fill: "none",
@@ -1341,27 +1400,92 @@ DBSDM.File = (function() {
             }
         }
 
+        function parseNote(node, bounds) {
+            var text = node.querySelector("comment").textContent;
+            text = text.replace(/<br\s*\/?>/i, "\n");
+
+            var transform = {
+                x: parseInt(bounds.getAttribute("x")),
+                y: parseInt(bounds.getAttribute("y")),
+                width: parseInt(bounds.getAttribute("width")) - 2*ns.Consts.NoteStrokeWidth,
+                height: parseInt(bounds.getAttribute("height") - 2*ns.Consts.NoteStrokeWidth)
+            };
+
+            // split on new lines
+            var div = document.createElement("div");
+            div.classList.add("note-content-helper");
+            div.style.width = (transform.width - 2*ns.Consts.NotePadding)+"px";
+
+            document.body.appendChild(div);
+
+            div.textContent = "&nbsp;"; // to get default height
+            var defaultHeight = div.getBoundingClientRect().height;
+
+            var resultText = "";
+            div.textContent = "";
+
+            var skipSpace = false;
+            text.trim().split(/\n/).forEach(function(line){
+
+                var prevHeight = defaultHeight;
+
+                line.split(/\s+/).forEach(function(word){
+                    div.textContent += " "+word;
+
+                    var currentHeight = div.getBoundingClientRect().height;
+                    if (currentHeight > prevHeight) {
+                        resultText += "\n";
+                    } else if (!skipSpace) {
+                        resultText += " ";
+                    }
+                    resultText += word;
+
+                    prevHeight = currentHeight;
+                    skipSpace = false;
+                });
+
+                // add original new lines
+                div.textContent += "\n";
+                resultText += "\n";
+                skipSpace = true;
+                prevHeight = div.getBoundingClientRect().height;
+            });
+
+            document.body.removeChild(div);
+
+            return {
+                text: resultText.trim(),
+                transform: transform
+            };
+        }
+
         function parseTransforms(node, map) {
 
             map.entities = {};
             map.relations = {};
 
             var vid = {};
+            var notes = [];
 
-            // entities
-            var objects = node.querySelectorAll("OView[otype=Entity]");
+            // entities and notes
+            var objects = node.querySelectorAll("OView");
             for (var i=0; i<objects.length; i++) {
                 var id = objects[i].getAttribute("oid");
                 var bounds = objects[i].querySelector("bounds");
 
-                map.entities[id] = {
-                    x: parseInt(bounds.getAttribute("x")),
-                    y: parseInt(bounds.getAttribute("y")),
-                    width: parseInt(bounds.getAttribute("width")),
-                    height: parseInt(bounds.getAttribute("height"))
-                };
+                var type = objects[i].getAttribute("otype");
+                if (type == "Entity") {
+                    map.entities[id] = {
+                        x: parseInt(bounds.getAttribute("x")),
+                        y: parseInt(bounds.getAttribute("y")),
+                        width: parseInt(bounds.getAttribute("width")),
+                        height: parseInt(bounds.getAttribute("height"))
+                    };
 
-                vid[objects[i].getAttribute("vid")] = id;
+                    vid[objects[i].getAttribute("vid")] = id;
+                } else if (type == "Note") {
+                    notes.push(parseNote(objects[i], bounds));
+                }
             }
 
             // relations
@@ -1446,6 +1570,8 @@ DBSDM.File = (function() {
                 //
                 map.relations[id] = transform;
             }
+
+            return notes;
         }
 
         var zip = new JSZip();
@@ -1464,6 +1590,7 @@ DBSDM.File = (function() {
                     var relationsRef = {}; // map of {relation ID} => {relationsMap index}
                     var arcMap = {};
                     var transformsMap = {};
+                    var notes = [];
 
                     var parser = new DOMParser();
                     for (var i=0; i<result.length; i++) {
@@ -1480,7 +1607,7 @@ DBSDM.File = (function() {
                                 parseArc(xml.documentElement, arcMap);
                                 break;
                             case "Diagram":
-                                parseTransforms(xml.documentElement, transformsMap);
+                                notes = parseTransforms(xml.documentElement, transformsMap);
                                 break;
                         }
 
@@ -1540,7 +1667,8 @@ DBSDM.File = (function() {
 
                     var data = {
                         entities: toArray(entityMap),
-                        relations: relationsMap
+                        relations: relationsMap,
+                        notes: notes
                     };
 
                     try {
@@ -1762,12 +1890,12 @@ DBSDM.Layout = (function() {
     };
 
     function Layout() {
-        this._entities = null;
+        this._objects = null;
         this._relations = null;
     }
 
-    Layout.prototype.sort = function(entities, relations) {
-        this._entities = entities;
+    Layout.prototype.sort = function(canvasObjects, relations) {
+        this._objects = canvasObjects;
         this._relations = relations;
 
         applyScale = 1;
@@ -1775,7 +1903,7 @@ DBSDM.Layout = (function() {
         this._fit();
         for (var i=0; i<iterations; i++) {
             this._computeRelationsStrenghts();
-            this._computeEntitiesRepulsions();
+            this._computeObjectsRepulsions();
             this._applyForces();
 
             /*
@@ -1789,9 +1917,9 @@ DBSDM.Layout = (function() {
     };
 
     Layout.prototype._fit = function() {
-        var count = this._entities.length;
+        var count = this._objects.length;
         for (var i=0; i<count; i++) {
-            this._entities[i].fitToContents();
+            this._objects[i].fitToContents();
         }
     };
 
@@ -1815,17 +1943,17 @@ DBSDM.Layout = (function() {
         }
     };
 
-    Layout.prototype._computeEntitiesRepulsions = function() {
-        var entities = this._entities;
-        var count = entities.length;
+    Layout.prototype._computeObjectsRepulsions = function() {
+        var objects = this._objects;
+        var count = objects.length;
         for (var i=0; i<count; i++) {
-            if (entities[i].hasParent()) { continue; }
-            var centerA = entities[i].getCenter();
+            if (objects[i].hasParent && objects[i].hasParent()) { continue; }
+            var centerA = objects[i].getCenter();
 
             for (var j=i+1; j<count; j++) {
-                if (entities[j].hasParent()) { continue; }
+                if (objects[j].hasParent && objects[j].hasParent()) { continue; }
 
-                var centerB = entities[j].getCenter();
+                var centerB = objects[j].getCenter();
                 var length = ns.Geometry.pointToPointDistance(centerA, centerB);
                 if (length > optimal*repulsionDistanceScale) { continue; }
 
@@ -1833,38 +1961,36 @@ DBSDM.Layout = (function() {
                     .multiply(repulsionScale*optimal / (length*length));
 
                 // add repulsive forces to entities
-                entities[i].addForce(force.getOpposite());
-                entities[j].addForce(force);
+                objects[i].addForce(force.getOpposite());
+                objects[j].addForce(force);
             }
         }
     };
 
     Layout.prototype._applyForces = function() {
-        var entities = this._entities;
-        var count = entities.length;
-        for (var i=0; i<count; i++) {
-            entities[i].applyForce(applyScale);
+        for (var i=0; i<this._objects.length; i++) {
+            this._objects[i].applyForce(applyScale);
         }
     };
 
     Layout.prototype._moveToOrigin = function() {
-        var entities = this._entities;
-        var edges = entities[0].getEdges();
+        var objects = this._objects;
+        var edges = objects[0].getEdges();
         var local = {
             x: edges.left,
             y: edges.top
         };
-        var count = entities.length;
+        var count = objects.length;
         for (var i=1; i<count; i++) {
-            edges = entities[i].getEdges();
+            edges = objects[i].getEdges();
             if (edges.left < local.x) { local.x = edges.left; }
             if (edges.top  < local.y) { local.y = edges.top;  }
         }
 
         var vector = (new ns.Geometry.Vector()).fromPoints(local, origin);
         for (i=0; i<count; i++) {
-            entities[i].addForce(vector);
-            entities[i].applyForce(1);
+            objects[i].addForce(vector);
+            objects[i].applyForce(1);
         }
     };
 
@@ -1940,6 +2066,11 @@ DBSDM.Menu = (function(){
             ["Delete Entity", "delete", "ban", "allowEdit"]
         ],
 
+        note: [
+            ["Fit to contents", "fit"],
+            ["Delete Note", "delete", "ban", "allowEdit"]
+        ],
+
         relationMiddle: [
             ["Reset point", "reset", "refresh"]
         ],
@@ -1978,10 +2109,14 @@ DBSDM.Menu = (function(){
         ],
 
         canvas: [
-            ["New entity", "entity", "list-alt", "allowEdit"],
+            ["New...", [
+                ["Entity", "new-entity", "list-alt"],
+                ["Note", "new-note", "sticky-note-o"]
+            ], "plus", "allowEdit"],
             ["Show...", [
-                ["Relation names", "rel-names", ["check-square-o", "square-o"]]
-            ]],
+                ["Relation names", "toggle-rel-names", ["check-square-o", "square-o"]],
+                ["Notes", "toggle-notes", ["check-square-o", "square-o"]]
+            ], "eye"],
             ["Snap to grid", "snap", "th"],
             ["Zoom", [
                 ["In", "zoom-in", "search-plus"],
@@ -3016,6 +3151,203 @@ DBSDM.Control.AttributeList = (function(){
 
     return AttributeList;
 })();
+/** src/control/CanvasObject.js */
+DBSDM.Control = DBSDM.Control ||{};
+
+DBSDM.Control.CanvasObject = (function(){
+    var ns = DBSDM;
+
+    CanvasObject.active = null;
+
+    function CanvasObject(canvas, model) {
+        this._canvas = canvas;
+        this._model = model;
+        this._view = null; // specify in subclass
+
+        this._neededSize = {width:0,height:0}; // size needed to encompass all content with it's current size
+        this._force = new ns.Geometry.Vector();
+
+        if (CanvasObject.active) {
+            CanvasObject.active.deactivate();
+        }
+    }
+
+    CanvasObject.prototype.getDom = function() {
+        return this._view.getDom();
+    };
+
+    CanvasObject.prototype.getEdges = function() {
+        return this._model.getEdges();
+    };
+
+    CanvasObject.prototype.drag = function(mouse) {
+        var delta = {
+            x: mouse.rx,
+            y: mouse.ry
+        };
+        if (this._canvas.snap && (delta.x != 0 || delta.y != 0)) {
+            var tr = this._model.getTransform();
+            if (delta.x != 0) { delta.x -= tr.x % ns.Consts.CanvasGridSize; }
+            if (delta.y != 0) { delta.y -= tr.y % ns.Consts.CanvasGridSize; }
+        }
+
+        this._model.translate(delta.x, delta.y);
+        return delta;
+    };
+
+    CanvasObject.prototype.dragControlPoint = function(mouse, cp) {
+        var transform = this._model.getTransform();
+        var x=null, y=null;
+        var width=null, height=null;
+
+        var cursor = {
+            x: mouse.x,
+            y: mouse.y
+        };
+
+        // set desired state
+
+        if (/n/.test(cp)) {
+            y = cursor.y;
+            height = (transform.y - y) + transform.height;
+        } else if (/s/.test(cp)) {
+            height = cursor.y - transform.y;
+        }
+
+        if (/w/.test(cp)) {
+            x = cursor.x;
+            width = (transform.x - x) + transform.width;
+        } else if (/e/.test(cp)) {
+            width = cursor.x - transform.x;
+        }
+
+        // constrain width/height
+
+        this._setConstrainedTransform(x, y, width, height);
+    };
+
+    CanvasObject.prototype.notifyDrag = function(x, y) {
+        // intentionally empty
+    };
+
+    /**
+     * Update position and size of element with regards to constraints
+     */
+    CanvasObject.prototype._setConstrainedTransform = function(x, y, width, height) {
+        var transform = this._model.getTransform();
+
+        if (width != null && width < this._neededSize.width) {
+            width = this._neededSize.width;
+            if (x != null) {
+                x = transform.x + transform.width - this._neededSize.width;
+            }
+        }
+        if (height != null && height < this._neededSize.height) {
+            height = this._neededSize.height;
+            if (y != null) {
+                y = transform.y + transform.height - this._neededSize.height;
+            }
+        }
+
+        this._model.setPosition(x, y);
+        this._model.setSize(width, height);
+    };
+
+    CanvasObject.prototype.computeNeededSize = function() {
+        var size = this._view.getMinimalSize();
+        this._neededSize.width = size.width;
+        this._neededSize.height = size.height;
+    };
+
+    /**
+     * Resize object to its minimal size, in case its dimensions are smaller than minimal required
+     * @returns boolean     Indication whether redraw happened
+     */
+    CanvasObject.prototype.encompassContent = function() {
+        this.computeNeededSize();
+        var transform = this._model.getTransform();
+
+        var width = (transform.width < this._neededSize.width ? this._neededSize.width : null);
+        var height = (transform.height < this._neededSize.height ? this._neededSize.height : null);
+
+        if (width != null || height != null) {
+            this._model.setSize(width, height);
+            this._view.redraw();
+            return true;
+        }
+        return false;
+    };
+
+
+    /**
+     * Layout forces
+     */
+
+    CanvasObject.prototype.getCenter = function() {
+        var transform = this._model.getTransform();
+        return {
+            x: transform.x + transform.width * 0.5,
+            y: transform.y + transform.height * 0.5
+        }
+    };
+
+    CanvasObject.prototype.resetForce = function() {
+        this._force.reset();
+    };
+
+    CanvasObject.prototype.addForce = function(force) {
+        this._force.add(force);
+    };
+
+    CanvasObject.prototype.applyForce = function(modifier) {
+        if (modifier && modifier != 1) {
+            this._force.multiply(modifier);
+        }
+
+        this._model.translate(this._force.x, this._force.y);
+        this.notifyDrag(this._force.x, this._force.y);
+        this._view.redraw();
+        this.resetForce();
+    };
+
+    /**
+     * Activation/Deactivation
+     */
+
+    CanvasObject.prototype.activate = function() {
+        if (CanvasObject.active) {
+           CanvasObject.active.deactivate();
+        }
+        CanvasObject.active = this;
+        this._view.showControls();
+    };
+
+    CanvasObject.prototype.deactivate = function() {
+        if (CanvasObject.active == this) {
+            CanvasObject.active = null;
+            this._view.hideControls();
+        }
+    };
+
+    CanvasObject.prototype._toggleIncorrect = function() {
+        this._model.incorrect = !this._model.incorrect;
+        this._view.defaultMark();
+    };
+
+    /** Handlers */
+
+    CanvasObject.prototype.onMouseDown = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
+
+        var matches = e.target.className.baseVal.match(/e-cp-(\w+)/);
+        if (matches) {
+            mouse.setParam("action", "cp");
+            mouse.setParam("cp", matches[1]);
+        }
+    };
+
+    return CanvasObject;
+})();
 /** src/control/Entity.js */
 DBSDM.Control = DBSDM.Control ||{};
 
@@ -3023,12 +3355,11 @@ DBSDM.Control.Entity = (function(){
     var ns = DBSDM;
     var Enum = ns.Enums;
 
-    Entity.activeEntity = null;
+    var Super = ns.Control.CanvasObject;
 
     function Entity(canvas, model) {
-        this._canvas = canvas;
+        Super.call(this, canvas, model);
 
-        this._model = model;
         this._attributeList = new ns.Control.AttributeList(this._model.getAttributeList(), this._canvas, this);
         this._relationLegList = [];
         this._xorLegList = [];
@@ -3039,18 +3370,9 @@ DBSDM.Control.Entity = (function(){
 
         this._new = true;
         this._ignoredInput = {x:0,y:0};
-        this._neededSize = {width:0,height:0}; // size needed to encompass all content with it's current size
-
-        this._force = new ns.Geometry.Vector();
-
-        if (Entity.activeEntity) {
-            Entity.activeEntity.deactivate();
-        }
     }
-
-    Entity.prototype.getDom = function() {
-        return this._view.getDom();
-    };
+    Entity.prototype = Object.create(Super.prototype);
+    Entity.prototype.constructor = Entity;
 
     Entity.prototype.getAttrContainer = function() {
         return this._view.getAttrContainer();
@@ -3163,6 +3485,7 @@ DBSDM.Control.Entity = (function(){
 
     /**
      * Drag entity
+     * @override
      */
     Entity.prototype.drag = function(mouse) {
         var delta;
@@ -3173,17 +3496,7 @@ DBSDM.Control.Entity = (function(){
                 transform.y + mouse.ry
             );
         } else {
-            delta = {
-                x: mouse.rx,
-                y: mouse.ry
-            };
-            if (this._canvas.snap && (delta.x != 0 || delta.y != 0)) {
-                var tr = this._model.getTransform();
-                if (delta.x != 0) { delta.x -= tr.x % ns.Consts.CanvasGridSize; }
-                if (delta.y != 0) { delta.y -= tr.y % ns.Consts.CanvasGridSize; }
-            }
-
-            this._model.translate(delta.x, delta.y);
+            delta = Super.prototype.drag.call(this, mouse);
         }
         this.notifyDrag(delta.x, delta.y);
     };
@@ -3207,6 +3520,7 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
+    /** @override */
     Entity.prototype.dragControlPoint = function(mouse, cp) {
         var transform = this._model.getTransform();
         var x=null, y=null;
@@ -3241,21 +3555,7 @@ DBSDM.Control.Entity = (function(){
 
         // constrain width/height
 
-        if (width != null && width < this._neededSize.width) {
-            width = this._neededSize.width;
-            if (x != null) {
-                x = transform.x + transform.width - this._neededSize.width;
-            }
-        }
-        if (height != null && height < this._neededSize.height) {
-            height = this._neededSize.height;
-            if (y != null) {
-                y = transform.y + transform.height - this._neededSize.height;
-            }
-        }
-
-        this._model.setPosition(x, y);
-        this._model.setSize(width, height);
+        this._setConstrainedTransform(x, y, width, height);
         this._notifyResize();
     };
 
@@ -3267,15 +3567,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.encompassContent = function() {
-        this.computeNeededSize();
-        var transform = this._model.getTransform();
-
-        var width = (transform.width < this._neededSize.width ? this._neededSize.width : null);
-        var height = (transform.height < this._neededSize.height ? this._neededSize.height : null);
-
-        if (width != null || height != null) {
-            this._model.setSize(width, height);
-            this._view.redraw();
+        if (Super.prototype.encompassContent.call(this)) {
             this._notifyResize();
         }
     };
@@ -3301,26 +3593,13 @@ DBSDM.Control.Entity = (function(){
     };
 
     /**
-     * Activate entity
-     * Shows control points, menu and allows other actions
+     * @override
      */
     Entity.prototype.activate = function() {
-        if (Entity.activeEntity) {
-            Entity.activeEntity.deactivate();
-        }
-        Entity.activeEntity = this;
-
-        this._view.showControls();
-
+        Super.prototype.activate.call(this);
         this._canvas.ui.acceptTutorialAction("Select");
     };
 
-    Entity.prototype.deactivate = function() {
-        if (Entity.activeEntity == this) {
-            Entity.activeEntity = null;
-            this._view.hideControls();
-        }
-    };
 
     Entity.prototype.delete = function() {
         if (!ns.Diagram.allowEdit) { return; }
@@ -3334,10 +3613,6 @@ DBSDM.Control.Entity = (function(){
         while(this._relationLegList.length > 0) {
             this._relationLegList[0].getRelation().clear();
         }
-    };
-
-    Entity.prototype.getEdges = function() {
-        return this._model.getEdges();
     };
 
     Entity.prototype.getEdgePosition = function(edge) {
@@ -3369,6 +3644,9 @@ DBSDM.Control.Entity = (function(){
         return size;
     };
 
+    /**
+     * @override
+     */
     Entity.prototype.computeNeededSize = function() {
         var size = this._view.getMinimalSize();
 
@@ -3699,42 +3977,10 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
-    // Sort
-
-    Entity.prototype.getCenter = function() {
-        var transform = this._model.getTransform();
-        return {
-            x: transform.x + transform.width * 0.5,
-            y: transform.y + transform.height * 0.5
-        }
-    };
-
-    Entity.prototype.resetForce = function() {
-        this._force.reset();
-    };
-
-    Entity.prototype.addForce = function(force) {
-        this._force.add(force);
-    };
-
-    Entity.prototype.applyForce = function(modifier) {
-        if (modifier && modifier != 1) {
-            this._force.multiply(modifier);
-        }
-
-        this._model.translate(this._force.x, this._force.y);
-        this.notifyDrag(this._force.x, this._force.y);
-        this._view.redraw();
-        this.resetForce();
-    };
+    //
 
     Entity.prototype.hasParent = function() {
         return this._model.hasParent();
-    };
-
-    Entity.prototype._toggleIncorrect = function() {
-        this._model.incorrect = !this._model.incorrect;
-        this._view.defaultMark();
     };
 
     // Menu Handlers
@@ -3752,16 +3998,6 @@ DBSDM.Control.Entity = (function(){
     };
 
     // Event Handlers
-
-    Entity.prototype.onMouseDown = function(e, mouse) {
-        if (this._canvas.inCorrectionMode) { return; }
-
-        var matches = e.target.className.baseVal.match(/e-cp-(\w+)/);
-        if (matches) {
-            mouse.setParam("action", "cp");
-            mouse.setParam("cp", matches[1]);
-        }
-    };
 
     Entity.prototype.onMouseMove = function(e, mouse) {
         if (this._canvas.inCorrectionMode) { return; }
@@ -3790,8 +4026,8 @@ DBSDM.Control.Entity = (function(){
             if (mouse.dx == 0 || mouse.dy == 0) {
                 this._view.remove();
 
-                if (Entity.activeEntity) {
-                    Entity.activeEntity.deactivate();
+                if (Super.active) {
+                    Super.active.deactivate();
                 }
             } else {
                 this.finish();
@@ -3830,7 +4066,7 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype.onKeyPress = function(e) {
         if (this._canvas.inCorrectionMode) { return; }
 
-        if (ns.View.EditableText.shown) { return; }
+        if (ns.View.EditableContent.shown) { return; }
         switch(e.keyCode) {
             case 46: this.delete(); break; // del
             case 27: this.deactivate(); break; // esc
@@ -3844,6 +4080,131 @@ DBSDM.Control.Entity = (function(){
     };
 
     return Entity;
+})();
+/** src/control/Note.js */
+DBSDM.Control = DBSDM.Control ||{};
+
+DBSDM.Control.Note = (function(){
+    var ns = DBSDM;
+
+    var Super = ns.Control.CanvasObject;
+
+    function Note(canvas, model) {
+        Super.call(this, canvas, model);
+        this._view = new ns.View.Note(this._canvas, this._model, this);
+    }
+    Note.prototype = Object.create(Super.prototype);
+    Note.prototype.constructor = Note;
+
+
+    Note.prototype.getDom = function() {
+        return this._view.getDom();
+    };
+
+    Note.prototype.getModel = function() {
+        return this._model;
+    };
+
+    /**
+     * Create empty Note at mouse coordinates
+     */
+    Note.prototype.create = function() {
+        var x = this._canvas.Mouse.x;
+        var y = this._canvas.Mouse.y;
+        this._model.setPosition(x, y);
+
+        this._view.create(this);
+        this._canvas.addNote(this);
+
+        this.computeNeededSize();
+        this.encompassContent();
+    };
+
+    /**
+     * Create entity from current model data (after import)
+     */
+    Note.prototype.import = function() {
+        this._view.create();
+        this._canvas.addNote(this);
+        return this;
+    };
+
+    Note.prototype.setText = function(text) {
+        this._model.setText(text);
+        this.encompassContent();
+    };
+
+    Note.prototype.delete = function() {
+        if (!ns.Diagram.allowEdit) { return; }
+        this._canvas.removeNote(this);
+        this._view.remove();
+    };
+
+    Note.prototype.show = function() {
+        this._view.show();
+    };
+    Note.prototype.hide = function() {
+        this._view.hide();
+    };
+
+    Note.prototype.fitToContents = function() {
+        var size = this._view.getMinimalSize();
+        this._model.setSize(size.width, size.height);
+        this._view.redraw();
+        return this;
+    };
+
+    // Menu Handlers
+    Note.prototype.handleMenu = function(action) {
+        switch(action) {
+            case "delete": this.delete(); break;
+            case "fit": this.fitToContents(); break;
+        }
+    };
+
+    // Event Handlers
+
+    Note.prototype.onMouseMove = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) { return; }
+
+        if (mouse.isDown()) {
+            var params = mouse.getParams();
+            if (params.action == "cp") {
+                this.dragControlPoint(mouse, params.cp);
+            } else {
+                this.drag(mouse);
+            }
+            this._view.redraw();
+        }
+    };
+
+    Note.prototype.onMouseUp = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) {
+            this._toggleIncorrect();
+            return;
+        }
+
+        if (!mouse.didMove()) {
+            this.activate();
+        }
+    };
+
+    Note.prototype.onMouseDblClick = function(e, mouse) {
+        if (this._canvas.isInMode("correction") || this._canvas.isInMode("isa")) { return; }
+        this._view.edit();
+    };
+
+    Note.prototype.onKeyPress = function(e) {
+        if (this._canvas.inCorrectionMode) { return; }
+
+        if (ns.View.EditableContent.shown) { return; }
+        switch(e.keyCode) {
+            case 46: this.delete(); break; // del
+            case 27: this.deactivate(); break; // esc
+        }
+    };
+
+    return Note;
 })();
 /** src/control/Relation.js */
 DBSDM.Control = DBSDM.Control ||{};
@@ -4744,6 +5105,85 @@ DBSDM.Model.AttributeList = (function(){
 
     return AttributeList;
 })();
+/** src/model/CanvasObject.js */
+DBSDM.Model = DBSDM.Model ||{};
+
+/**
+ * Canvas Object base class
+ * ! Should be treated as abstract
+ */
+DBSDM.Model.CanvasObject = (function(){
+    var ns = DBSDM;
+
+    function CanvasObject() {
+        this._transform = {
+            x: 0,
+            y: 0,
+            width: 1,
+            height: 1
+        };
+
+        this.incorrect = false;
+    }
+
+    CanvasObject.prototype.setPosition = function(x, y) {
+        this._transform.x = (x != null ? x : this._transform.x);
+        this._transform.y = (y != null ? y : this._transform.y);
+    };
+
+    CanvasObject.prototype.translate = function(dx, dy) {
+        this._transform.x += (dx != null ? dx : 0);
+        this._transform.y += (dy != null ? dy : 0);
+    };
+
+    CanvasObject.prototype.setSize = function(w, h) {
+        this._transform.width = (w != null ? w : this._transform.width);
+        this._transform.height = (h != null ? h : this._transform.height);
+    };
+
+    CanvasObject.prototype.resize = function(dw, dh) {
+        this._transform.width += (dw != null ? dw : 0);
+        this._transform.height += (dh != null ? dh : 0);
+    };
+
+    CanvasObject.prototype.getTransform = function() {
+        return this._transform;
+    };
+
+    /** in canvas coordinates */
+    CanvasObject.prototype.getEdges = function() {
+        var transform = Object.assign({}, this._transform);
+        return {
+            top: transform.y,
+            right: transform.x + transform.width,
+            bottom: transform.y + transform.height,
+            left: transform.x
+        };
+    };
+
+    CanvasObject.prototype.getExportData = function(properties) {
+        var data = {};
+        if (properties['saveTransform']) {
+            data.transform = this._transform;
+        }
+        if (this.incorrect) {
+            data.incorrect = true;
+        }
+        return data;
+    };
+
+    CanvasObject.prototype.import = function(data) {
+        if (data.transform) {
+            this.setPosition(data.transform.x, data.transform.y);
+            this.setSize(data.transform.width, data.transform.height);
+        }
+        if (typeof data.incorrect == "boolean") {
+            this.incorrect = data.incorrect;
+        }
+    };
+
+    return CanvasObject;
+})();
 /** src/model/Entity.js */
 DBSDM.Model = DBSDM.Model ||{};
 
@@ -4756,30 +5196,29 @@ DBSDM.Model.Entity = (function(){
 
     var EdgeOffset = ns.Consts.EntityEdgePadding;
 
+    var Super = ns.Model.CanvasObject;
+
     /**
      * @param name       string|object   Name of new entity or object to create entity from
      */
     function Entity(name) {
+        Super.call(this);
+
         this._name = (name && typeof name == "string") ? name : "Entity";
         this._attributes = new ns.Model.AttributeList();
-        this._transform = {
-            x: 0,
-            y: 0,
-            width: 1,
-            height: 1
-        };
         this._parent = null;
         this._children = [];
 
         this._relationLegs = []; // does not export from here
         this._xorList = []; // Array of Arrays of relation leg models. Each array represent one XOR relation
 
-        this.incorrect = false;
-
         if (name && typeof name == "object") {
             this.import(name);
         }
     }
+    Entity.prototype = Object.create(Super.prototype);
+    Entity.prototype.constructor = Entity;
+
 
     Entity.prototype.getName = function() {
         return this._name;
@@ -4877,49 +5316,21 @@ DBSDM.Model.Entity = (function(){
         return null;
     };
 
-    // Transform
-
-    Entity.prototype.setPosition = function(x, y) {
-        this._transform.x = (x != null ? x : this._transform.x);
-        this._transform.y = (y != null ? y : this._transform.y);
-    };
-
-    Entity.prototype.translate = function(dx, dy) {
-        this._transform.x += (dx != null ? dx : 0);
-        this._transform.y += (dy != null ? dy : 0);
-    };
-
-    Entity.prototype.setSize = function(w, h) {
-        this._transform.width = (w != null ? w : this._transform.width);
-        this._transform.height = (h != null ? h : this._transform.height);
-    };
-
-    Entity.prototype.resize = function(dw, dh) {
-        this._transform.width += (dw != null ? dw : 0);
-        this._transform.height += (dh != null ? dh : 0);
-    };
-
-    Entity.prototype.getTransform = function() {
-        return this._transform;
-    };
-
-    /** in Canvas coordinates! */
+    /** @override */
     Entity.prototype.getEdges = function() {
-        var transform = Object.assign({}, this._transform);
+        var edges = Super.prototype.getEdges.call(this);
+
         var parent = this._parent;
         while (parent != null) {
             var parentTransform = parent.getTransform();
-            transform.x += parentTransform.x;
-            transform.y += parentTransform.y;
+            edges.right  += parentTransform.x;
+            edges.left   += parentTransform.x;
+            edges.top    += parentTransform.y;
+            edges.bottom += parentTransform.y;
             parent = parent._parent;
         }
 
-        return {
-            top: transform.y,
-            right: transform.x + transform.width,
-            bottom: transform.y + transform.height,
-            left: transform.x
-        };
+        return edges;
     };
 
     Entity.prototype._pointsOnEdgeCmp = function(a, b) {
@@ -5015,6 +5426,7 @@ DBSDM.Model.Entity = (function(){
         return str;
     };
 
+    /** @override */
     Entity.prototype.getExportData = function(properties) {
         this.setName(this._name); // force normalization
 
@@ -5041,14 +5453,57 @@ DBSDM.Model.Entity = (function(){
     Entity.prototype.import = function(data) {
         if (data.name) { this._name = data.name; }
         if (data.attr) { this._attributes.import(data.attr); }
-        if (typeof data.incorrect == "boolean") { this.incorrect = data.incorrect; }
-        if (data.transform) {
-            this.setPosition(data.transform.x, data.transform.y);
-            this.setSize(data.transform.width, data.transform.height);
-        }
+
+        Super.prototype.import.call(this, data);
     };
 
     return Entity;
+})();
+/** src/model/Note.js */
+DBSDM.Model = DBSDM.Model ||{};
+
+DBSDM.Model.Note = (function(){
+    var ns = DBSDM;
+    var Consts = ns.Consts;
+
+    var Super = ns.Model.CanvasObject;
+
+    function Note() {
+        Super.call(this);
+        this.setSize(Consts.NoteDefaultWidth, Consts.NoteDefaultHeight);
+        this._text = "Click to edit";
+    }
+    Note.prototype = Object.create(Super.prototype);
+    Note.prototype.constructor = Note;
+
+    Note.prototype.getText = function(text) {
+        return this._text;
+    };
+    Note.prototype.setText = function(text) {
+        this._text = text;
+    };
+
+    // Data representation
+
+    Note.prototype.toString = function() {
+        return "Note: "+this._text + "\n\n";
+    };
+
+    Note.prototype.getExportData = function(properties) {
+        var data = {
+            text: this._text
+        };
+        Object.assign(data, Super.prototype.getExportData.call(this, properties));
+
+        return data;
+    };
+
+    Note.prototype.import = function(data) {
+        if (data.text) { this.setText(data.text); }
+        Super.prototype.import.call(this, data);
+    };
+
+    return Note;
 })();
 /** src/model/Relation.js */
 DBSDM.Model = DBSDM.Model ||{};
@@ -5839,11 +6294,346 @@ DBSDM.View.Attribute = (function(){
 
     return Attribute;
 })();
+/** src/view/CanvasObject.js */
+DBSDM.View = DBSDM.View ||{};
+
+DBSDM.View.CanvasObject = (function(){
+    var ns = DBSDM;
+
+    function CanvasObject(canvas, model, control) {
+        this._canvas = canvas;
+        this._model = model;
+        this._control = control;
+
+        this._dom = null;
+        this._controls = null;
+    }
+
+    CanvasObject.prototype.getDom = function() {
+        return this._dom;
+    };
+
+    CanvasObject.prototype.redraw = function() {
+        ns.Element.attr(this._dom, this._model.getTransform());
+    };
+
+    CanvasObject.prototype.remove = function() {
+        this._dom.remove();
+    };
+
+    CanvasObject.prototype.showControls = function() {
+        this._controls = ns.Element.g(
+            ns.Diagram.getSharedElement("Entity.ControlRectangle"),
+            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-nw", x:      0, y:      0 }),
+            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-n",  x:  "50%", y:      0 }),
+            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-ne", x: "100%", y:      0 }),
+            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-e",  x: "100%", y:  "50%" }),
+            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-se", x: "100%", y: "100%" }),
+            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-s",  x:  "50%", y: "100%" }),
+            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-sw", x:      0, y: "100%" }),
+            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-w",  x:      0, y:  "50%" })
+        );
+        ns.Element.attr(this._controls, { class: "e-control" });
+        this._dom.appendChild(this._controls);
+    };
+
+    CanvasObject.prototype.hideControls = function() {
+        this._controls.remove();
+    };
+
+    return CanvasObject;
+})();
+/** src/view/EditableContent.js */
+DBSDM.View = DBSDM.View ||{};
+
+DBSDM.View.EditableContent = (function(){
+    var ns = DBSDM;
+
+    EditableContent.shown = false;
+
+    /**
+     * Create new editable content (text) in view
+     * @param canvas     Canvas          Canvas in which editable text is created
+     * @param properties object          Object of element's SVG attributes
+     * @param getHandler function        Function used to get current content
+     * @param setHandler function        Function used to set new content
+     */
+    function EditableContent(canvas, properties, getHandler, setHandler) {
+        this._canvas = canvas;
+
+        this._properties = Object.assign({
+            dominantBaseline: "text-before-edge"
+        }, (properties || {}));
+
+        // handlers
+        this._getHandler = getHandler;
+        this._setHandler = setHandler;
+        this._emptyHandler = null;
+
+        this._text = null;
+        this._input = null;
+
+        var that = this;
+        this._sizeHandler = function() {
+            return that._text.getBoundingClientRect();
+        };
+
+        // dom
+        this._createSharedElements(); // abstract
+    }
+
+    EditableContent.prototype._setInputHandlers = function() {
+        var that = this;
+        if (ns.Diagram.allowEdit) {
+            this._text.classList.add("editable");
+
+            this._text.addEventListener("mousedown", function(e) {
+                if (!that._canvas.inCorrectionMode && !that._canvas.isInMode("isa")) {
+                    that._canvas.Mouse.down(e, that);
+                }
+            });
+        }
+    };
+
+    EditableContent.prototype.getTextDom = function() {
+        return this._text;
+    };
+
+    EditableContent.prototype.setEmptyHandler = function(callback) {
+        this._emptyHandler = callback;
+    };
+
+    /**
+     * Handler for computing desired size should return object with width and height,
+     * usually bounding client rectangle
+     */
+    EditableContent.prototype.setSizeHandler = function(callback) {
+        this._sizeHandler = callback;
+    };
+
+    /** Value handling */
+
+    EditableContent.prototype._getValue = function() {
+        return this._getHandler() || "Editable Text";
+    };
+    EditableContent.prototype._setValue = function() {
+        this._setHandler(this._input.value);
+        this._text.innerHTML = this._getValue();
+    };
+
+    /** Input handling */
+
+    EditableContent.prototype.getFontSize = function(considerZoom) {
+        considerZoom = (typeof considerZoom == "boolean" ? considerZoom : true);
+
+        var fontSize = window.getComputedStyle(this._text, null).getPropertyValue("font-size");
+        if (fontSize) {
+            var size = parseFloat(fontSize);
+            if (considerZoom) { size *= this._canvas.getZoomLevel(); }
+            return size+"px";
+        }
+        return null;
+    };
+
+    EditableContent.prototype._placeInput = function(x, y, align) {
+        var cont = this._canvas._container.getBoundingClientRect();
+        this._input.style.textAlign = align || "left";
+        this._input.style.left   = (x - cont.left) + "px";
+        this._input.style.top    = (y - cont.top) + "px";
+    };
+
+    EditableContent.prototype._hideInput = function() {
+        this._input.style.display = "none";
+        this._text.style.visibility = "visible";
+
+        EditableContent.shown = false;
+    };
+
+    EditableContent.prototype.onMouseUp = function(e, mouse) {
+        if (!this._canvas.inCorrectionMode) {
+            this.showInput();
+        }
+    };
+
+    /** Key press handling */
+
+    EditableContent.prototype._confirm = function() {
+        this._input.value = this._input.value.trim();
+        if (this._input.value == "") {
+            if (this._emptyHandler) {
+                this._hideInput();
+                this._emptyHandler();
+            } else {
+                this._cancel();
+            }
+        } else {
+            this._setValue();
+            this._hideInput();
+        }
+    };
+
+    EditableContent.prototype._cancel = function() {
+        this._input.onblur = null;
+        this._input.value = this._getValue(); // set old value, so the blur event won't update it
+        this._hideInput();
+    };
+
+    return EditableContent;
+})();
+/** src/view/EditableLongText.js */
+DBSDM.View = DBSDM.View ||{};
+
+DBSDM.View.EditableLongText = (function(){
+    var ns = DBSDM;
+
+    var Super = ns.View.EditableContent;
+
+    /**
+     * Create new editable text in view
+     * @param canvas     Canvas          Canvas in which editable text is created
+     * @param x          number|string   x coordinate of text, may be either number of pixels
+     *                                   or percent string (and possibly all other CSS options).
+     *                                   Has no effect when creating `tspan` element (leave null)
+     * @param y          number|string   y coordinate of text, see @x
+     * @param properties object          Object of element's SVG attributes
+     * @param getHandler function        Function used to get current content
+     * @param setHandler function        Function used to set new content
+     */
+    function EditableLongText(canvas, x, y, properties, getHandler, setHandler) {
+        this._canvas = canvas;
+
+        this._properties = Object.assign({
+            dominantBaseline: "text-before-edge"
+        }, (properties || {}));
+
+        var that = this;
+
+        // handlers
+        this._getHandler = getHandler;
+        this._setHandler = setHandler;
+        this._emptyHandler = null;
+
+        this._sizeHandler = function() {
+            return that._text.getBoundingClientRect();
+        };
+
+        // dom
+        this._createSharedElements();
+
+        this._x = x;
+
+        this._text = ns.Element.text(x, y, "", this._properties);
+        this._input = this._canvas.getSharedHTMLElement("EditableLongText.Textarea");
+        this._hideInput();
+
+        this._text.appendChild(this._getTextSVG());
+
+        // set input handlers
+        this._setInputHandlers.call(this);
+    }
+    EditableLongText.prototype = Object.create(Super.prototype);
+    EditableLongText.prototype.constructor = EditableLongText;
+
+
+    EditableLongText.prototype._createSharedElements = function() {
+        if (this._canvas.hasSharedHTMLElement('EditableLongText.Textarea')) { return; }
+
+        var input = document.createElement("textarea");
+        input.className = "editableSvgText";
+        this._canvas.createSharedHTMLElement("EditableLongText.Textarea", input);
+    };
+
+    EditableLongText.prototype._getTextSVG = function() {
+        var that = this;
+        var dy = 0;
+
+        var lineHeight = window.getComputedStyle(this._text, null).getPropertyValue("line-height");
+
+        if (!lineHeight) { // dirty hack for chrome, where it doesn't seem to work on SVG element
+            var div = document.createElement("div");
+            div.classList.add("note-content-helper"); // TODO change if used elsewhere
+            document.body.appendChild(div);
+            lineHeight = window.getComputedStyle(div, null).getPropertyValue("line-height");
+            document.body.removeChild(div);
+        }
+
+        var fragment = document.createDocumentFragment();
+        this._getValue().split("\n").forEach(function(line){
+            var tspan = ns.Element.el("tspan", that._properties);
+            tspan.innerHTML = line;
+
+            ns.Element.attr(tspan, {x: that._x, dy: dy});
+            fragment.appendChild(tspan);
+
+            dy = lineHeight;
+        });
+        return fragment;
+    };
+
+    /** @override */
+    EditableLongText.prototype._setValue = function() {
+        this._setHandler(this._input.value);
+        this._text.innerHTML = "";
+        this._text.appendChild(this._getTextSVG())
+    };
+
+    /** Input handling */
+
+    EditableLongText.prototype._setInputPosition = function() {
+
+        var sizeRect = this._sizeHandler();
+        this._input.style.width = sizeRect.width + "px";
+        this._input.style.height = sizeRect.height +"px";
+
+        var svgRect = this._text.getBoundingClientRect();
+        var x = svgRect.left;
+        var y = svgRect.top - 1;
+
+        this._placeInput(x, y);
+    };
+
+    EditableLongText.prototype.showInput = function() {
+        if (!ns.Diagram.allowEdit) { return; }
+        ns.Menu.hide();
+
+        var fontSize = this.getFontSize();
+        if (fontSize) {
+            this._input.style.fontSize = this.getFontSize();
+        }
+
+        this._input.value = this._getValue();
+
+        this._setInputPosition();
+        this._input.style.display = "block";
+        this._input.focus();
+
+        this._text.style.visibility = "hidden";
+
+        Super.shown = true;
+
+        //
+        var that = this;
+        this._input.onkeyup = function(e) { that._keyHandler(e); };
+        this._input.onblur  = function(e) { that._confirm(e); };
+    };
+
+    /** Key press handling */
+
+    EditableLongText.prototype._keyHandler = function(e) {
+        if (e.keyCode == 27) { // esc
+            this._confirm();
+        }
+    };
+
+    return EditableLongText;
+})();
 /** src/view/EditableText.js */
 DBSDM.View = DBSDM.View ||{};
 
 DBSDM.View.EditableText = (function(){
     var ns = DBSDM;
+
+    var Super = ns.View.EditableContent;
 
     /**
      * Create new editable text in view
@@ -5859,23 +6649,20 @@ DBSDM.View.EditableText = (function(){
      *                                   all other values generate `text` element
      */
     function EditableText(canvas, x, y, properties, getHandler, setHandler, el) {
-        this._canvas = canvas;
-
-        this._properties = Object.assign({
-            dominantBaseline: "text-before-edge"
-        }, (properties || {}));
+        Super.call(this, canvas, properties, getHandler, setHandler);
 
         this._leftOffset = 0;
 
         // handlers
-        this._getHandler = getHandler;
-        this._setHandler = setHandler;
         this._nextHandler = null;
-        this._emptyHandler = null;
+
+        var that = this;
+        this._sizeHandler = function(){
+            that._span.innerHTML = that._input.value;
+            return {width: that._span.getBoundingClientRect().width};
+        };
 
         // dom
-        this._createSharedElements();
-
         if (el == "tspan") {
             this._text = ns.Element.el("tspan", this._properties);
             this._text.innerHTML = this._getValue();
@@ -5888,19 +6675,11 @@ DBSDM.View.EditableText = (function(){
         this._hideInput();
 
         // set input handlers
-        var that = this;
-        if (ns.Diagram.allowEdit) {
-            this._text.classList.add("editable");
-
-            this._text.addEventListener("mousedown", function(e) {
-                if (!that._canvas.inCorrectionMode && !that._canvas.isInMode("isa")) {
-                    that._canvas.Mouse.down(e, that);
-                }
-            });
-        }
+        this._setInputHandlers.call(this);
     }
+    EditableText.prototype = Object.create(Super.prototype);
+    EditableText.prototype.constructor = EditableText;
 
-    EditableText.shown = false;
 
     EditableText.prototype._createSharedElements = function() {
         if (this._canvas.hasSharedHTMLElement('EditableText.Input')) { return; }
@@ -5916,34 +6695,15 @@ DBSDM.View.EditableText = (function(){
         this._canvas.createSharedHTMLElement("EditableText.Span", span);
     };
 
-    EditableText.prototype.getTextDom = function() {
-        return this._text;
-    };
-
     EditableText.prototype.setNextHandler = function(callback) {
         this._nextHandler = callback;
-    };
-
-    EditableText.prototype.setEmptyHandler = function(callback) {
-        this._emptyHandler = callback;
-    };
-
-    /** Value handling */
-
-    EditableText.prototype._getValue = function() {
-        return this._getHandler() || "Editable Text";
-    };
-    EditableText.prototype._setValue = function() {
-        this._setHandler(this._input.value);
-        this._text.innerHTML = this._getValue();
     };
 
     /** Input handling */
 
     EditableText.prototype._setInputPosition = function() {
-        this._span.innerHTML = this._input.value;
-        var textWidth = this._span.getBoundingClientRect().width;
-        this._input.style.width = textWidth + "px";
+        var sizeRect = this._sizeHandler();
+        this._input.style.width = sizeRect.width + "px";
 
         var svgRect = this._text.getBoundingClientRect();
 
@@ -5952,20 +6712,17 @@ DBSDM.View.EditableText = (function(){
         var y = svgRect.top - 1;
         if (this._properties.textAnchor && this._properties.textAnchor == "middle") {
             align = "center";
-            x = Math.floor((svgRect.left + svgRect.right - textWidth)/2 + 3);
+            x = Math.floor((svgRect.left + svgRect.right - sizeRect.width)/2 + 3);
         }
 
-        var cont = this._canvas._container.getBoundingClientRect();
-        this._input.style.textAlign = align;
-        this._input.style.left   = (x - cont.left) + "px";
-        this._input.style.top    = (y - cont.top) + "px";
+        this._placeInput(x, y, align);
     };
 
     EditableText.prototype.showInput = function() {
         if (!ns.Diagram.allowEdit) { return; }
         ns.Menu.hide();
 
-        var fontSize = window.getComputedStyle(this._text, null).getPropertyValue("font-size");
+        var fontSize = this.getFontSize();
         if (fontSize) {
             this._input.style.fontSize = fontSize;
             this._span.style.fontSize = fontSize;
@@ -5985,7 +6742,7 @@ DBSDM.View.EditableText = (function(){
 
         this._text.style.visibility = "hidden";
 
-        EditableText.shown = true;
+        Super.shown = true;
 
         //
         var that = this;
@@ -5994,41 +6751,7 @@ DBSDM.View.EditableText = (function(){
         this._input.onblur  = function(e) { that._confirm(e); };
     };
 
-    EditableText.prototype._hideInput = function() {
-        this._input.style.display = "none";
-        this._text.style.visibility = "visible";
-
-        EditableText.shown = false;
-    };
-
-    EditableText.prototype.onMouseUp = function(e, mouse) {
-        if (!this._canvas.inCorrectionMode) {
-            this.showInput();
-        }
-    };
-
     /** Key press handling */
-
-    EditableText.prototype._confirm = function() {
-        this._input.value = this._input.value.trim();
-        if (this._input.value == "") {
-            if (this._emptyHandler) {
-                this._hideInput();
-                this._emptyHandler();
-            } else {
-                this._cancel();
-            }
-        } else {
-            this._setValue();
-            this._hideInput();
-        }
-    };
-
-    EditableText.prototype._cancel = function() {
-        this._input.onblur = null;
-        this._input.value = this._getValue(); // set old value, so the blur event won't update it
-        this._hideInput();
-    };
 
     EditableText.prototype._next = function(e) {
         if (!this._nextHandler) { return; }
@@ -6063,24 +6786,19 @@ DBSDM.View = DBSDM.View ||{};
 DBSDM.View.Entity = (function(){
     var ns = DBSDM;
 
-    function Entity(canvas, model, control) {
-        this._canvas = canvas;
-        this._model = model;
-        this._control = control;
+    var Super = ns.View.CanvasObject;
 
-        this._dom = null;
+    function Entity(canvas, model, control) {
+        Super.call(this, canvas, model, control);
+
         this._bg = null;
         this._name = null;
         this._attrContainer = null;
 
-        this._controls = null;
-
         this._xorNodes = [];
     }
-
-    Entity.prototype.getDom = function() {
-        return this._dom;
-    };
+    Entity.prototype = Object.create(Super.prototype);
+    Entity.prototype.constructor = Entity;
 
     Entity.prototype.getAttrContainer = function() {
         return this._attrContainer;
@@ -6139,15 +6857,6 @@ DBSDM.View.Entity = (function(){
         this._dom.addEventListener("contextmenu", function(e) { DBSDM.Menu.attach(control, "entity"); });
     };
 
-    Entity.prototype.redraw = function() {
-        var transform = this._model.getTransform();
-        ns.Element.attr(this._dom, transform);
-    };
-
-    Entity.prototype.remove = function() {
-        this._dom.remove();
-    };
-
     // XOR
 
     Entity.prototype.clearXor = function(index) {
@@ -6166,27 +6875,7 @@ DBSDM.View.Entity = (function(){
         this._xorNodes[index] = arcNode;
     };
 
-    // Controls
-
-    Entity.prototype.showControls = function() {
-        this._controls = ns.Element.g(
-            ns.Diagram.getSharedElement("Entity.ControlRectangle"),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-nw", x:      0, y:      0 }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-n",  x:  "50%", y:      0 }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-ne", x: "100%", y:      0 }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-e",  x: "100%", y:  "50%" }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-se", x: "100%", y: "100%" }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-s",  x:  "50%", y: "100%" }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-sw", x:      0, y: "100%" }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-w",  x:      0, y:  "50%" })
-        );
-        ns.Element.attr(this._controls, { class: "e-control" });
-        this._dom.appendChild(this._controls);
-    };
-
-    Entity.prototype.hideControls = function() {
-        this._controls.remove();
-    };
+    //
 
     Entity.prototype.select = function() {
         ns.Element.attr(this._bg, {href: "#Entity.Bg.Selected"});
@@ -6201,6 +6890,99 @@ DBSDM.View.Entity = (function(){
     };
 
     return Entity;
+})();
+/** src/view/Note.js */
+DBSDM.View = DBSDM.View ||{};
+
+DBSDM.View.Note = (function(){
+    var ns = DBSDM;
+
+    var Super = ns.View.CanvasObject;
+
+    function Note(canvas, model, control) {
+        Super.call(this, canvas, model, control);
+        this._bg = null;
+        this._text = null;
+    }
+    Note.prototype = Object.create(Super.prototype);
+    Note.prototype.constructor = Note;
+
+    Note.prototype.getMinimalSize = function() {
+        var div = document.createElement("div");
+        div.classList.add("note-content-helper");
+        div.style.whiteSpace = "pre";
+
+        var fontSize = this._text.getFontSize(false);
+        if (fontSize) {
+            div.style.fontSize = fontSize;
+        }
+        div.textContent = this._model.getText();
+
+        document.body.appendChild(div);
+        var rect = div.getBoundingClientRect();
+
+        document.body.removeChild(div);
+
+        return {
+            width: rect.width + ns.Consts.NotePadding*2,
+            height: rect.height + ns.Consts.NotePadding*2
+        };
+    };
+
+    /**
+     * Create Note
+     */
+    Note.prototype.create = function() {
+        var transform = this._model.getTransform();
+        this._dom = ns.Element.el("svg", transform);
+        this._dom.style.overflow = "visible";
+
+        this._bg = this._dom.appendChild(ns.Diagram.getSharedElement("Note.Bg"));
+        this._canvas.svg.appendChild(this._dom);
+
+        var that = this;
+
+        this._text = new ns.View.EditableLongText(this._canvas,
+            ns.Consts.NotePadding, ns.Consts.NotePadding - 2, // -2 due to weird positioning in svg text
+            { class: "note-content" },
+            function() { return that._model.getText(); },
+            function(value) { that._control.setText(value); }
+        );
+        this._text.setSizeHandler(function(){
+            var rect = that._bg.getBoundingClientRect();
+            return {
+                width: rect.width - 2*ns.Consts.NotePadding,
+                height: rect.height - 2*ns.Consts.NotePadding
+            };
+        });
+        this._dom.appendChild(this._text.getTextDom());
+
+        this.defaultMark();
+
+        this._dom.addEventListener("mousedown", function(e) { that._canvas.Mouse.down(e, that._control); });
+        this._dom.addEventListener("contextmenu", function() { ns.Menu.attach(that._control, "note"); });
+    };
+
+    Note.prototype.edit = function() {
+        this._text.showInput();
+    };
+
+    Note.prototype.show = function() {
+        this._dom.style.display='block';
+    };
+    Note.prototype.hide = function() {
+        this._dom.style.display='none';
+    };
+
+    Note.prototype.defaultMark = function() {
+        if (this._model.incorrect) {
+            ns.Element.attr(this._bg, {href: "#Note.Bg.Incorrect"});
+        } else {
+            ns.Element.attr(this._bg, {href: "#Note.Bg"});
+        }
+    };
+
+    return Note;
 })();
 /** src/view/Relation.js */
 DBSDM.View = DBSDM.View ||{};

@@ -4,7 +4,7 @@ Data Modeler is a Entity-Relationship web component for drawing diagrams in Bark
 
 ## Features
 
-- support for drawing logical models in the Barker notation, including XOR relationships and ISA hierarchy
+- support for drawing logical models in the Barker notation, including XOR relationships, ISA hierarchy and notes
 - automatic diagram layout, which ensures that equivalent diagrams are displayed in the same way
 - save to local storage to preserve your work
 - marking mode, used to mark incorrect parts of the diagram
