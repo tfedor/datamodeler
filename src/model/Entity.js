@@ -10,18 +10,16 @@ DBSDM.Model.Entity = (function(){
 
     var EdgeOffset = ns.Consts.EntityEdgePadding;
 
+    var Super = ns.Model.CanvasObject;
+
     /**
      * @param name       string|object   Name of new entity or object to create entity from
      */
     function Entity(name) {
+        Super.call(this);
+
         this._name = (name && typeof name == "string") ? name : "Entity";
         this._attributes = new ns.Model.AttributeList();
-        this._transform = {
-            x: 0,
-            y: 0,
-            width: 1,
-            height: 1
-        };
         this._parent = null;
         this._children = [];
 
@@ -34,6 +32,9 @@ DBSDM.Model.Entity = (function(){
             this.import(name);
         }
     }
+    Entity.prototype = Object.create(Super.prototype);
+    Entity.prototype.constructor = Entity;
+
 
     Entity.prototype.getName = function() {
         return this._name;
@@ -129,32 +130,6 @@ DBSDM.Model.Entity = (function(){
             }
         }
         return null;
-    };
-
-    // Transform
-
-    Entity.prototype.setPosition = function(x, y) {
-        this._transform.x = (x != null ? x : this._transform.x);
-        this._transform.y = (y != null ? y : this._transform.y);
-    };
-
-    Entity.prototype.translate = function(dx, dy) {
-        this._transform.x += (dx != null ? dx : 0);
-        this._transform.y += (dy != null ? dy : 0);
-    };
-
-    Entity.prototype.setSize = function(w, h) {
-        this._transform.width = (w != null ? w : this._transform.width);
-        this._transform.height = (h != null ? h : this._transform.height);
-    };
-
-    Entity.prototype.resize = function(dw, dh) {
-        this._transform.width += (dw != null ? dw : 0);
-        this._transform.height += (dh != null ? dh : 0);
-    };
-
-    Entity.prototype.getTransform = function() {
-        return this._transform;
     };
 
     /** in Canvas coordinates! */
@@ -296,10 +271,8 @@ DBSDM.Model.Entity = (function(){
         if (data.name) { this._name = data.name; }
         if (data.attr) { this._attributes.import(data.attr); }
         if (typeof data.incorrect == "boolean") { this.incorrect = data.incorrect; }
-        if (data.transform) {
-            this.setPosition(data.transform.x, data.transform.y);
-            this.setSize(data.transform.width, data.transform.height);
-        }
+
+        Super.prototype.import.call(this, data);
     };
 
     return Entity;

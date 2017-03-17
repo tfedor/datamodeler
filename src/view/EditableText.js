@@ -4,6 +4,8 @@ DBSDM.View = DBSDM.View ||{};
 DBSDM.View.EditableText = (function(){
     var ns = DBSDM;
 
+    var Super = ns.View.EditableContent;
+
     /**
      * Create new editable text in view
      * @param canvas     Canvas          Canvas in which editable text is created
@@ -18,23 +20,20 @@ DBSDM.View.EditableText = (function(){
      *                                   all other values generate `text` element
      */
     function EditableText(canvas, x, y, properties, getHandler, setHandler, el) {
-        this._canvas = canvas;
-
-        this._properties = Object.assign({
-            dominantBaseline: "text-before-edge"
-        }, (properties || {}));
+        Super.call(this, canvas, properties, getHandler, setHandler);
 
         this._leftOffset = 0;
 
         // handlers
-        this._getHandler = getHandler;
-        this._setHandler = setHandler;
         this._nextHandler = null;
-        this._emptyHandler = null;
+
+        var that = this;
+        this._sizeHandler = function(){
+            that._span.innerHTML = that._input.value;
+            return {width: that._span.getBoundingClientRect().width};
+        };
 
         // dom
-        this._createSharedElements();
-
         if (el == "tspan") {
             this._text = ns.Element.el("tspan", this._properties);
             this._text.innerHTML = this._getValue();
@@ -47,19 +46,11 @@ DBSDM.View.EditableText = (function(){
         this._hideInput();
 
         // set input handlers
-        var that = this;
-        if (ns.Diagram.allowEdit) {
-            this._text.classList.add("editable");
-
-            this._text.addEventListener("mousedown", function(e) {
-                if (!that._canvas.inCorrectionMode && !that._canvas.isInMode("isa")) {
-                    that._canvas.Mouse.down(e, that);
-                }
-            });
-        }
+        this._setInputHandlers.call(this);
     }
+    EditableText.prototype = Object.create(Super.prototype);
+    EditableText.prototype.constructor = EditableText;
 
-    EditableText.shown = false;
 
     EditableText.prototype._createSharedElements = function() {
         if (this._canvas.hasSharedHTMLElement('EditableText.Input')) { return; }
@@ -75,34 +66,15 @@ DBSDM.View.EditableText = (function(){
         this._canvas.createSharedHTMLElement("EditableText.Span", span);
     };
 
-    EditableText.prototype.getTextDom = function() {
-        return this._text;
-    };
-
     EditableText.prototype.setNextHandler = function(callback) {
         this._nextHandler = callback;
-    };
-
-    EditableText.prototype.setEmptyHandler = function(callback) {
-        this._emptyHandler = callback;
-    };
-
-    /** Value handling */
-
-    EditableText.prototype._getValue = function() {
-        return this._getHandler() || "Editable Text";
-    };
-    EditableText.prototype._setValue = function() {
-        this._setHandler(this._input.value);
-        this._text.innerHTML = this._getValue();
     };
 
     /** Input handling */
 
     EditableText.prototype._setInputPosition = function() {
-        this._span.innerHTML = this._input.value;
-        var textWidth = this._span.getBoundingClientRect().width;
-        this._input.style.width = textWidth + "px";
+        var sizeRect = this._sizeHandler();
+        this._input.style.width = sizeRect.width + "px";
 
         var svgRect = this._text.getBoundingClientRect();
 
@@ -111,20 +83,17 @@ DBSDM.View.EditableText = (function(){
         var y = svgRect.top - 1;
         if (this._properties.textAnchor && this._properties.textAnchor == "middle") {
             align = "center";
-            x = Math.floor((svgRect.left + svgRect.right - textWidth)/2 + 3);
+            x = Math.floor((svgRect.left + svgRect.right - sizeRect.width)/2 + 3);
         }
 
-        var cont = this._canvas._container.getBoundingClientRect();
-        this._input.style.textAlign = align;
-        this._input.style.left   = (x - cont.left) + "px";
-        this._input.style.top    = (y - cont.top) + "px";
+        this._placeInput(x, y, align);
     };
 
     EditableText.prototype.showInput = function() {
         if (!ns.Diagram.allowEdit) { return; }
         ns.Menu.hide();
 
-        var fontSize = window.getComputedStyle(this._text, null).getPropertyValue("font-size");
+        var fontSize = this.getFontSize();
         if (fontSize) {
             this._input.style.fontSize = fontSize;
             this._span.style.fontSize = fontSize;
@@ -144,7 +113,7 @@ DBSDM.View.EditableText = (function(){
 
         this._text.style.visibility = "hidden";
 
-        EditableText.shown = true;
+        Super.shown = true;
 
         //
         var that = this;
@@ -153,41 +122,7 @@ DBSDM.View.EditableText = (function(){
         this._input.onblur  = function(e) { that._confirm(e); };
     };
 
-    EditableText.prototype._hideInput = function() {
-        this._input.style.display = "none";
-        this._text.style.visibility = "visible";
-
-        EditableText.shown = false;
-    };
-
-    EditableText.prototype.onMouseUp = function(e, mouse) {
-        if (!this._canvas.inCorrectionMode) {
-            this.showInput();
-        }
-    };
-
     /** Key press handling */
-
-    EditableText.prototype._confirm = function() {
-        this._input.value = this._input.value.trim();
-        if (this._input.value == "") {
-            if (this._emptyHandler) {
-                this._hideInput();
-                this._emptyHandler();
-            } else {
-                this._cancel();
-            }
-        } else {
-            this._setValue();
-            this._hideInput();
-        }
-    };
-
-    EditableText.prototype._cancel = function() {
-        this._input.onblur = null;
-        this._input.value = this._getValue(); // set old value, so the blur event won't update it
-        this._hideInput();
-    };
 
     EditableText.prototype._next = function(e) {
         if (!this._nextHandler) { return; }

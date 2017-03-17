@@ -18,7 +18,9 @@ DBSDM.Canvas = (function() {
 
         this._offset = {x:0, y:0};
         this._zoom = 1;
+
         this._namesShown = false;
+        this._notesShown = true;
 
         /**
          * Check when exiting the site, to compare current with imported data
@@ -35,6 +37,7 @@ DBSDM.Canvas = (function() {
         this.menu = {};
 
         this._entities = [];
+        this._notes = [];
         this._relations = [];
 
         /**
@@ -153,17 +156,6 @@ DBSDM.Canvas = (function() {
 
     // canvas
 
-    Canvas.prototype._toggleRelationNames = function() {
-        for (var i=0; i<this._relations.length; i++) {
-            if (!this._namesShown) {
-                this._relations[i].showNames();
-            } else {
-                this._relations[i].hideNames();
-            }
-        }
-        this._namesShown = !this._namesShown;
-    };
-
     Canvas.prototype._switchSnap = function() {
         this.snap = !this.snap;
         if (this.snap) {
@@ -210,6 +202,9 @@ DBSDM.Canvas = (function() {
         this.updateViewbox();
     };
 
+    Canvas.prototype.getZoomLevel = function(){
+        return this._zoom;
+    };
     Canvas.prototype.zoomIn = function() {
         this._zoom = Math.min(2, this._zoom + 0.1);
         this.updateViewbox();
@@ -230,6 +225,39 @@ DBSDM.Canvas = (function() {
     Canvas.prototype.fullscreen = function() {
         if (!ns.Fullscreen.enabled()) { return; }
         ns.Fullscreen.toggle(this._container, this);
+    };
+
+    // notes
+
+    Canvas.prototype._createNote = function() {
+        if (this.inCorrectionMode || !ns.Diagram.allowEdit) { return null; }
+
+        var note = new ns.Control.Note(this, new ns.Model.Note());
+        note.create();
+    };
+    Canvas.prototype.addNote = function(note) {
+        if (!this._notesShown) {
+            this._toggleNotes();
+        }
+        this._notes.push(note);
+    };
+    Canvas.prototype.removeNote =  function(note) {
+        for (var i=0; i<this._notes.length; i++) {
+            if (this._notes[i] == note) {
+                this._notes.splice(i, 1);
+                return;
+            }
+        }
+    };
+    Canvas.prototype._toggleNotes = function() {
+        for (var i=0; i<this._notes.length; i++) {
+            if (!this._notesShown) {
+                this._notes[i].show();
+            } else {
+                this._notes[i].hide();
+            }
+        }
+        this._notesShown = !this._notesShown;
     };
 
     // entities
@@ -273,6 +301,16 @@ DBSDM.Canvas = (function() {
                 return;
             }
         }
+    };
+    Canvas.prototype._toggleRelationNames = function() {
+        for (var i=0; i<this._relations.length; i++) {
+            if (!this._namesShown) {
+                this._relations[i].showNames();
+            } else {
+                this._relations[i].hideNames();
+            }
+        }
+        this._namesShown = !this._namesShown;
     };
 
     Canvas.prototype.clear = function() {
@@ -415,6 +453,9 @@ DBSDM.Canvas = (function() {
 
         count = data.relations.length;
         for (i=0; i<count; i++) {
+            if (!this._namesShown && (data.relations[i][0].name || data.relations[i][1].name)) {
+                this._namesShown = true;
+            }
             relationModels.push(
                 new ns.Model.Relation(
                     (new ns.Model.RelationLeg()).import(data.relations[i][0]),
@@ -557,8 +598,10 @@ DBSDM.Canvas = (function() {
 
     Canvas.prototype.handleMenu = function(action) {
         switch(action) {
-            case "entity": this._createDefaultEntity(); break;
-            case "rel-names": this._toggleRelationNames(); break;
+            case "new-entity": this._createDefaultEntity(); break;
+            case "new-note": this._createNote(); break;
+            case "toggle-rel-names": this._toggleRelationNames(); break;
+            case "toggle-notes": this._toggleNotes(); break;
             case "snap": this._switchSnap(); break;
             case "zoom-in": this.zoomIn(); break;
             case "zoom-reset": this.zoomReset(); break;
@@ -588,7 +631,8 @@ DBSDM.Canvas = (function() {
 
     Canvas.prototype.getMenuState = function() {
         return {
-            "rel-names": this._namesShown
+            "toggle-rel-names": this._namesShown,
+            "toggle-notes": this._notesShown
         }
     };
 

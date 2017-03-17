@@ -5,12 +5,11 @@ DBSDM.Control.Entity = (function(){
     var ns = DBSDM;
     var Enum = ns.Enums;
 
-    Entity.activeEntity = null;
+    var Super = ns.Control.CanvasObject;
 
     function Entity(canvas, model) {
-        this._canvas = canvas;
+        Super.call(this, canvas, model);
 
-        this._model = model;
         this._attributeList = new ns.Control.AttributeList(this._model.getAttributeList(), this._canvas, this);
         this._relationLegList = [];
         this._xorLegList = [];
@@ -21,18 +20,11 @@ DBSDM.Control.Entity = (function(){
 
         this._new = true;
         this._ignoredInput = {x:0,y:0};
-        this._neededSize = {width:0,height:0}; // size needed to encompass all content with it's current size
 
         this._force = new ns.Geometry.Vector();
-
-        if (Entity.activeEntity) {
-            Entity.activeEntity.deactivate();
-        }
     }
-
-    Entity.prototype.getDom = function() {
-        return this._view.getDom();
-    };
+    Entity.prototype = Object.create(Super.prototype);
+    Entity.prototype.constructor = Entity;
 
     Entity.prototype.getAttrContainer = function() {
         return this._view.getAttrContainer();
@@ -145,6 +137,7 @@ DBSDM.Control.Entity = (function(){
 
     /**
      * Drag entity
+     * @override
      */
     Entity.prototype.drag = function(mouse) {
         var delta;
@@ -155,17 +148,7 @@ DBSDM.Control.Entity = (function(){
                 transform.y + mouse.ry
             );
         } else {
-            delta = {
-                x: mouse.rx,
-                y: mouse.ry
-            };
-            if (this._canvas.snap && (delta.x != 0 || delta.y != 0)) {
-                var tr = this._model.getTransform();
-                if (delta.x != 0) { delta.x -= tr.x % ns.Consts.CanvasGridSize; }
-                if (delta.y != 0) { delta.y -= tr.y % ns.Consts.CanvasGridSize; }
-            }
-
-            this._model.translate(delta.x, delta.y);
+            delta = Super.prototype.drag.call(this, mouse);
         }
         this.notifyDrag(delta.x, delta.y);
     };
@@ -189,6 +172,7 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
+    /** @override */
     Entity.prototype.dragControlPoint = function(mouse, cp) {
         var transform = this._model.getTransform();
         var x=null, y=null;
@@ -223,21 +207,7 @@ DBSDM.Control.Entity = (function(){
 
         // constrain width/height
 
-        if (width != null && width < this._neededSize.width) {
-            width = this._neededSize.width;
-            if (x != null) {
-                x = transform.x + transform.width - this._neededSize.width;
-            }
-        }
-        if (height != null && height < this._neededSize.height) {
-            height = this._neededSize.height;
-            if (y != null) {
-                y = transform.y + transform.height - this._neededSize.height;
-            }
-        }
-
-        this._model.setPosition(x, y);
-        this._model.setSize(width, height);
+        this._setConstrainedTransform(x, y, width, height);
         this._notifyResize();
     };
 
@@ -249,15 +219,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.encompassContent = function() {
-        this.computeNeededSize();
-        var transform = this._model.getTransform();
-
-        var width = (transform.width < this._neededSize.width ? this._neededSize.width : null);
-        var height = (transform.height < this._neededSize.height ? this._neededSize.height : null);
-
-        if (width != null || height != null) {
-            this._model.setSize(width, height);
-            this._view.redraw();
+        if (Super.prototype.encompassContent.call(this)) {
             this._notifyResize();
         }
     };
@@ -283,26 +245,13 @@ DBSDM.Control.Entity = (function(){
     };
 
     /**
-     * Activate entity
-     * Shows control points, menu and allows other actions
+     * @override
      */
     Entity.prototype.activate = function() {
-        if (Entity.activeEntity) {
-            Entity.activeEntity.deactivate();
-        }
-        Entity.activeEntity = this;
-
-        this._view.showControls();
-
+        Super.prototype.activate.call(this);
         this._canvas.ui.acceptTutorialAction("Select");
     };
 
-    Entity.prototype.deactivate = function() {
-        if (Entity.activeEntity == this) {
-            Entity.activeEntity = null;
-            this._view.hideControls();
-        }
-    };
 
     Entity.prototype.delete = function() {
         if (!ns.Diagram.allowEdit) { return; }
@@ -351,6 +300,9 @@ DBSDM.Control.Entity = (function(){
         return size;
     };
 
+    /**
+     * @override
+     */
     Entity.prototype.computeNeededSize = function() {
         var size = this._view.getMinimalSize();
 
@@ -735,16 +687,6 @@ DBSDM.Control.Entity = (function(){
 
     // Event Handlers
 
-    Entity.prototype.onMouseDown = function(e, mouse) {
-        if (this._canvas.inCorrectionMode) { return; }
-
-        var matches = e.target.className.baseVal.match(/e-cp-(\w+)/);
-        if (matches) {
-            mouse.setParam("action", "cp");
-            mouse.setParam("cp", matches[1]);
-        }
-    };
-
     Entity.prototype.onMouseMove = function(e, mouse) {
         if (this._canvas.inCorrectionMode) { return; }
 
@@ -772,8 +714,8 @@ DBSDM.Control.Entity = (function(){
             if (mouse.dx == 0 || mouse.dy == 0) {
                 this._view.remove();
 
-                if (Entity.activeEntity) {
-                    Entity.activeEntity.deactivate();
+                if (Super.active) {
+                    Super.active.deactivate();
                 }
             } else {
                 this.finish();
@@ -812,7 +754,7 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype.onKeyPress = function(e) {
         if (this._canvas.inCorrectionMode) { return; }
 
-        if (ns.View.EditableText.shown) { return; }
+        if (ns.View.EditableContent.shown) { return; }
         switch(e.keyCode) {
             case 46: this.delete(); break; // del
             case 27: this.deactivate(); break; // esc

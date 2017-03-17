@@ -68,6 +68,11 @@ DBSDM.Menu = (function(){
             ["Delete Entity", "delete", "ban", "allowEdit"]
         ],
 
+        note: [
+            ["Fit to contents", "fit"],
+            ["Delete Note", "delete", "ban", "allowEdit"]
+        ],
+
         relationMiddle: [
             ["Reset point", "reset", "refresh"]
         ],
@@ -106,10 +111,14 @@ DBSDM.Menu = (function(){
         ],
 
         canvas: [
-            ["New entity", "entity", "list-alt", "allowEdit"],
+            ["New...", [
+                ["Entity", "new-entity", "list-alt"],
+                ["Note", "new-note", "sticky-note-o"]
+            ], "plus", "allowEdit"],
             ["Show...", [
-                ["Relation names", "rel-names", ["check-square-o", "square-o"]]
-            ]],
+                ["Relation names", "toggle-rel-names", ["check-square-o", "square-o"]],
+                ["Notes", "toggle-notes", ["check-square-o", "square-o"]]
+            ], "eye"],
             ["Snap to grid", "snap", "th"],
             ["Zoom", [
                 ["In", "zoom-in", "search-plus"],

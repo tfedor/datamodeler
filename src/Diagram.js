@@ -77,8 +77,8 @@ DBSDM.Diagram = (function() {
             if (e.keyCode == 27 && self.cancelAction) { // ESC
                 self.cancelAction();
                 self.cancelAction = null;
-            } else if (ns.Control.Entity.activeEntity) {
-                ns.Control.Entity.activeEntity.onKeyPress(e);
+            } else if (ns.Control.CanvasObject.active) {
+                ns.Control.CanvasObject.active.onKeyPress(e);
             }
         });
         window.addEventListener('keypress',function(e){
@@ -92,8 +92,8 @@ DBSDM.Diagram = (function() {
         });
         window.addEventListener("mousedown", function(e) {
             ns.Menu.hide();
-            if (ns.Control.Entity.activeEntity) {
-                ns.Control.Entity.activeEntity.deactivate();
+            if (ns.Control.CanvasObject.active) {
+                ns.Control.CanvasObject.active.deactivate();
             }
         });
         ns.Fullscreen.setEvents(function(e) {
@@ -175,6 +175,7 @@ DBSDM.Diagram = (function() {
 
     // create shared svg elements
     self._createEntityElements = function() {
+        // Entity
         self.createSharedElement("Entity.Bg",
             ns.Element.rect(0, 0, "100%", "100%", {
                 rx: 10, ry: 10,
@@ -202,6 +203,23 @@ DBSDM.Diagram = (function() {
             })
         );
 
+        // Note
+        self.createSharedElement("Note.Bg",
+            ns.Element.rect(0, 0, "100%", "100%", {
+                fill: "#fffbb4",
+                stroke: "#f9de4f",
+                strokeWidth: ns.Consts.NoteStrokeWidth
+            })
+        );
+        self.createSharedElement("Note.Bg.Incorrect",
+            ns.Element.rect(0, 0, "100%", "100%", {
+                fill: "#ffaaaa",
+                stroke: "#b62727",
+                strokeWidth: ns.Consts.NoteStrokeWidth
+            })
+        );
+
+        // Controls
         self.createSharedElement("Entity.ControlRectangle",
             ns.Element.rect(0, 0, "100%", "100%", {
                 fill: "none",

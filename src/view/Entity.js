@@ -4,24 +4,19 @@ DBSDM.View = DBSDM.View ||{};
 DBSDM.View.Entity = (function(){
     var ns = DBSDM;
 
-    function Entity(canvas, model, control) {
-        this._canvas = canvas;
-        this._model = model;
-        this._control = control;
+    var Super = ns.View.CanvasObject;
 
-        this._dom = null;
+    function Entity(canvas, model, control) {
+        Super.call(this, canvas, model, control);
+
         this._bg = null;
         this._name = null;
         this._attrContainer = null;
 
-        this._controls = null;
-
         this._xorNodes = [];
     }
-
-    Entity.prototype.getDom = function() {
-        return this._dom;
-    };
+    Entity.prototype = Object.create(Super.prototype);
+    Entity.prototype.constructor = Entity;
 
     Entity.prototype.getAttrContainer = function() {
         return this._attrContainer;
@@ -80,15 +75,6 @@ DBSDM.View.Entity = (function(){
         this._dom.addEventListener("contextmenu", function(e) { DBSDM.Menu.attach(control, "entity"); });
     };
 
-    Entity.prototype.redraw = function() {
-        var transform = this._model.getTransform();
-        ns.Element.attr(this._dom, transform);
-    };
-
-    Entity.prototype.remove = function() {
-        this._dom.remove();
-    };
-
     // XOR
 
     Entity.prototype.clearXor = function(index) {
@@ -107,27 +93,7 @@ DBSDM.View.Entity = (function(){
         this._xorNodes[index] = arcNode;
     };
 
-    // Controls
-
-    Entity.prototype.showControls = function() {
-        this._controls = ns.Element.g(
-            ns.Diagram.getSharedElement("Entity.ControlRectangle"),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-nw", x:      0, y:      0 }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-n",  x:  "50%", y:      0 }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-ne", x: "100%", y:      0 }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-e",  x: "100%", y:  "50%" }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-se", x: "100%", y: "100%" }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-s",  x:  "50%", y: "100%" }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-sw", x:      0, y: "100%" }),
-            ns.Element.attr(ns.Diagram.getSharedElement("Entity.ControlPoint"), { class: "e-cp-w",  x:      0, y:  "50%" })
-        );
-        ns.Element.attr(this._controls, { class: "e-control" });
-        this._dom.appendChild(this._controls);
-    };
-
-    Entity.prototype.hideControls = function() {
-        this._controls.remove();
-    };
+    //
 
     Entity.prototype.select = function() {
         ns.Element.attr(this._bg, {href: "#Entity.Bg.Selected"});

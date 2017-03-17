@@ -14,6 +14,11 @@ DBSDM.Consts = {
     EntityEdgePadding: 10, // how close to the corner can the relation be placed
     EntityExtraHeight: 5,
 
+    NoteDefaultWidth: 150,
+    NoteDefaultHeight: 100,
+    NoteStrokeWidth: 1,
+    NotePadding: 10,
+
     DefaultAnchorOffset: 11, // how for from edge to start drawing relation leg
     MinAnchorAnchorDistance: 10, // should be half the anchor width
 

@@ -1,4 +1,4 @@
-body,input {
+body,input,textarea {
     font-family: Verdana, sans-serif;
 }
 
@@ -149,7 +149,8 @@ use.e-cp-s  { cursor: ns-resize; }
 use.e-cp-sw { cursor: nesw-resize; }
 use.e-cp-w  { cursor: ew-resize; }
 
-input.editableSvgText {
+input.editableSvgText,
+textarea.editableSvgText {
     position:absolute;z-index:999;
     font-size:0.8em;
     padding:3px 2px;
@@ -159,6 +160,11 @@ input.editableSvgText {
     height:auto;
     box-sizing:content-box;
     transition: width 0.1s, left 0.1s;
+}
+textarea.editableSvgText {
+    resize:none;
+    white-space:pre;
+    line-height:1.2;
 }
 
 /** MENU */
@@ -251,6 +257,13 @@ svg text, svg tspan {
 }
 svg text.editable, svg tspan.editable {
     cursor: text;
+}
+
+/** NOTE */
+text.note-content {
+    font-size: 0.75em;
+    white-space: pre;
+    line-height:1.2;
 }
 
 /** ENTITY */

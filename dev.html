@@ -13,26 +13,34 @@
     <script type="application/javascript" src="src/Consts.js"></script>
 
     <!-- model -->
+    <script type="application/javascript" src="src/model/CanvasObject.js"></script>
     <script type="application/javascript" src="src/model/Entity.js"></script>
     <script type="application/javascript" src="src/model/Attribute.js"></script>
     <script type="application/javascript" src="src/model/AttributeList.js"></script>
     <script type="application/javascript" src="src/model/Relation.js"></script>
     <script type="application/javascript" src="src/model/RelationLeg.js"></script>
+    <script type="application/javascript" src="src/model/Note.js"></script>
 
     <!-- view -->
+    <script type="application/javascript" src="src/view/EditableContent.js"></script>
     <script type="application/javascript" src="src/view/EditableText.js"></script>
+    <script type="application/javascript" src="src/view/EditableLongText.js"></script>
+    <script type="application/javascript" src="src/view/CanvasObject.js"></script>
     <script type="application/javascript" src="src/view/Entity.js"></script>
     <script type="application/javascript" src="src/view/Attribute.js"></script>
     <script type="application/javascript" src="src/view/Relation.js"></script>
     <script type="application/javascript" src="src/view/RelationLeg.js"></script>
     <script type="application/javascript" src="src/view/Arc.js"></script>
+    <script type="application/javascript" src="src/view/Note.js"></script>
 
     <!-- control -->
+    <script type="application/javascript" src="src/control/CanvasObject.js"></script>
     <script type="application/javascript" src="src/control/Entity.js"></script>
     <script type="application/javascript" src="src/control/Attribute.js"></script>
     <script type="application/javascript" src="src/control/AttributeList.js"></script>
     <script type="application/javascript" src="src/control/Relation.js"></script>
     <script type="application/javascript" src="src/control/RelationLeg.js"></script>
+    <script type="application/javascript" src="src/control/Note.js"></script>
 
     <script type="application/javascript" src="src/Random.js"></script>
     <script type="application/javascript" src="src/Hash.js"></script>
@@ -55,7 +63,8 @@
     <script>
         DBSDM.Diagram.init({
             showTutorial: false,
-            confirmLeave: false
+            confirmLeave: false,
+            allowCorrectMode: true
         });
 
         var parent = document.getElementById("modelerContainer");
