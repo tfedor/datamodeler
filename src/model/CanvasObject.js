@@ -15,6 +15,8 @@ DBSDM.Model.CanvasObject = (function(){
             width: 1,
             height: 1
         };
+
+        this.incorrect = false;
     }
 
     CanvasObject.prototype.setPosition = function(x, y) {
@@ -57,6 +59,9 @@ DBSDM.Model.CanvasObject = (function(){
         if (properties['saveTransform']) {
             data.transform = this._transform;
         }
+        if (this.incorrect) {
+            data.incorrect = true;
+        }
         return data;
     };
 
@@ -64,6 +69,9 @@ DBSDM.Model.CanvasObject = (function(){
         if (data.transform) {
             this.setPosition(data.transform.x, data.transform.y);
             this.setSize(data.transform.width, data.transform.height);
+        }
+        if (typeof data.incorrect == "boolean") {
+            this.incorrect = data.incorrect;
         }
     };
 

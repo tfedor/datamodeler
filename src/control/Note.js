@@ -71,11 +71,6 @@ DBSDM.Control.Note = (function(){
         return this;
     };
 
-    Note.prototype._toggleIncorrect = function() {
-        this._model.incorrect = !this._model.incorrect;
-        this._view.defaultMark();
-    };
-
     // Menu Handlers
     Note.prototype.handleMenu = function(action) {
         switch(action) {

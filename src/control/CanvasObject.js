@@ -176,6 +176,11 @@ DBSDM.Control.CanvasObject = (function(){
         }
     };
 
+    CanvasObject.prototype._toggleIncorrect = function() {
+        this._model.incorrect = !this._model.incorrect;
+        this._view.defaultMark();
+    };
+
     /** Handlers */
 
     CanvasObject.prototype.onMouseDown = function(e, mouse) {

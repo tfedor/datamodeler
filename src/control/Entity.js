@@ -633,11 +633,6 @@ DBSDM.Control.Entity = (function(){
         return this._model.hasParent();
     };
 
-    Entity.prototype._toggleIncorrect = function() {
-        this._model.incorrect = !this._model.incorrect;
-        this._view.defaultMark();
-    };
-
     // Menu Handlers
     Entity.prototype.handleMenu = function(action) {
         switch(action) {

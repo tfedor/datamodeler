@@ -26,8 +26,6 @@ DBSDM.Model.Entity = (function(){
         this._relationLegs = []; // does not export from here
         this._xorList = []; // Array of Arrays of relation leg models. Each array represent one XOR relation
 
-        this.incorrect = false;
-
         if (name && typeof name == "object") {
             this.import(name);
         }
@@ -242,6 +240,7 @@ DBSDM.Model.Entity = (function(){
         return str;
     };
 
+    /** @override */
     Entity.prototype.getExportData = function(properties) {
         this.setName(this._name); // force normalization
 
@@ -268,7 +267,6 @@ DBSDM.Model.Entity = (function(){
     Entity.prototype.import = function(data) {
         if (data.name) { this._name = data.name; }
         if (data.attr) { this._attributes.import(data.attr); }
-        if (typeof data.incorrect == "boolean") { this.incorrect = data.incorrect; }
 
         Super.prototype.import.call(this, data);
     };
