@@ -16,12 +16,8 @@ DBSDM.View.Note = (function(){
 
     Note.prototype.getMinimalSize = function() {
         var div = document.createElement("div");
+        div.classList.add("note-content-helper");
         div.style.whiteSpace = "pre";
-        div.style.display = "inline-block";
-        div.style.position = "absolute";
-        div.style.top = 0;
-        div.style.left = "-2000px";
-        div.style.lineHeight = "1.2";
 
         var fontSize = this._text.getFontSize(false);
         if (fontSize) {
@@ -54,7 +50,7 @@ DBSDM.View.Note = (function(){
         var that = this;
 
         this._text = new ns.View.EditableLongText(this._canvas,
-            ns.Consts.NotePadding, ns.Consts.NotePadding,
+            ns.Consts.NotePadding, ns.Consts.NotePadding - 2, // -2 due to weird positioning in svg text
             { class: "note-content" },
             function() { return that._model.getText(); },
             function(value) { that._control.setText(value); }

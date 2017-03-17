@@ -17,7 +17,7 @@ DBSDM.Consts = {
     NoteDefaultWidth: 150,
     NoteDefaultHeight: 100,
     NoteStrokeWidth: 1,
-    NotePadding: 10,
+    NotePadding: 5,
 
     DefaultAnchorOffset: 11, // how for from edge to start drawing relation leg
     MinAnchorAnchorDistance: 10, // should be half the anchor width

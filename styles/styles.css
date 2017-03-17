@@ -261,9 +261,16 @@ svg text.editable, svg tspan.editable {
 
 /** NOTE */
 text.note-content {
-    font-size: 0.75em;
-    white-space: pre;
+    font-size: 0.58rem;
     line-height:1.2;
+    white-space: pre;
+}
+/* used in computation of transforms */
+div.note-content-helper {
+    font-size: 0.58rem;
+    line-height:1.2;
+    display:inline-block;
+    position:absolute; top:0; left:-2000px;
 }
 
 /** ENTITY */

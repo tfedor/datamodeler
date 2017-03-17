@@ -230,27 +230,92 @@ DBSDM.File = (function() {
             }
         }
 
+        function parseNote(node, bounds) {
+            var text = node.querySelector("comment").textContent;
+            text = text.replace(/<br\s*\/?>/i, "\n");
+
+            var transform = {
+                x: parseInt(bounds.getAttribute("x")),
+                y: parseInt(bounds.getAttribute("y")),
+                width: parseInt(bounds.getAttribute("width")) - 2*ns.Consts.NoteStrokeWidth,
+                height: parseInt(bounds.getAttribute("height") - 2*ns.Consts.NoteStrokeWidth)
+            };
+
+            // split on new lines
+            var div = document.createElement("div");
+            div.classList.add("note-content-helper");
+            div.style.width = (transform.width - 2*ns.Consts.NotePadding)+"px";
+
+            document.body.appendChild(div);
+
+            div.textContent = "&nbsp;"; // to get default height
+            var defaultHeight = div.getBoundingClientRect().height;
+
+            var resultText = "";
+            div.textContent = "";
+
+            var skipSpace = false;
+            text.trim().split(/\n/).forEach(function(line){
+
+                var prevHeight = defaultHeight;
+
+                line.split(/\s+/).forEach(function(word){
+                    div.textContent += " "+word;
+
+                    var currentHeight = div.getBoundingClientRect().height;
+                    if (currentHeight > prevHeight) {
+                        resultText += "\n";
+                    } else if (!skipSpace) {
+                        resultText += " ";
+                    }
+                    resultText += word;
+
+                    prevHeight = currentHeight;
+                    skipSpace = false;
+                });
+
+                // add original new lines
+                div.textContent += "\n";
+                resultText += "\n";
+                skipSpace = true;
+                prevHeight = div.getBoundingClientRect().height;
+            });
+
+            document.body.removeChild(div);
+
+            return {
+                text: resultText.trim(),
+                transform: transform
+            };
+        }
+
         function parseTransforms(node, map) {
 
             map.entities = {};
             map.relations = {};
 
             var vid = {};
+            var notes = [];
 
-            // entities
-            var objects = node.querySelectorAll("OView[otype=Entity]");
+            // entities and notes
+            var objects = node.querySelectorAll("OView");
             for (var i=0; i<objects.length; i++) {
                 var id = objects[i].getAttribute("oid");
                 var bounds = objects[i].querySelector("bounds");
 
-                map.entities[id] = {
-                    x: parseInt(bounds.getAttribute("x")),
-                    y: parseInt(bounds.getAttribute("y")),
-                    width: parseInt(bounds.getAttribute("width")),
-                    height: parseInt(bounds.getAttribute("height"))
-                };
+                var type = objects[i].getAttribute("otype");
+                if (type == "Entity") {
+                    map.entities[id] = {
+                        x: parseInt(bounds.getAttribute("x")),
+                        y: parseInt(bounds.getAttribute("y")),
+                        width: parseInt(bounds.getAttribute("width")),
+                        height: parseInt(bounds.getAttribute("height"))
+                    };
 
-                vid[objects[i].getAttribute("vid")] = id;
+                    vid[objects[i].getAttribute("vid")] = id;
+                } else if (type == "Note") {
+                    notes.push(parseNote(objects[i], bounds));
+                }
             }
 
             // relations
@@ -335,6 +400,8 @@ DBSDM.File = (function() {
                 //
                 map.relations[id] = transform;
             }
+
+            return notes;
         }
 
         var zip = new JSZip();
@@ -353,6 +420,7 @@ DBSDM.File = (function() {
                     var relationsRef = {}; // map of {relation ID} => {relationsMap index}
                     var arcMap = {};
                     var transformsMap = {};
+                    var notes = [];
 
                     var parser = new DOMParser();
                     for (var i=0; i<result.length; i++) {
@@ -369,7 +437,7 @@ DBSDM.File = (function() {
                                 parseArc(xml.documentElement, arcMap);
                                 break;
                             case "Diagram":
-                                parseTransforms(xml.documentElement, transformsMap);
+                                notes = parseTransforms(xml.documentElement, transformsMap);
                                 break;
                         }
 
@@ -429,7 +497,8 @@ DBSDM.File = (function() {
 
                     var data = {
                         entities: toArray(entityMap),
-                        relations: relationsMap
+                        relations: relationsMap,
+                        notes: notes
                     };
 
                     try {

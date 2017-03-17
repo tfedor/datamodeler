@@ -38,9 +38,13 @@ DBSDM.View.EditableLongText = (function(){
         // dom
         this._createSharedElements();
 
-        this._text = ns.Element.text(x, y, this._getValue(), this._properties);
+        this._x = x;
+
+        this._text = ns.Element.text(x, y, "", this._properties);
         this._input = this._canvas.getSharedHTMLElement("EditableLongText.Textarea");
         this._hideInput();
+
+        this._text.appendChild(this._getTextSVG());
 
         // set input handlers
         this._setInputHandlers.call(this);
@@ -55,6 +59,40 @@ DBSDM.View.EditableLongText = (function(){
         var input = document.createElement("textarea");
         input.className = "editableSvgText";
         this._canvas.createSharedHTMLElement("EditableLongText.Textarea", input);
+    };
+
+    EditableLongText.prototype._getTextSVG = function() {
+        var that = this;
+        var dy = 0;
+
+        var lineHeight = window.getComputedStyle(this._text, null).getPropertyValue("line-height");
+
+        if (!lineHeight) { // dirty hack for chrome, where it doesn't seem to work on SVG element
+            var div = document.createElement("div");
+            div.classList.add("note-content-helper"); // TODO change if used elsewhere
+            document.body.appendChild(div);
+            lineHeight = window.getComputedStyle(div, null).getPropertyValue("line-height");
+            document.body.removeChild(div);
+        }
+
+        var fragment = document.createDocumentFragment();
+        this._getValue().split("\n").forEach(function(line){
+            var tspan = ns.Element.el("tspan", that._properties);
+            tspan.innerHTML = line;
+
+            ns.Element.attr(tspan, {x: that._x, dy: dy});
+            fragment.appendChild(tspan);
+
+            dy = lineHeight;
+        });
+        return fragment;
+    };
+
+    /** @override */
+    EditableLongText.prototype._setValue = function() {
+        this._setHandler(this._input.value);
+        this._text.innerHTML = "";
+        this._text.appendChild(this._getTextSVG())
     };
 
     /** Input handling */
