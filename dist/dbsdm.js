@@ -27,7 +27,7 @@ DBSDM.Canvas = (function() {
          * Check when exiting the site, to compare current with imported data
          * and prompt user about leaving
          */
-        this._dataRef = '{"entities":[],"relations":[]}'; // default empty object
+        this._dataRef = '';
 
         /**
          * Mouse controller
@@ -414,9 +414,8 @@ DBSDM.Canvas = (function() {
             jsonData = JSON.stringify(result);
         }
 
-        if (   (typeof saveRef == "boolean" && saveRef)
-            || (typeof saveRef != "boolean" && ns.Diagram.confirmLeave)) {
-            this._dataRef = JSON.stringify(result);
+        if (saveRef !== false && (saveRef || ns.Diagram.confirmLeave)) {
+            this._dataRef = this._generateRef();
         }
 
         if (ns.Diagram.allowFile && promptDownload) {
@@ -430,10 +429,6 @@ DBSDM.Canvas = (function() {
 
         if (forceSort) {
             this._sortData(data);
-        }
-
-        if (ns.Diagram.confirmLeave) {
-            this._dataRef = JSON.stringify(data);
         }
 
         var i,control,model;
@@ -518,10 +513,20 @@ DBSDM.Canvas = (function() {
         if (forceSort || sort) {
             this.sort();
         }
+
+        if (ns.Diagram.confirmLeave) {
+            this._dataRef = this._generateRef();
+        }
+    };
+
+    Canvas.prototype._generateRef = function(){
+        return JSON.stringify(this.export(false, false, false, {saveNotes: true, saveRelationNames: true}));
     };
 
     Canvas.prototype.didDataChange = function() {
-        return this.export(false, false, false) != this._dataRef;
+        console.log(this._generateRef());
+        console.log(this._dataRef);
+        return this._generateRef() !== this._dataRef;
     };
 
     Canvas.prototype.saveAsImage = function() {
@@ -552,7 +557,7 @@ DBSDM.Canvas = (function() {
         if (suffix) {
             name += " - "+suffix;
         }
-        localStorage.setItem(name, this.export(false, false, null, {
+        localStorage.setItem(name, this.export(false, false, false, {
             saveNotes: true,
             saveRelationNames: true,
             saveTransform: true,
