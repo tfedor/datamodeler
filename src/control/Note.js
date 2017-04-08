@@ -35,6 +35,9 @@ DBSDM.Control.Note = (function(){
 
         this.computeNeededSize();
         this.encompassContent();
+
+        var final = Object.assign({}, this._model.getTransform());
+        this._canvas.History.record(this, "create", null, final);
     };
 
     /**
@@ -43,18 +46,35 @@ DBSDM.Control.Note = (function(){
     Note.prototype.import = function() {
         this._view.create();
         this._canvas.addNote(this);
+
+        var final = Object.assign({}, this._model.getTransform());
+        final.text = this._model.getText();
+        this._canvas.History.record(this, "import", null, final);
         return this;
     };
 
     Note.prototype.setText = function(text) {
+        var initial = Object.assign({}, this._model.getTransform());
+        initial.text = this._model.getText();
+
         this._model.setText(text);
         this.encompassContent();
+
+        var final = Object.assign({}, this._model.getTransform());
+        final.text = text;
+        this._canvas.History.record(this, "edit", initial, final);
     };
 
     Note.prototype.delete = function() {
         if (!ns.Diagram.allowEdit) { return; }
+
+        var initial = Object.assign({}, this._model.getTransform());
+        initial.text = this._model.getText();
+
         this._canvas.removeNote(this);
         this._view.remove();
+
+        this._canvas.History.record(this, "delete", initial, null);
     };
 
     Note.prototype.show = function() {
@@ -65,9 +85,14 @@ DBSDM.Control.Note = (function(){
     };
 
     Note.prototype.fitToContents = function() {
+        var initial = Object.assign({}, this._model.getTransform());
+
         var size = this._view.getMinimalSize();
         this._model.setSize(size.width, size.height);
         this._view.redraw();
+
+        var final = Object.assign({}, this._model.getTransform());
+        this._canvas.History.record(this, "fit", initial, final);
         return this;
     };
 
@@ -112,6 +137,45 @@ DBSDM.Control.Note = (function(){
         if (this._canvas.inCorrectionMode) { return; }
         if (ns.View.EditableContent.shown) { return; }
         Super.prototype.onKeyPress.call(this, e);
+    };
+
+    // History
+
+    Note.prototype.playback = function(action, from, to) {
+        switch(action) {
+            case "create":
+            case "import":
+            case "delete":
+                if (to == null) {
+                    this.delete();
+                } else {
+                    this._model.setPosition(to.x, to.y);
+                    this._model.setSize(to.width, to.height);
+
+                    if (to.text) {
+                        this._model.setText(to.text);
+                    }
+
+                    this._view.create();
+                    this._canvas.addNote(this);
+                }
+                break;
+
+            case "fit":
+            case "edit":
+                this._model.setPosition(to.x, to.y);
+                this._model.setSize(to.width, to.height);
+                this._view.redraw();
+
+                if (to.text) {
+                    this._model.setText(to.text);
+                    this._view._text.redraw();
+                }
+                break;
+
+            default:
+                Super.prototype.playback.call(this, action, from, to);
+        }
     };
 
     return Note;

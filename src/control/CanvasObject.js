@@ -32,13 +32,17 @@ DBSDM.Control.CanvasObject = (function(){
             x: mouse.rx,
             y: mouse.ry
         };
+        var tr = this._model.getTransform();
         if (this._canvas.snap && (delta.x != 0 || delta.y != 0)) {
-            var tr = this._model.getTransform();
             if (delta.x != 0) { delta.x -= tr.x % ns.Consts.CanvasGridSize; }
             if (delta.y != 0) { delta.y -= tr.y % ns.Consts.CanvasGridSize; }
         }
 
+        var initial = [tr.x, tr.y];
         this._model.translate(delta.x, delta.y);
+
+        var final = [tr.x, tr.y];
+        this._canvas.History.record(this, "drag", initial, final);
         return delta;
     };
 
@@ -96,8 +100,13 @@ DBSDM.Control.CanvasObject = (function(){
             }
         }
 
+        var initial = [transform.x, transform.y, transform.width, transform.height];
+
         this._model.setPosition(x, y);
         this._model.setSize(width, height);
+
+        var final = [transform.x, transform.y, transform.width, transform.height];
+        this._canvas.History.record(this, "resize", initial, final);
     };
 
     CanvasObject.prototype.computeNeededSize = function() {
@@ -211,6 +220,22 @@ DBSDM.Control.CanvasObject = (function(){
         }
         switch(e.key.toLowerCase()) {
             case "f": this.fitToContents(); break; // "f"
+        }
+    };
+
+    /**
+     * History
+     */
+    CanvasObject.prototype.playback = function(action, from, to) {
+        switch(action) {
+            case "drag":
+                this.drag({rx: to[0] - from[0], ry: to[1] - from[1]});
+                this._view.redraw();
+                break;
+            case "resize":
+                this._setConstrainedTransform(to[0], to[1], to[2], to[3]);
+                this._view.redraw();
+                break;
         }
     };
 

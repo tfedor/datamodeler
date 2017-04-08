@@ -95,6 +95,11 @@ DBSDM.View.EditableLongText = (function(){
         this._text.appendChild(this._getTextSVG())
     };
 
+    EditableLongText.prototype.redraw = function() {
+        this._text.innerHTML = "";
+        this._text.appendChild(this._getTextSVG())
+    };
+
     /** Input handling */
 
     EditableLongText.prototype._setInputPosition = function() {

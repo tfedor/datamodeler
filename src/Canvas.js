@@ -33,6 +33,7 @@ DBSDM.Canvas = (function() {
          */
         this.Mouse = null;
         this.Layout = new ns.Layout();
+        this.History = new ns.History();
 
         this.menu = {};
 
@@ -619,6 +620,8 @@ DBSDM.Canvas = (function() {
                     ns.Diagram.clearLocal()
                 }
                 break;
+            case "undo": this.History.undo(); break;
+            case "redo": this.History.redo(); break;
         }
 
         if (/^local#(.+)/.test(action)) {

@@ -49,6 +49,7 @@
     <script type="application/javascript" src="src/Canvas.js"></script>
     <script type="application/javascript" src="src/Layout.js"></script>
     <script type="application/javascript" src="src/Mouse.js"></script>
+    <script type="application/javascript" src="src/History.js"></script>
     <script type="application/javascript" src="src/Element.js"></script>
     <script type="application/javascript" src="src/Geometry.js"></script>
     <script type="application/javascript" src="src/Vector.js"></script>
@@ -63,9 +64,8 @@
     <script>
         DBSDM.Diagram.init({
             showTutorial: false,
-            confirmLeave: true,
-            allowCorrectMode: true,
-
+            confirmLeave: false,
+            allowCorrectMode: true
         });
 
         var parent = document.getElementById("modelerContainer");

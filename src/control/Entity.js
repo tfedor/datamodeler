@@ -59,7 +59,7 @@ DBSDM.Control.Entity = (function(){
 
     /**
      * Create entity from current model data (after import)
-     * */
+     */
     Entity.prototype.import = function() {
         this._view.createEmpty();
         this.finish();

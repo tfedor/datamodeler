@@ -34,6 +34,7 @@ DBSDM.Canvas = (function() {
          */
         this.Mouse = null;
         this.Layout = new ns.Layout();
+        this.History = new ns.History();
 
         this.menu = {};
 
@@ -620,6 +621,8 @@ DBSDM.Canvas = (function() {
                     ns.Diagram.clearLocal()
                 }
                 break;
+            case "undo": this.History.undo(); break;
+            case "redo": this.History.redo(); break;
         }
 
         if (/^local#(.+)/.test(action)) {
@@ -1874,6 +1877,61 @@ DBSDM.Hash = (function(){
     };
 
     return self;
+})();/** src/History.js */
+
+/**
+ * Canvas controller
+ * Creates and handles canvas which is used to manipulate other elements
+ */
+DBSDM.History = (function() {
+    var ns = DBSDM;
+
+    function History() {
+        this.undolog = [];
+        this.redolog = [];
+        this._last = null;
+        this._canRecord = true;
+    }
+
+    History.prototype.record = function(context, name, from, to, stackable) {
+        if (!this._canRecord) { return; }
+        stackable = (typeof stackable === "undefined" || stackable);
+
+        if (stackable && this._last && this._last[0] === context && this._last[1] === name) {
+            this._last[3] = to; // stack changes
+        } else {
+            this._last = [context, name, from, to];
+            this.undolog.push(this._last);
+            this.redolog = [];
+        }
+
+        console.log(this.undolog, this.redolog);
+    };
+
+    History.prototype.redo = function() {
+        var entry = this.redolog.pop();
+        if (!entry) { return; }
+
+        this.undolog.push(entry);
+        this._last = entry;
+
+        this._canRecord = false;
+        entry[0].playback(entry[1], entry[2], entry[3]);
+        this._canRecord = true;
+    };
+
+    History.prototype.undo = function() {
+        var entry = this.undolog.pop();
+        if (!entry) { return; }
+        this.redolog.push(entry);
+        this._last = (this.undolog.length != 0 ? this.undolog[this.undolog.length - 1] : null);
+
+        this._canRecord = false;
+        entry[0].playback(entry[1], entry[3], entry[2]);
+        this._canRecord = true;
+    };
+
+    return History;
 })();/** src/Layout.js */
 
 /**
@@ -2150,6 +2208,8 @@ DBSDM.Menu = (function(){
             ], "search"],
             ["Reset view", "reset-view", "arrows-alt"],
             ["Fullscreen", "fullscreen", "desktop"],
+            ["Undo", "undo", "arrow-left"],
+            ["Redo", "redo", "arrow-right"],
             ["Save as...", [
                 ["Model (JSON)", "save-model", "file-text-o", "allowFile"],
                 ["Data (JSON)", "save-data", "file-code-o", "allowFile"],
@@ -3210,13 +3270,17 @@ DBSDM.Control.CanvasObject = (function(){
             x: mouse.rx,
             y: mouse.ry
         };
+        var tr = this._model.getTransform();
         if (this._canvas.snap && (delta.x != 0 || delta.y != 0)) {
-            var tr = this._model.getTransform();
             if (delta.x != 0) { delta.x -= tr.x % ns.Consts.CanvasGridSize; }
             if (delta.y != 0) { delta.y -= tr.y % ns.Consts.CanvasGridSize; }
         }
 
+        var initial = [tr.x, tr.y];
         this._model.translate(delta.x, delta.y);
+
+        var final = [tr.x, tr.y];
+        this._canvas.History.record(this, "drag", initial, final);
         return delta;
     };
 
@@ -3274,8 +3338,13 @@ DBSDM.Control.CanvasObject = (function(){
             }
         }
 
+        var initial = [transform.x, transform.y, transform.width, transform.height];
+
         this._model.setPosition(x, y);
         this._model.setSize(width, height);
+
+        var final = [transform.x, transform.y, transform.width, transform.height];
+        this._canvas.History.record(this, "resize", initial, final);
     };
 
     CanvasObject.prototype.computeNeededSize = function() {
@@ -3392,6 +3461,22 @@ DBSDM.Control.CanvasObject = (function(){
         }
     };
 
+    /**
+     * History
+     */
+    CanvasObject.prototype.playback = function(action, from, to) {
+        switch(action) {
+            case "drag":
+                this.drag({rx: to[0] - from[0], ry: to[1] - from[1]});
+                this._view.redraw();
+                break;
+            case "resize":
+                this._setConstrainedTransform(to[0], to[1], to[2], to[3]);
+                this._view.redraw();
+                break;
+        }
+    };
+
     return CanvasObject;
 })();
 /** src/control/Entity.js */
@@ -3455,7 +3540,7 @@ DBSDM.Control.Entity = (function(){
 
     /**
      * Create entity from current model data (after import)
-     * */
+     */
     Entity.prototype.import = function() {
         this._view.createEmpty();
         this.finish();
@@ -4158,6 +4243,9 @@ DBSDM.Control.Note = (function(){
 
         this.computeNeededSize();
         this.encompassContent();
+
+        var final = Object.assign({}, this._model.getTransform());
+        this._canvas.History.record(this, "create", null, final);
     };
 
     /**
@@ -4166,18 +4254,35 @@ DBSDM.Control.Note = (function(){
     Note.prototype.import = function() {
         this._view.create();
         this._canvas.addNote(this);
+
+        var final = Object.assign({}, this._model.getTransform());
+        final.text = this._model.getText();
+        this._canvas.History.record(this, "import", null, final);
         return this;
     };
 
     Note.prototype.setText = function(text) {
+        var initial = Object.assign({}, this._model.getTransform());
+        initial.text = this._model.getText();
+
         this._model.setText(text);
         this.encompassContent();
+
+        var final = Object.assign({}, this._model.getTransform());
+        final.text = text;
+        this._canvas.History.record(this, "edit", initial, final);
     };
 
     Note.prototype.delete = function() {
         if (!ns.Diagram.allowEdit) { return; }
+
+        var initial = Object.assign({}, this._model.getTransform());
+        initial.text = this._model.getText();
+
         this._canvas.removeNote(this);
         this._view.remove();
+
+        this._canvas.History.record(this, "delete", initial, null);
     };
 
     Note.prototype.show = function() {
@@ -4188,9 +4293,14 @@ DBSDM.Control.Note = (function(){
     };
 
     Note.prototype.fitToContents = function() {
+        var initial = Object.assign({}, this._model.getTransform());
+
         var size = this._view.getMinimalSize();
         this._model.setSize(size.width, size.height);
         this._view.redraw();
+
+        var final = Object.assign({}, this._model.getTransform());
+        this._canvas.History.record(this, "fit", initial, final);
         return this;
     };
 
@@ -4235,6 +4345,45 @@ DBSDM.Control.Note = (function(){
         if (this._canvas.inCorrectionMode) { return; }
         if (ns.View.EditableContent.shown) { return; }
         Super.prototype.onKeyPress.call(this, e);
+    };
+
+    // History
+
+    Note.prototype.playback = function(action, from, to) {
+        switch(action) {
+            case "create":
+            case "import":
+            case "delete":
+                if (to == null) {
+                    this.delete();
+                } else {
+                    this._model.setPosition(to.x, to.y);
+                    this._model.setSize(to.width, to.height);
+
+                    if (to.text) {
+                        this._model.setText(to.text);
+                    }
+
+                    this._view.create();
+                    this._canvas.addNote(this);
+                }
+                break;
+
+            case "fit":
+            case "edit":
+                this._model.setPosition(to.x, to.y);
+                this._model.setSize(to.width, to.height);
+                this._view.redraw();
+
+                if (to.text) {
+                    this._model.setText(to.text);
+                    this._view._text.redraw();
+                }
+                break;
+
+            default:
+                Super.prototype.playback.call(this, action, from, to);
+        }
     };
 
     return Note;
@@ -6619,6 +6768,11 @@ DBSDM.View.EditableLongText = (function(){
     /** @override */
     EditableLongText.prototype._setValue = function() {
         this._setHandler(this._input.value);
+        this._text.innerHTML = "";
+        this._text.appendChild(this._getTextSVG())
+    };
+
+    EditableLongText.prototype.redraw = function() {
         this._text.innerHTML = "";
         this._text.appendChild(this._getTextSVG())
     };
