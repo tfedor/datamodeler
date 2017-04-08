@@ -65,11 +65,25 @@ DBSDM.Menu = (function(){
             ],
             ["Is a...", "isa", null, "allowEdit"],
             ["Fit to contents", "fit"],
+            [
+                "Order",
+                [
+                    ["Send to Front", "tofront", "level-up"],
+                    ["Send to Back", "toback", "level-down"]
+                ]
+            ],
             ["Delete Entity", "delete", "ban", "allowEdit"]
         ],
 
         note: [
             ["Fit to contents", "fit"],
+            [
+                "Order",
+                [
+                    ["Send to Front", "tofront", "level-up"],
+                        ["Send to Back", "toback", "level-down"]
+                ]
+            ],
             ["Delete Note", "delete", "ban", "allowEdit"]
         ],
 
@@ -106,7 +120,13 @@ DBSDM.Menu = (function(){
                 "exchange"
             ],
             ["Straighten", "straighten", "compress"],
-            ["Send to Back", "toback", "level-down"],
+            [
+                "Order",
+                [
+                    ["Send to Front", "tofront", "level-up"],
+                    ["Send to Back", "toback", "level-down"]
+                ]
+            ],
             ["Delete Relation", "delete", "ban", "allowEdit"]
         ],
 

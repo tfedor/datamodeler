@@ -43,12 +43,12 @@ DBSDM.View.Relation = (function(){
     };
 
     Relation.prototype.toBack = function() {
-        var first = this._g.parentNode.querySelector("g.rel");
+        var first = this._g.parentNode.querySelector(":first-child");
         if (first == this._g) { return; }
         this._canvas.svg.insertBefore(this._g, first);
     };
     Relation.prototype.toFront = function() {
-        this._canvas.svg.appendChild(this._g);
+        this._canvas.svg.insertBefore(this._g, null);
     };
 
     Relation.prototype.clear = function() {

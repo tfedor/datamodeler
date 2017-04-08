@@ -636,14 +636,13 @@ DBSDM.Control.Entity = (function(){
     // Menu Handlers
     Entity.prototype.handleMenu = function(action) {
         switch(action) {
-            case "delete": this.delete(); break;
             case "attr": this._createAttribute(); break;
             case "rel-nm": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.MANY); break;
             case "rel-n1": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.ONE);  break;
             case "rel-1n": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break;
             case "rel-11": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.ONE);  break;
-            case "fit": this.fitToContents(); break;
             case "isa": this._initIsa(); break;
+            default: Super.prototype.handleMenu.call(this, action);
         }
     };
 
@@ -715,18 +714,13 @@ DBSDM.Control.Entity = (function(){
 
     Entity.prototype.onKeyPress = function(e) {
         if (this._canvas.inCorrectionMode) { return; }
-
         if (ns.View.EditableContent.shown) { return; }
-        switch(e.keyCode) {
-            case 46: this.delete(); break; // del
-            case 27: this.deactivate(); break; // esc
-        }
         switch(e.key.toLowerCase()) {
             case "a": this._createAttribute(); break; // "a"
             case "r": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break; // "r"
-            case "f": this.fitToContents(); break; // "f"
             case "i": this._initIsa(); break; // "i"
         }
+        Super.prototype.onKeyPress.call(this, e);
     };
 
     return Entity;

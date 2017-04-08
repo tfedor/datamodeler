@@ -45,5 +45,17 @@ DBSDM.View.CanvasObject = (function(){
         this._controls.remove();
     };
 
+    // order
+
+    CanvasObject.prototype.toBack = function() {
+        var first = this._dom.parentNode.querySelector(":first-child");
+        if (first == this._dom) { return; }
+        this._dom.parentNode.insertBefore(this._dom, first);
+    };
+    CanvasObject.prototype.toFront = function() {
+        this._dom.parentNode.insertBefore(this._dom, null);
+    };
+
+
     return CanvasObject;
 })();

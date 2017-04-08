@@ -73,10 +73,7 @@ DBSDM.Control.Note = (function(){
 
     // Menu Handlers
     Note.prototype.handleMenu = function(action) {
-        switch(action) {
-            case "delete": this.delete(); break;
-            case "fit": this.fitToContents(); break;
-        }
+        Super.prototype.handleMenu.call(this, action);
     };
 
     // Event Handlers
@@ -113,12 +110,8 @@ DBSDM.Control.Note = (function(){
 
     Note.prototype.onKeyPress = function(e) {
         if (this._canvas.inCorrectionMode) { return; }
-
         if (ns.View.EditableContent.shown) { return; }
-        switch(e.keyCode) {
-            case 46: this.delete(); break; // del
-            case 27: this.deactivate(); break; // esc
-        }
+        Super.prototype.onKeyPress.call(this, e);
     };
 
     return Note;

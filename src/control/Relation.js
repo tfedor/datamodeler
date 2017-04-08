@@ -376,6 +376,7 @@ DBSDM.Control.Relation = (function() {
             case "reset":      this._model.resetMiddlePoint(); break;
             case "straighten": this.straighten(); break;
             case "toback":     this._view.toBack(); break;
+            case "tofront":    this._view.toFront(); break;
         }
         this.redraw();
 

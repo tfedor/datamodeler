@@ -2063,11 +2063,25 @@ DBSDM.Menu = (function(){
             ],
             ["Is a...", "isa", null, "allowEdit"],
             ["Fit to contents", "fit"],
+            [
+                "Order",
+                [
+                    ["Send to Front", "tofront", "level-up"],
+                    ["Send to Back", "toback", "level-down"]
+                ]
+            ],
             ["Delete Entity", "delete", "ban", "allowEdit"]
         ],
 
         note: [
             ["Fit to contents", "fit"],
+            [
+                "Order",
+                [
+                    ["Send to Front", "tofront", "level-up"],
+                        ["Send to Back", "toback", "level-down"]
+                ]
+            ],
             ["Delete Note", "delete", "ban", "allowEdit"]
         ],
 
@@ -2104,7 +2118,13 @@ DBSDM.Menu = (function(){
                 "exchange"
             ],
             ["Straighten", "straighten", "compress"],
-            ["Send to Back", "toback", "level-down"],
+            [
+                "Order",
+                [
+                    ["Send to Front", "tofront", "level-up"],
+                    ["Send to Back", "toback", "level-down"]
+                ]
+            ],
             ["Delete Relation", "delete", "ban", "allowEdit"]
         ],
 
@@ -3336,6 +3356,15 @@ DBSDM.Control.CanvasObject = (function(){
 
     /** Handlers */
 
+    CanvasObject.prototype.handleMenu = function(action) {
+        switch(action) {
+            case "delete": this.delete(); break;
+            case "fit": this.fitToContents(); break;
+            case "toback":  this._view.toBack(); break;
+            case "tofront": this._view.toFront(); break;
+        }
+    };
+
     CanvasObject.prototype.onMouseDown = function(e, mouse) {
         if (this._canvas.inCorrectionMode) { return; }
 
@@ -3343,6 +3372,18 @@ DBSDM.Control.CanvasObject = (function(){
         if (matches) {
             mouse.setParam("action", "cp");
             mouse.setParam("cp", matches[1]);
+        }
+    };
+
+    CanvasObject.prototype.onKeyPress = function(e) {
+        switch(e.keyCode) {
+            case 46: this.delete(); break; // del
+            case 27: this.deactivate(); break; // esc
+            case 34: this._view.toBack(); e.preventDefault(); break; // pgdn
+            case 33: this._view.toFront(); e.preventDefault(); break; // pgup
+        }
+        switch(e.key.toLowerCase()) {
+            case "f": this.fitToContents(); break; // "f"
         }
     };
 
@@ -3986,14 +4027,13 @@ DBSDM.Control.Entity = (function(){
     // Menu Handlers
     Entity.prototype.handleMenu = function(action) {
         switch(action) {
-            case "delete": this.delete(); break;
             case "attr": this._createAttribute(); break;
             case "rel-nm": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.MANY); break;
             case "rel-n1": this._createRelation(Enum.Cardinality.MANY, Enum.Cardinality.ONE);  break;
             case "rel-1n": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break;
             case "rel-11": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.ONE);  break;
-            case "fit": this.fitToContents(); break;
             case "isa": this._initIsa(); break;
+            default: Super.prototype.handleMenu.call(this, action);
         }
     };
 
@@ -4065,18 +4105,13 @@ DBSDM.Control.Entity = (function(){
 
     Entity.prototype.onKeyPress = function(e) {
         if (this._canvas.inCorrectionMode) { return; }
-
         if (ns.View.EditableContent.shown) { return; }
-        switch(e.keyCode) {
-            case 46: this.delete(); break; // del
-            case 27: this.deactivate(); break; // esc
-        }
         switch(e.key.toLowerCase()) {
             case "a": this._createAttribute(); break; // "a"
             case "r": this._createRelation(Enum.Cardinality.ONE,  Enum.Cardinality.MANY); break; // "r"
-            case "f": this.fitToContents(); break; // "f"
             case "i": this._initIsa(); break; // "i"
         }
+        Super.prototype.onKeyPress.call(this, e);
     };
 
     return Entity;
@@ -4156,10 +4191,7 @@ DBSDM.Control.Note = (function(){
 
     // Menu Handlers
     Note.prototype.handleMenu = function(action) {
-        switch(action) {
-            case "delete": this.delete(); break;
-            case "fit": this.fitToContents(); break;
-        }
+        Super.prototype.handleMenu.call(this, action);
     };
 
     // Event Handlers
@@ -4196,12 +4228,8 @@ DBSDM.Control.Note = (function(){
 
     Note.prototype.onKeyPress = function(e) {
         if (this._canvas.inCorrectionMode) { return; }
-
         if (ns.View.EditableContent.shown) { return; }
-        switch(e.keyCode) {
-            case 46: this.delete(); break; // del
-            case 27: this.deactivate(); break; // esc
-        }
+        Super.prototype.onKeyPress.call(this, e);
     };
 
     return Note;
@@ -4584,6 +4612,7 @@ DBSDM.Control.Relation = (function() {
             case "reset":      this._model.resetMiddlePoint(); break;
             case "straighten": this.straighten(); break;
             case "toback":     this._view.toBack(); break;
+            case "tofront":    this._view.toFront(); break;
         }
         this.redraw();
 
@@ -6341,6 +6370,18 @@ DBSDM.View.CanvasObject = (function(){
         this._controls.remove();
     };
 
+    // order
+
+    CanvasObject.prototype.toBack = function() {
+        var first = this._dom.parentNode.querySelector(":first-child");
+        if (first == this._dom) { return; }
+        this._dom.parentNode.insertBefore(this._dom, first);
+    };
+    CanvasObject.prototype.toFront = function() {
+        this._dom.parentNode.insertBefore(this._dom, null);
+    };
+
+
     return CanvasObject;
 })();
 /** src/view/EditableContent.js */
@@ -7029,12 +7070,12 @@ DBSDM.View.Relation = (function(){
     };
 
     Relation.prototype.toBack = function() {
-        var first = this._g.parentNode.querySelector("g.rel");
+        var first = this._g.parentNode.querySelector(":first-child");
         if (first == this._g) { return; }
         this._canvas.svg.insertBefore(this._g, first);
     };
     Relation.prototype.toFront = function() {
-        this._canvas.svg.appendChild(this._g);
+        this._canvas.svg.insertBefore(this._g, null);
     };
 
     Relation.prototype.clear = function() {

@@ -183,6 +183,15 @@ DBSDM.Control.CanvasObject = (function(){
 
     /** Handlers */
 
+    CanvasObject.prototype.handleMenu = function(action) {
+        switch(action) {
+            case "delete": this.delete(); break;
+            case "fit": this.fitToContents(); break;
+            case "toback":  this._view.toBack(); break;
+            case "tofront": this._view.toFront(); break;
+        }
+    };
+
     CanvasObject.prototype.onMouseDown = function(e, mouse) {
         if (this._canvas.inCorrectionMode) { return; }
 
@@ -190,6 +199,18 @@ DBSDM.Control.CanvasObject = (function(){
         if (matches) {
             mouse.setParam("action", "cp");
             mouse.setParam("cp", matches[1]);
+        }
+    };
+
+    CanvasObject.prototype.onKeyPress = function(e) {
+        switch(e.keyCode) {
+            case 46: this.delete(); break; // del
+            case 27: this.deactivate(); break; // esc
+            case 34: this._view.toBack(); e.preventDefault(); break; // pgdn
+            case 33: this._view.toFront(); e.preventDefault(); break; // pgup
+        }
+        switch(e.key.toLowerCase()) {
+            case "f": this.fitToContents(); break; // "f"
         }
     };
 
