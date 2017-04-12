@@ -147,8 +147,8 @@ DBSDM.Menu = (function(){
             ], "search"],
             ["Reset view", "reset-view", "arrows-alt"],
             ["Fullscreen", "fullscreen", "desktop"],
-            ["Undo", "undo", "arrow-left"],
-            ["Redo", "redo", "arrow-right"],
+            ["Undo", "undo", "undo"],
+            ["Redo", "redo", "repeat"],
             ["Save as...", [
                 ["Model (JSON)", "save-model", "file-text-o", "allowFile"],
                 ["Data (JSON)", "save-data", "file-code-o", "allowFile"],

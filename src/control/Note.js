@@ -46,10 +46,6 @@ DBSDM.Control.Note = (function(){
     Note.prototype.import = function() {
         this._view.create();
         this._canvas.addNote(this);
-
-        var final = Object.assign({}, this._model.getTransform());
-        final.text = this._model.getText();
-        this._canvas.History.record(this, "import", null, final);
         return this;
     };
 
@@ -144,7 +140,6 @@ DBSDM.Control.Note = (function(){
     Note.prototype.playback = function(action, from, to) {
         switch(action) {
             case "create":
-            case "import":
             case "delete":
                 if (to == null) {
                     this.delete();

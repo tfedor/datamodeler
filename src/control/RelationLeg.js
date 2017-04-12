@@ -13,8 +13,8 @@ DBSDM.Control.RelationLeg = (function() {
         this._canvas = relationControl.getCanvas();
         this._entity = null;
         this._model = model;
-        this._view = new ns.View.RelationLeg(canvas, this._model, this);
-        this._view.draw();
+        this._view = null;
+        this.draw();
 
         var name = model.getName();
         if (name) {
@@ -34,6 +34,11 @@ DBSDM.Control.RelationLeg = (function() {
 
     RelationLeg.prototype.getRelation = function() {
         return this._relation;
+    };
+
+    RelationLeg.prototype.draw = function() {
+        this._view = new ns.View.RelationLeg(this._canvas, this._model, this);
+        this._view.draw();
     };
 
     RelationLeg.prototype.redraw = function() {
@@ -69,6 +74,8 @@ DBSDM.Control.RelationLeg = (function() {
     };
 
     RelationLeg.prototype._moveAnchor = function(mouse) {
+        var initial = Object.assign({}, this._model.getAnchor());
+
         var pos = this._entity.getEdgeCursorPosition(mouse.x, mouse.y);
         if (pos != null) {
             if ((pos.edge & 1) != 0) { // right/left
@@ -84,22 +91,26 @@ DBSDM.Control.RelationLeg = (function() {
         if (this._model.inXor) {
             this._entity.redrawXor(null, this);
         }
+
+        this._canvas.History.record(this, "anchor", initial, Object.assign({}, this._model.getAnchor()));
     };
 
-    RelationLeg.prototype.createControlPoint = function(P) {
+    RelationLeg.prototype.createControlPoint = function(P, index) {
         var points = this._model.getPoints();
 
-        var index = 1;
-        var minDist = -1;
-        for (var i=1; i<points.length; i++) {
-            var A = points[i-1];
-            var B = points[i];
+        if (!index) {
+            index = 1;
+            var minDist = -1;
+            for (var i=1; i<points.length; i++) {
+                var A = points[i-1];
+                var B = points[i];
 
-            if (ns.Geometry.pointIsInBox(P, A, B, ControlCreationOffset)) {
-                var dist = ns.Geometry.pointToLineDistance(P, A, B);
-                if (minDist == -1 || dist < minDist) {
-                    minDist = dist;
-                    index = i;
+                if (ns.Geometry.pointIsInBox(P, A, B, ControlCreationOffset)) {
+                    var dist = ns.Geometry.pointToLineDistance(P, A, B);
+                    if (minDist == -1 || dist < minDist) {
+                        minDist = dist;
+                        index = i;
+                    }
                 }
             }
         }
@@ -110,18 +121,34 @@ DBSDM.Control.RelationLeg = (function() {
 
         this._model.pointsManual = true;
 
+        this._canvas.History.record(this, "cp:"+this._model.getPointsCount(), null, {x: P.x, y: P.y, index: index});
         return index;
     };
 
-    RelationLeg.prototype._moveControlPoint = function(index, mouse) {
+    RelationLeg.prototype._removeControlPoint = function(index) {
+        this._canvas.History.record(this, "cp:"+this._model.getPointsCount(),
+            Object.assign({index:index}, this._model.getPoint(index)),
+            null, false
+        );
+
+        this._model.removePoint(index);
+        this._view.removeControlPoint(index - 1);
+        this._view.updatePoints();
+    };
+
+    RelationLeg.prototype._moveControlPoint = function(index, pos) {
         var p = this._model.getPoint(index);
         var prev = this._model.getPoint(index - 1);
         var next = this._model.getPoint(index + 1);
 
-        p.x = ns.Geometry.snap(mouse.x, prev.x, next.x, ns.Consts.SnappingLimit);
-        p.y = ns.Geometry.snap(mouse.y, prev.y, next.y, ns.Consts.SnappingLimit);
+        var initial = {x: p.x, y: p.y, index: index};
+
+        p.x = ns.Geometry.snap(pos.x, prev.x, next.x, ns.Consts.SnappingLimit);
+        p.y = ns.Geometry.snap(pos.y, prev.y, next.y, ns.Consts.SnappingLimit);
 
         this._relation.centerMiddlePoint();
+
+        this._canvas.History.record(this, "cp:"+this._model.getPointsCount(), initial, {x: p.x, y: p.y, index: index});
     };
 
     // XOR
@@ -284,29 +311,47 @@ DBSDM.Control.RelationLeg = (function() {
         }
     };
 
+    // Properties
+
+    RelationLeg.prototype.setCardinality = function(cardinality) {
+        var initial = this._model.getCardinality();
+        this._model.setCardinality(cardinality);
+        this._canvas.History.record(this, "cardinality", initial, cardinality);
+    };
+
+    RelationLeg.prototype.toggleIdentifying = function(value) {
+        value = typeof(value) === "boolean" ? value : !this._model.isIdentifying();
+        this._model.setIdentifying(value);
+        this._canvas.History.record(this, "identifying", !value, value);
+    };
+
+    RelationLeg.prototype.toggleOptional = function(value) {
+        value = typeof(value) === "boolean" ? value : !this._model.isIdentifying();
+        this._model.setOptional(value);
+        this._canvas.History.record(this, "optional", !value, value);
+    };
+
     // Menu
 
     RelationLeg.prototype.handleMenu = function(action, params) {
         switch(action) {
             case "cp-delete":
                 if (params.index) {
-                    this._model.removePoint(params.index);
-                    this._view.removeControlPoint(params.index - 1);
-                    this._view.updatePoints();
+                    this._removeControlPoint(params.index);
                     return;
                 }
                 break;
             case "name":
                 this.toggleName();
-                break;
+                return;
         }
 
         if (!ns.Diagram.allowEdit) { return; }
         switch(action) {
-            case "one":         this._model.setCardinality( Enum.Cardinality.ONE );         break;
-            case "many":        this._model.setCardinality( Enum.Cardinality.MANY );        break;
-            case "identifying": this._model.setIdentifying( !this._model.isIdentifying() ); break;
-            case "required":    this._model.setOptional   ( !this._model.isOptional()    ); break;
+            case "one":         this.setCardinality( Enum.Cardinality.ONE ); break;
+            case "many":        this.setCardinality( Enum.Cardinality.MANY ); break;
+            case "identifying": this.toggleIdentifying(); break;
+            case "required":    this.toggleOptional(); break;
             case "xor":         this._initXor(); break;
             case "remove-xor":  this._removeXor(); break;
         }
@@ -322,6 +367,40 @@ DBSDM.Control.RelationLeg = (function() {
             required: !this._model.isOptional(),
             name: (this._view._name != null),
             "remove-xor": this._model.inXor
+        }
+    };
+
+    // History
+
+    RelationLeg.prototype.playback = function(action, from, to) {
+        var list = action.split(":");
+        switch(list[0]) {
+            case "cp":
+                if (from == null) {
+                    this.createControlPoint(to, to.index);
+                } else if (to == null) {
+                    this._removeControlPoint(from.index);
+                } else {
+                    this._moveControlPoint(to.index, to);
+                }
+                this._relation.centerMiddlePoint();
+                break;
+            case "anchor":
+                this._model.setAnchor(to.x, to.y, to.edge);
+                this._relation.onAnchorMove();
+                break;
+            case "cardinality":
+                this.setCardinality(to);
+                this.redrawType();
+                break;
+            case "optional":
+                this.toggleOptional(to);
+                this.redrawType();
+                break;
+            case "identifying":
+                this.toggleIdentifying(to);
+                this.redrawType();
+                break;
         }
     };
 

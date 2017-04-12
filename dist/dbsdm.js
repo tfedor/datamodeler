@@ -293,6 +293,7 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.addRelation = function(relation) {
+        if (this._relations.indexOf(relation) !== -1) { return; }
         this._relations.push(relation);
     };
     Canvas.prototype.removeRelation = function(relation) {
@@ -426,7 +427,10 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.import = function(data, forceSort) {
+        this.History.begin();
         this.clear();
+
+        this.History.pause();
 
         if (forceSort) {
             this._sortData(data);
@@ -518,6 +522,11 @@ DBSDM.Canvas = (function() {
         if (ns.Diagram.confirmLeave) {
             this._dataRef = this._generateRef();
         }
+
+        this.History.resume();
+
+        this.History.record(this, "import", null, [data, forceSort]);
+        this.History.commit();
     };
 
     Canvas.prototype._generateRef = function(){
@@ -525,8 +534,6 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.didDataChange = function() {
-        console.log(this._generateRef());
-        console.log(this._dataRef);
         return this._generateRef() !== this._dataRef;
     };
 
@@ -633,7 +640,23 @@ DBSDM.Canvas = (function() {
     Canvas.prototype.getMenuState = function() {
         return {
             "toggle-rel-names": this._namesShown,
-            "toggle-notes": this._notesShown
+            "toggle-notes": this._notesShown,
+            "undo": this.History.hasUndo(),
+            "redo": this.History.hasRedo()
+        }
+    };
+
+    // History
+
+    Canvas.prototype.playback = function(action, from, to) {
+        switch (action) {
+            case "import":
+                if (to) {
+                    this.import(to[0], to[1]);
+                } else {
+                    this.clear();
+                }
+                break;
         }
     };
 
@@ -692,7 +715,7 @@ DBSDM.Diagram = (function() {
     self.confirmLeave = false;
 
     self._canvasList = [];
-    self._lastCanvas = null;
+    self.lastCanvas = null;
     self.cancelAction = null;
 
     /**
@@ -744,10 +767,20 @@ DBSDM.Diagram = (function() {
 
         window.addEventListener('keydown', function(e) {
             if (self.lastCanvas) {
-                if (e.keyCode == 112) { // F1
-                    self.lastCanvas.ui.toggleHelp();
-                    e.preventDefault();
-                    return;
+                switch (e.keyCode) {
+                    case 112:  // F1
+                        self.lastCanvas.ui.toggleHelp();
+                        e.preventDefault();
+                        return;
+                    case 90: // z
+                        if (e.ctrlKey) {
+                            if (e.shiftKey) {
+                                self.lastCanvas.History.redo();
+                            } else {
+                                self.lastCanvas.History.undo();
+                            }
+                        }
+                        return;
                 }
             }
             if (e.keyCode == 27 && self.cancelAction) { // ESC
@@ -1887,48 +1920,115 @@ DBSDM.History = (function() {
     var ns = DBSDM;
 
     function History() {
-        this.undolog = [];
-        this.redolog = [];
+        this._undolog = [];
+        this._redolog = [];
         this._last = null;
+        this._transaction = [];
+        this._level = 0;
+
         this._canRecord = true;
+        this._paused = false;
     }
 
+    History.prototype.clear = function () {
+        this._undolog = [];
+        this._redolog = [];
+        this._last = null;
+        this._transaction = [];
+        this._level = 0;
+    };
+
+    // recording control
+
+    History.prototype.pause = function() {
+        this._paused = true;
+    };
+
+    History.prototype.resume = function() {
+        this._paused = false;
+    };
+
+    // transaction control
+
+    History.prototype.begin = function() {
+        if (!this._canRecord || this._paused) { return; }
+
+        if (this._level++ == 0) {
+            this._transaction = [];
+        }
+    };
+    History.prototype.commit = function() {
+        if (!this._canRecord || this._paused) { return; }
+        if (--this._level == 0) {
+            this._undolog.push([null, this._transaction]);
+            this._redolog = [];
+            this._transaction = [];
+        }
+    };
+
+    // recording
+
     History.prototype.record = function(context, name, from, to, stackable) {
-        if (!this._canRecord) { return; }
+        if (!this._canRecord || this._paused) { return; }
         stackable = (typeof stackable === "undefined" || stackable);
 
         if (stackable && this._last && this._last[0] === context && this._last[1] === name) {
             this._last[3] = to; // stack changes
         } else {
             this._last = [context, name, from, to];
-            this.undolog.push(this._last);
-            this.redolog = [];
+            if (this._level > 0) {
+                this._transaction.push(this._last);
+            } else {
+                this._undolog.push(this._last);
+                this._redolog = [];
+            }
         }
-
-        console.log(this.undolog, this.redolog);
     };
 
     History.prototype.redo = function() {
-        var entry = this.redolog.pop();
+        var entry = this._redolog.pop();
         if (!entry) { return; }
 
-        this.undolog.push(entry);
+        this._undolog.push(entry);
         this._last = entry;
 
         this._canRecord = false;
-        entry[0].playback(entry[1], entry[2], entry[3]);
+        if (!entry[0]) {
+            entry[1].forEach(function(part) {
+                part[0].playback(part[1], part[2], part[3]);
+            });
+        } else {
+            entry[0].playback(entry[1], entry[2], entry[3]);
+        }
         this._canRecord = true;
     };
 
     History.prototype.undo = function() {
-        var entry = this.undolog.pop();
+        var entry = this._undolog.pop();
         if (!entry) { return; }
-        this.redolog.push(entry);
-        this._last = (this.undolog.length != 0 ? this.undolog[this.undolog.length - 1] : null);
+        this._redolog.push(entry);
+        this._last = (this._undolog.length != 0 ? this._undolog[this._undolog.length - 1] : null);
 
         this._canRecord = false;
-        entry[0].playback(entry[1], entry[3], entry[2]);
+        if (!entry[0]) {
+            for (var i=entry[1].length-1; i>=0; i--) {
+                var part = entry[1][i];
+                part[0].playback(part[1], part[3], part[2]);
+            }
+        } else {
+            entry[0].playback(entry[1], entry[3], entry[2]);
+        }
         this._canRecord = true;
+    };
+
+    // state
+
+    History.prototype.hasUndo = function () {
+        return this._undolog.length !== 0;
+    };
+
+    History.prototype.hasRedo = function () {
+        return this._redolog.length !== 0;
     };
 
     return History;
@@ -2208,8 +2308,8 @@ DBSDM.Menu = (function(){
             ], "search"],
             ["Reset view", "reset-view", "arrows-alt"],
             ["Fullscreen", "fullscreen", "desktop"],
-            ["Undo", "undo", "arrow-left"],
-            ["Redo", "redo", "arrow-right"],
+            ["Undo", "undo", "undo"],
+            ["Redo", "redo", "repeat"],
             ["Save as...", [
                 ["Model (JSON)", "save-model", "file-text-o", "allowFile"],
                 ["Data (JSON)", "save-data", "file-code-o", "allowFile"],
@@ -2717,6 +2817,8 @@ DBSDM.UI = (function() {
         if (ns.Diagram.allowCorrectMode) {
             this._cModeSwitch = ledge.appendChild(this._createCorrectionModeSwitch());
         }
+        
+        ledge.appendChild(this._createHistoryControls());
         ledge.appendChild(this._createZoomControls());
         this._helpSwitch = ledge.appendChild(this._createHelp());
 
@@ -2799,6 +2901,33 @@ DBSDM.UI = (function() {
 
         return a;
     };
+
+    UI.prototype._createHistoryControls = function() {
+        var that = this;
+
+        var f = document.createDocumentFragment();
+
+        // undo
+        var a = document.createElement("a");
+        a.className = "uiIcon";
+        a.innerHTML = "<i class='fa fa-undo'></i>";
+        a.title = "Undo";
+
+        a.addEventListener("click", function() { that._canvas.History.undo();} );
+        f.appendChild(a);
+
+        // redo
+        a = document.createElement("a");
+        a.className = "uiIcon";
+        a.innerHTML = "<i class='fa fa-repeat'></i>";
+        a.title = "Redo";
+
+        a.addEventListener("click", function() { that._canvas.History.redo();} );
+        f.appendChild(a);
+
+        return f;
+    };
+
 
     // zoom
     UI.prototype.updateZoomLevels = function(zoom) {
@@ -3031,16 +3160,22 @@ DBSDM.Control.Attribute = (function(){
 
         this._canvas = canvas;
         this._model = (model || new DBSDM.Model.Attribute());
+        this._entityControl = entityControl;
         this._view = new ns.View.Attribute(this._model, this, canvas);
-        this._view.create(this, entityControl.getAttrContainer());
+        this.draw();
 
         this._dragOffset = null;
         this._dragStartPosition = null;
         this._dragCurrentPosition = null;
     }
 
+    Attribute.prototype.draw = function() {
+        this._view.create(this, this._entityControl.getAttrContainer());
+    };
+
     Attribute.prototype.delete = function() {
         this._list.removeAttribute(this._model, this);
+        this._view.destroy();
     };
 
     Attribute.prototype.getPosition = function() {
@@ -3073,24 +3208,46 @@ DBSDM.Control.Attribute = (function(){
         }
     };
 
+    /** Parameter toggles */
+
+    Attribute.prototype.setName = function(name) {
+        var oldName = this._model.getName();
+        if (oldName != name) {
+            this._model.setName(name);
+            this._canvas.History.record(this, "name", oldName, name, false);
+        }
+    };
+
+    Attribute.prototype._togglePrimary = function() {
+        this._model.setPrimary(  !this._model.isPrimary()  );
+        this._view.redrawIndex();
+    };
+    Attribute.prototype._toggleUnique = function() {
+        this._model.setUnique(   !this._model.isUnique()   );
+        this._view.redrawIndex();
+    };
+    Attribute.prototype._toggleNullable = function() {
+        this._model.setNullable( !this._model.isNullable() );
+        this._view.redrawNullable();
+    };
+
     // Menu Handlers
     Attribute.prototype.handleMenu = function(action) {
         switch(action) {
             case "primary":
-                this._model.setPrimary(  !this._model.isPrimary()  );
-                this._view.redrawIndex();
+                this._togglePrimary();
+                this._canvas.History.record(this, "primary", null, null, false);
                 break;
             case "unique":
-                this._model.setUnique(   !this._model.isUnique()   );
-                this._view.redrawIndex();
+                this._toggleUnique();
+                this._canvas.History.record(this, "unique", null, null, false);
                 break;
             case "nullable":
-                this._model.setNullable( !this._model.isNullable() );
-                this._view.redrawNullable();
+                this._toggleNullable();
+                this._canvas.History.record(this, "nullable", null, null, false);
                 break;
             case "delete":
                 this.delete();
-                this._view.destroy();
                 break;
         }
     };
@@ -3132,7 +3289,26 @@ DBSDM.Control.Attribute = (function(){
             return;
         }
 
+        if (this._dragStartPosition != this._dragCurrentPosition) {
+            this._canvas.History.record(this, "position", this._dragStartPosition, this._dragCurrentPosition, false);
+        }
+
         this._view.dragEnded();
+    };
+
+    // History
+
+    Attribute.prototype.playback = function(action, from, to) {
+        switch(action) {
+            case "name":
+                this.setName(to);
+                this._view.redrawName();
+                break;
+            case "position": this._list.setPosition(this._model, to); break;
+            case "primary":  this._togglePrimary();  break;
+            case "unique":   this._toggleUnique();   break;
+            case "nullable": this._toggleNullable(); break;
+        }
     };
 
     return Attribute;
@@ -3159,6 +3335,8 @@ DBSDM.Control.AttributeList = (function(){
         var control = this._createAttributeControl(attrModel);
         this._entityControl.encompassContent();
         control.select();
+
+        this._canvas.History.record(this, "create", null, control, false);
     };
 
     AttributeList.prototype._createAttributeControl = function(attributeModel) {
@@ -3176,6 +3354,12 @@ DBSDM.Control.AttributeList = (function(){
         }
     };
 
+    AttributeList.prototype.redraw = function() {
+        for (var i=0; i<this._controls.length; i++) {
+            this._controls[i].draw();
+        }
+    };
+
     AttributeList.prototype.removeAttribute = function(attrModel, control) {
         this._model.remove(attrModel);
 
@@ -3184,6 +3368,8 @@ DBSDM.Control.AttributeList = (function(){
         });
         this._controls.splice(index, 1);
         this._updatePositions();
+
+        this._canvas.History.record(this, "delete", [attrModel, control, index], null, false);
     };
 
     AttributeList.prototype.getPosition = function(attrModel) {
@@ -3232,6 +3418,33 @@ DBSDM.Control.AttributeList = (function(){
             size.height += a.height;
         }
         return size;
+    };
+
+    // History
+
+    AttributeList.prototype.playback = function(action, from, to) {
+        switch(action) {
+            case "delete":
+                if (to) {
+                    var model=to[0], control=to[1], position=to[2];
+                    this._model.add(model);
+                    this._controls.push(control);
+                    this.setPosition(model, position);
+                    control.draw();
+                } else {
+                    from[1].delete();
+                }
+                break;
+            case "create":
+                if (to) {
+                    this._model.add(to._model);
+                    this._controls.push(to);
+                    to.draw();
+                } else {
+                    from.delete();
+                }
+                break;
+        }
     };
 
     return AttributeList;
@@ -3536,6 +3749,8 @@ DBSDM.Control.Entity = (function(){
         this._canvas.ui.acceptTutorialAction("Entity");
 
         this.computeNeededSize();
+
+        this._canvas.History.record(this, "create", false, true, false);
     };
 
     /**
@@ -3622,10 +3837,15 @@ DBSDM.Control.Entity = (function(){
         var delta;
         if (this._parent != null) {
             var transform = this._model.getTransform();
+            var initial = [transform.x, transform.y];
+
             delta = this._setPosition(
                 transform.x + mouse.rx,
                 transform.y + mouse.ry
             );
+
+            var final = [transform.x, transform.y];
+            this._canvas.History.record(this, "drag", initial, final);
         } else {
             delta = Super.prototype.drag.call(this, mouse);
         }
@@ -3734,6 +3954,7 @@ DBSDM.Control.Entity = (function(){
 
     Entity.prototype.delete = function() {
         if (!ns.Diagram.allowEdit) { return; }
+        this._canvas.History.begin();
         this._canvas.removeEntity(this);
 
         for (var i=0; i<this._children.length; i++) {
@@ -3744,6 +3965,18 @@ DBSDM.Control.Entity = (function(){
         while(this._relationLegList.length > 0) {
             this._relationLegList[0].getRelation().clear();
         }
+
+        this._canvas.History.record(this, "delete", true, false, false);
+        this._canvas.History.commit();
+    };
+    Entity.prototype.undoDelete = function() {
+        if (!ns.Diagram.allowEdit) { return; }
+        this._canvas.addEntity(this);
+
+        this._view.createEmpty();
+        this._view.create(this);
+
+        this._attributeList.redraw();
     };
 
     Entity.prototype.getEdgePosition = function(edge) {
@@ -3802,7 +4035,15 @@ DBSDM.Control.Entity = (function(){
 
     //
     Entity.prototype._createAttribute = function() {
+        this._canvas.History.begin();
+        var tr = this._model.getTransform();
+        var initial = {width: tr.width, height:tr.height};
+
         this._attributeList.createAttribute();
+
+        var final = {width: tr.width, height:tr.height};
+        this._canvas.History.record(this, "resize", initial, final, false);
+        this._canvas.History.commit();
     };
 
     // Relations
@@ -3814,6 +4055,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.addRelationLeg = function(relationLegControl) {
+        if (this._relationLegList.indexOf(relationLegControl) !== -1) { return; }
         this._relationLegList.push(relationLegControl);
         this._model.addRelation(relationLegControl.getModel());
     };
@@ -3873,8 +4115,18 @@ DBSDM.Control.Entity = (function(){
         this._view.redraw();
     };
 
-    Entity.prototype._isa = function(parent) {
+    Entity.prototype._isa = function(parent, pos) {
         if (!ns.Diagram.allowEdit) { return; }
+        pos = pos || this._canvas.Mouse;
+
+        var tr = this._model.getTransform();
+
+        this._canvas.History.begin();
+        this._canvas.History.record(this, "isa",
+            {parent: this._parent, x: tr.x, y: tr.y},
+            {parent: parent, x: pos.x, y: pos.y},
+            false
+        );
 
         this._canvas.unsetMode("isa");
         this._view.defaultMark();
@@ -3889,20 +4141,18 @@ DBSDM.Control.Entity = (function(){
             this._model.setParent(null);
         }
 
-        var mouse = this._canvas.Mouse;
-
         this._parent = parent;
         if (parent == null) {
             this._view.setParent(this._canvas.svg);
             this._canvas.addEntity(this);
 
-            this._setPosition(mouse.x, mouse.y);
+            this._setPosition(pos.x, pos.y);
 
             newEdges = this._model.getEdges();
             this.notifyDrag(newEdges.left - oldEdges.left, newEdges.top - oldEdges.top);
         } else {
             var parentTransform = parent._model.getTransform();
-            this._setPosition(mouse.x - parentTransform.x, mouse.y - parentTransform.y);
+            this._setPosition(pos.x - parentTransform.x, pos.y - parentTransform.y);
 
             this._model.setParent(parent._model);
             this._view.setParent(parent.getDom());
@@ -3921,6 +4171,8 @@ DBSDM.Control.Entity = (function(){
             this._relationLegList[i].getRelation().straighten();
             this._relationLegList[i].getRelation().redraw();
         }
+
+        this._canvas.History.commit();
     };
 
     Entity.prototype._initIsa = function() {
@@ -3959,6 +4211,8 @@ DBSDM.Control.Entity = (function(){
         var childTransform = child._model.getTransform();
         var transform = this._model.getTransform();
 
+        var initial = {width: transform.width, height:transform.height};
+
         var neededWidth  = childTransform.width + 2*ns.Consts.EntityPadding;
         var neededHeight = childTransform.height + 2*ns.Consts.EntityPadding;
 
@@ -3967,14 +4221,22 @@ DBSDM.Control.Entity = (function(){
             (transform.height < neededHeight ? neededHeight : null)
         );
 
+        var final = {width: transform.width, height:transform.height};
+        this._canvas.History.record(this, "resize", initial, final, false);
+
         this._notifyResize();
         this._view.redraw();
         this.computeNeededSize();
     };
 
     Entity.prototype.fitToContents = function() {
+        var tr = this._model.getTransform();
+        var initial = {width: tr.width, height: tr.height};
+
         var size = this.getMinimalSize();
         this._model.setSize(size.width, size.height);
+
+        this._canvas.History.record(this, "fit", initial, {width: size.width, height:size.height});
 
         //
         if (this._children.length != 0) {
@@ -4029,11 +4291,17 @@ DBSDM.Control.Entity = (function(){
             this._model.createXor(legA.getModel(), legB.getModel());
         }
         this.redrawXor(index);
+
+        this._canvas.History.record(this, "xor", null, [legA, legB], false);
     };
 
     Entity.prototype.removeXorLeg = function(leg) {
         var xorIndex = this._findXor(leg);
         if (xorIndex == -1) { return; }
+
+        var other = this._xorLegList[xorIndex][0];
+        if (other == leg) { other = this._xorLegList[xorIndex][0]; }
+        this._canvas.History.record(this, "xor", [leg, other], null, false);
 
         if (this._xorLegList[xorIndex].length == 2) {
             this._xorLegList[xorIndex][0].getModel().setAnchorOffset(ns.Consts.DefaultAnchorOffset);
@@ -4204,6 +4472,44 @@ DBSDM.Control.Entity = (function(){
         Super.prototype.onKeyPress.call(this, e);
     };
 
+    // History
+
+    Entity.prototype.playback = function(action, from, to) {
+        switch(action) {
+            case "delete":
+            case "create":
+                if (to) {
+                    this.undoDelete();
+                } else {
+                    this.delete();
+                }
+                break;
+            case "xor":
+                if (!to) {
+                    this.removeXorLeg(from[0]);
+                } else {
+                    this.xorWith(to[0], to[1]);
+                }
+                break;
+            case "fit":
+            case "resize":
+                this._model.setSize(to.width, to.height);
+                this._view.redraw();
+                this._notifyResize();
+                break;
+            case "isa":
+                this._isa(to.parent, to);
+                if (to.width) {
+                    this._model.setSize(to.width, to.height);
+                    this._view.redraw();
+                    this._notifyResize();
+                }
+                break;
+            default:
+                Super.prototype.playback.call(this, action, from, to);
+        }
+    };
+
     return Entity;
 })();
 /** src/control/Note.js */
@@ -4254,10 +4560,6 @@ DBSDM.Control.Note = (function(){
     Note.prototype.import = function() {
         this._view.create();
         this._canvas.addNote(this);
-
-        var final = Object.assign({}, this._model.getTransform());
-        final.text = this._model.getText();
-        this._canvas.History.record(this, "import", null, final);
         return this;
     };
 
@@ -4352,7 +4654,6 @@ DBSDM.Control.Note = (function(){
     Note.prototype.playback = function(action, from, to) {
         switch(action) {
             case "create":
-            case "import":
             case "delete":
                 if (to == null) {
                     this.delete();
@@ -4429,6 +4730,8 @@ DBSDM.Control.Relation = (function() {
             this._legs.source.getDom(),
             this._legs.target.getDom()
         );
+
+        this._canvas.History.record(this, "create", false, true);
     }
 
     /**
@@ -4487,8 +4790,22 @@ DBSDM.Control.Relation = (function() {
         this._sourceEntity.removeRelationLeg(this._legs.source);
         this._targetEntity.removeRelationLeg(this._legs.target);
         this._view.clear();
-
         this._canvas.removeRelation(this);
+
+        this._canvas.History.record(this, "clear", true, false);
+    };
+    Relation.prototype.undoClear = function() {
+        this._legs.source.draw();
+        this._legs.target.draw();
+
+        this._view.draw(
+            this._legs.source.getDom(),
+            this._legs.target.getDom()
+        );
+
+        this._setupEntities();
+        this.redraw();
+        this.redrawType();
     };
 
     Relation.prototype.straighten = function() {
@@ -4508,15 +4825,19 @@ DBSDM.Control.Relation = (function() {
 
     // middle point
 
-    Relation.prototype._moveMiddle = function(mouse) {
+    Relation.prototype._moveMiddle = function(pos) {
         var s = this._legs.source._model.getPoint(-2);
         var t = this._legs.target._model.getPoint(-2);
 
-        var x = ns.Geometry.snap(mouse.x, s.x, t.x, ns.Consts.SnappingLimit);
-        var y = ns.Geometry.snap(mouse.y, s.y, t.y, ns.Consts.SnappingLimit);
+        var x = ns.Geometry.snap(pos.x, s.x, t.x, ns.Consts.SnappingLimit);
+        var y = ns.Geometry.snap(pos.y, s.y, t.y, ns.Consts.SnappingLimit);
+
+        var initial = Object.assign({manual: this._model.middleManual}, this._model.getMiddlePoint());
 
         this._model.setMiddlePointPosition(x, y);
         this._model.middleManual = true;
+
+        this._canvas.History.record(this, "middle", initial, {x: x, y: y, manual: true});
     };
 
     Relation.prototype.centerMiddlePoint = function() {
@@ -4640,35 +4961,38 @@ DBSDM.Control.Relation = (function() {
     // swap
 
     Relation.prototype._swap = function() {
+        this._canvas.History.begin();
         this._swapCardinality();
         this._swapIdentifying();
         this._swapRequired();
+        this._canvas.History.commit();
     };
     Relation.prototype._swapCardinality = function() {
-        var s = this._legs.source.getModel();
-        var t = this._legs.target.getModel();
+        var s = this._legs.source.getModel().getCardinality();
+        var t = this._legs.target.getModel().getCardinality();
 
-        console.log(s, t);
-
-        var tmp = s.getCardinality();
-        s.setCardinality(t.getCardinality());
-        t.setCardinality(tmp);
+        this._canvas.History.begin();
+        this._legs.source.setCardinality(t);
+        this._legs.target.setCardinality(s);
+        this._canvas.History.commit();
     };
     Relation.prototype._swapIdentifying = function() {
-        var s = this._legs.source.getModel();
-        var t = this._legs.target.getModel();
+        var s = this._legs.source.getModel().isIdentifying();
+        var t = this._legs.target.getModel().isIdentifying();
 
-        var tmp = s.isIdentifying();
-        s.setIdentifying(t.isIdentifying());
-        t.setIdentifying(tmp);
+        this._canvas.History.begin();
+        this._legs.source.toggleIdentifying(t);
+        this._legs.target.toggleIdentifying(s);
+        this._canvas.History.commit();
     };
     Relation.prototype._swapRequired = function() {
-        var s = this._legs.source.getModel();
-        var t = this._legs.target.getModel();
+        var s = this._legs.source.getModel().isOptional();
+        var t = this._legs.target.getModel().isOptional();
 
-        var tmp = s.isOptional();
-        s.setOptional(t.isOptional());
-        t.setOptional(tmp);
+        this._canvas.History.begin();
+        this._legs.source.toggleOptional(t);
+        this._legs.target.toggleOptional(s);
+        this._canvas.History.commit();
     };
 
     // names
@@ -4772,6 +5096,26 @@ DBSDM.Control.Relation = (function() {
 
     };
 
+    // History
+
+    Relation.prototype.playback = function(action, from, to) {
+        switch(action) {
+            case "create":
+            case "clear":
+                if (to) {
+                    this.undoClear()
+                } else {
+                    this.clear();
+                }
+                break;
+            case "middle":
+                this._moveMiddle(to);
+                this._model.middleManual = to.manual;
+                this.redraw();
+                break;
+        }
+    };
+
     return Relation;
 })();
 /** src/control/RelationLeg.js */
@@ -4789,8 +5133,8 @@ DBSDM.Control.RelationLeg = (function() {
         this._canvas = relationControl.getCanvas();
         this._entity = null;
         this._model = model;
-        this._view = new ns.View.RelationLeg(canvas, this._model, this);
-        this._view.draw();
+        this._view = null;
+        this.draw();
 
         var name = model.getName();
         if (name) {
@@ -4810,6 +5154,11 @@ DBSDM.Control.RelationLeg = (function() {
 
     RelationLeg.prototype.getRelation = function() {
         return this._relation;
+    };
+
+    RelationLeg.prototype.draw = function() {
+        this._view = new ns.View.RelationLeg(this._canvas, this._model, this);
+        this._view.draw();
     };
 
     RelationLeg.prototype.redraw = function() {
@@ -4845,6 +5194,8 @@ DBSDM.Control.RelationLeg = (function() {
     };
 
     RelationLeg.prototype._moveAnchor = function(mouse) {
+        var initial = Object.assign({}, this._model.getAnchor());
+
         var pos = this._entity.getEdgeCursorPosition(mouse.x, mouse.y);
         if (pos != null) {
             if ((pos.edge & 1) != 0) { // right/left
@@ -4860,22 +5211,26 @@ DBSDM.Control.RelationLeg = (function() {
         if (this._model.inXor) {
             this._entity.redrawXor(null, this);
         }
+
+        this._canvas.History.record(this, "anchor", initial, Object.assign({}, this._model.getAnchor()));
     };
 
-    RelationLeg.prototype.createControlPoint = function(P) {
+    RelationLeg.prototype.createControlPoint = function(P, index) {
         var points = this._model.getPoints();
 
-        var index = 1;
-        var minDist = -1;
-        for (var i=1; i<points.length; i++) {
-            var A = points[i-1];
-            var B = points[i];
+        if (!index) {
+            index = 1;
+            var minDist = -1;
+            for (var i=1; i<points.length; i++) {
+                var A = points[i-1];
+                var B = points[i];
 
-            if (ns.Geometry.pointIsInBox(P, A, B, ControlCreationOffset)) {
-                var dist = ns.Geometry.pointToLineDistance(P, A, B);
-                if (minDist == -1 || dist < minDist) {
-                    minDist = dist;
-                    index = i;
+                if (ns.Geometry.pointIsInBox(P, A, B, ControlCreationOffset)) {
+                    var dist = ns.Geometry.pointToLineDistance(P, A, B);
+                    if (minDist == -1 || dist < minDist) {
+                        minDist = dist;
+                        index = i;
+                    }
                 }
             }
         }
@@ -4886,18 +5241,34 @@ DBSDM.Control.RelationLeg = (function() {
 
         this._model.pointsManual = true;
 
+        this._canvas.History.record(this, "cp:"+this._model.getPointsCount(), null, {x: P.x, y: P.y, index: index});
         return index;
     };
 
-    RelationLeg.prototype._moveControlPoint = function(index, mouse) {
+    RelationLeg.prototype._removeControlPoint = function(index) {
+        this._canvas.History.record(this, "cp:"+this._model.getPointsCount(),
+            Object.assign({index:index}, this._model.getPoint(index)),
+            null, false
+        );
+
+        this._model.removePoint(index);
+        this._view.removeControlPoint(index - 1);
+        this._view.updatePoints();
+    };
+
+    RelationLeg.prototype._moveControlPoint = function(index, pos) {
         var p = this._model.getPoint(index);
         var prev = this._model.getPoint(index - 1);
         var next = this._model.getPoint(index + 1);
 
-        p.x = ns.Geometry.snap(mouse.x, prev.x, next.x, ns.Consts.SnappingLimit);
-        p.y = ns.Geometry.snap(mouse.y, prev.y, next.y, ns.Consts.SnappingLimit);
+        var initial = {x: p.x, y: p.y, index: index};
+
+        p.x = ns.Geometry.snap(pos.x, prev.x, next.x, ns.Consts.SnappingLimit);
+        p.y = ns.Geometry.snap(pos.y, prev.y, next.y, ns.Consts.SnappingLimit);
 
         this._relation.centerMiddlePoint();
+
+        this._canvas.History.record(this, "cp:"+this._model.getPointsCount(), initial, {x: p.x, y: p.y, index: index});
     };
 
     // XOR
@@ -5060,29 +5431,47 @@ DBSDM.Control.RelationLeg = (function() {
         }
     };
 
+    // Properties
+
+    RelationLeg.prototype.setCardinality = function(cardinality) {
+        var initial = this._model.getCardinality();
+        this._model.setCardinality(cardinality);
+        this._canvas.History.record(this, "cardinality", initial, cardinality);
+    };
+
+    RelationLeg.prototype.toggleIdentifying = function(value) {
+        value = typeof(value) === "boolean" ? value : !this._model.isIdentifying();
+        this._model.setIdentifying(value);
+        this._canvas.History.record(this, "identifying", !value, value);
+    };
+
+    RelationLeg.prototype.toggleOptional = function(value) {
+        value = typeof(value) === "boolean" ? value : !this._model.isIdentifying();
+        this._model.setOptional(value);
+        this._canvas.History.record(this, "optional", !value, value);
+    };
+
     // Menu
 
     RelationLeg.prototype.handleMenu = function(action, params) {
         switch(action) {
             case "cp-delete":
                 if (params.index) {
-                    this._model.removePoint(params.index);
-                    this._view.removeControlPoint(params.index - 1);
-                    this._view.updatePoints();
+                    this._removeControlPoint(params.index);
                     return;
                 }
                 break;
             case "name":
                 this.toggleName();
-                break;
+                return;
         }
 
         if (!ns.Diagram.allowEdit) { return; }
         switch(action) {
-            case "one":         this._model.setCardinality( Enum.Cardinality.ONE );         break;
-            case "many":        this._model.setCardinality( Enum.Cardinality.MANY );        break;
-            case "identifying": this._model.setIdentifying( !this._model.isIdentifying() ); break;
-            case "required":    this._model.setOptional   ( !this._model.isOptional()    ); break;
+            case "one":         this.setCardinality( Enum.Cardinality.ONE ); break;
+            case "many":        this.setCardinality( Enum.Cardinality.MANY ); break;
+            case "identifying": this.toggleIdentifying(); break;
+            case "required":    this.toggleOptional(); break;
             case "xor":         this._initXor(); break;
             case "remove-xor":  this._removeXor(); break;
         }
@@ -5098,6 +5487,40 @@ DBSDM.Control.RelationLeg = (function() {
             required: !this._model.isOptional(),
             name: (this._view._name != null),
             "remove-xor": this._model.inXor
+        }
+    };
+
+    // History
+
+    RelationLeg.prototype.playback = function(action, from, to) {
+        var list = action.split(":");
+        switch(list[0]) {
+            case "cp":
+                if (from == null) {
+                    this.createControlPoint(to, to.index);
+                } else if (to == null) {
+                    this._removeControlPoint(from.index);
+                } else {
+                    this._moveControlPoint(to.index, to);
+                }
+                this._relation.centerMiddlePoint();
+                break;
+            case "anchor":
+                this._model.setAnchor(to.x, to.y, to.edge);
+                this._relation.onAnchorMove();
+                break;
+            case "cardinality":
+                this.setCardinality(to);
+                this.redrawType();
+                break;
+            case "optional":
+                this.toggleOptional(to);
+                this.redrawType();
+                break;
+            case "identifying":
+                this.toggleIdentifying(to);
+                this.redrawType();
+                break;
         }
     };
 
@@ -6041,6 +6464,9 @@ DBSDM.Model.RelationLeg = (function(){
     RelationLeg.prototype.getPoints = function() {
         return this._points;
     };
+    RelationLeg.prototype.getPointsCount = function() {
+        return this._points.length;
+    };
 
     RelationLeg.prototype.translatePoints = function(dx, dy) {
         for (var i=1; i<this._points.length-1; i++) {
@@ -6404,7 +6830,7 @@ DBSDM.View.Attribute = (function(){
             null, null,
             { dominantBaseline: "central", dx: "4" },
             function() { return model.getName(); },
-            function(value) { model.setName(value); },
+            function(value) { that._control.setName(value); },
             "tspan"
         );
         var that = this;
@@ -6415,8 +6841,7 @@ DBSDM.View.Attribute = (function(){
         this._nameInput.setEmptyHandler(function() {
             var position = that._control.getPosition();
             that._control.delete();
-            that._control.selectAt(position, false);
-            that.destroy();
+            that._control.selectAt(position-1, false);
         });
 
         this._text.appendChild(this._nameInput.getTextDom());
@@ -6438,6 +6863,10 @@ DBSDM.View.Attribute = (function(){
 
     Attribute.prototype.showInput = function() {
         this._nameInput.showInput();
+    };
+
+    Attribute.prototype.redrawName = function() {
+        this._nameInput.redraw();
     };
 
     Attribute.prototype.redrawIndex = function() {
@@ -6616,6 +7045,11 @@ DBSDM.View.EditableContent = (function(){
         this._text.innerHTML = this._getValue();
     };
 
+    EditableContent.prototype.redraw = function() {
+        this._text.innerHTML = "";
+        this._text.innerHTML = this._getValue();
+    };
+
     /** Input handling */
 
     EditableContent.prototype.getFontSize = function(considerZoom) {
@@ -6772,6 +7206,7 @@ DBSDM.View.EditableLongText = (function(){
         this._text.appendChild(this._getTextSVG())
     };
 
+    /** @override */
     EditableLongText.prototype.redraw = function() {
         this._text.innerHTML = "";
         this._text.appendChild(this._getTextSVG())
@@ -7030,7 +7465,7 @@ DBSDM.View.Entity = (function(){
 
     /**
      * Finish creation of entity, create other elements and attach control
-     * */
+     */
     Entity.prototype.create = function(control) {
         var mouse = this._canvas.Mouse;
 

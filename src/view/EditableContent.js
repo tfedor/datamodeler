@@ -76,6 +76,11 @@ DBSDM.View.EditableContent = (function(){
         this._text.innerHTML = this._getValue();
     };
 
+    EditableContent.prototype.redraw = function() {
+        this._text.innerHTML = "";
+        this._text.innerHTML = this._getValue();
+    };
+
     /** Input handling */
 
     EditableContent.prototype.getFontSize = function(considerZoom) {

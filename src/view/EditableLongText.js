@@ -95,6 +95,7 @@ DBSDM.View.EditableLongText = (function(){
         this._text.appendChild(this._getTextSVG())
     };
 
+    /** @override */
     EditableLongText.prototype.redraw = function() {
         this._text.innerHTML = "";
         this._text.appendChild(this._getTextSVG())

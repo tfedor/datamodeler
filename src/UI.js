@@ -31,6 +31,8 @@ DBSDM.UI = (function() {
         if (ns.Diagram.allowCorrectMode) {
             this._cModeSwitch = ledge.appendChild(this._createCorrectionModeSwitch());
         }
+
+        ledge.appendChild(this._createHistoryControls());
         ledge.appendChild(this._createZoomControls());
         this._helpSwitch = ledge.appendChild(this._createHelp());
 
@@ -113,6 +115,33 @@ DBSDM.UI = (function() {
 
         return a;
     };
+
+    UI.prototype._createHistoryControls = function() {
+        var that = this;
+
+        var f = document.createDocumentFragment();
+
+        // undo
+        var a = document.createElement("a");
+        a.className = "uiIcon";
+        a.innerHTML = "<i class='fa fa-undo'></i>";
+        a.title = "Undo";
+
+        a.addEventListener("click", function() { that._canvas.History.undo();} );
+        f.appendChild(a);
+
+        // redo
+        a = document.createElement("a");
+        a.className = "uiIcon";
+        a.innerHTML = "<i class='fa fa-repeat'></i>";
+        a.title = "Redo";
+
+        a.addEventListener("click", function() { that._canvas.History.redo();} );
+        f.appendChild(a);
+
+        return f;
+    };
+
 
     // zoom
     UI.prototype.updateZoomLevels = function(zoom) {

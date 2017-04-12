@@ -79,7 +79,7 @@ DBSDM.View.Attribute = (function(){
             null, null,
             { dominantBaseline: "central", dx: "4" },
             function() { return model.getName(); },
-            function(value) { model.setName(value); },
+            function(value) { that._control.setName(value); },
             "tspan"
         );
         var that = this;
@@ -90,8 +90,7 @@ DBSDM.View.Attribute = (function(){
         this._nameInput.setEmptyHandler(function() {
             var position = that._control.getPosition();
             that._control.delete();
-            that._control.selectAt(position, false);
-            that.destroy();
+            that._control.selectAt(position-1, false);
         });
 
         this._text.appendChild(this._nameInput.getTextDom());
@@ -113,6 +112,10 @@ DBSDM.View.Attribute = (function(){
 
     Attribute.prototype.showInput = function() {
         this._nameInput.showInput();
+    };
+
+    Attribute.prototype.redrawName = function() {
+        this._nameInput.redraw();
     };
 
     Attribute.prototype.redrawIndex = function() {

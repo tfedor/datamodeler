@@ -178,6 +178,9 @@ DBSDM.Model.RelationLeg = (function(){
     RelationLeg.prototype.getPoints = function() {
         return this._points;
     };
+    RelationLeg.prototype.getPointsCount = function() {
+        return this._points.length;
+    };
 
     RelationLeg.prototype.translatePoints = function(dx, dy) {
         for (var i=1; i<this._points.length-1; i++) {

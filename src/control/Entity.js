@@ -55,6 +55,8 @@ DBSDM.Control.Entity = (function(){
         this._canvas.ui.acceptTutorialAction("Entity");
 
         this.computeNeededSize();
+
+        this._canvas.History.record(this, "create", false, true, false);
     };
 
     /**
@@ -141,10 +143,15 @@ DBSDM.Control.Entity = (function(){
         var delta;
         if (this._parent != null) {
             var transform = this._model.getTransform();
+            var initial = [transform.x, transform.y];
+
             delta = this._setPosition(
                 transform.x + mouse.rx,
                 transform.y + mouse.ry
             );
+
+            var final = [transform.x, transform.y];
+            this._canvas.History.record(this, "drag", initial, final);
         } else {
             delta = Super.prototype.drag.call(this, mouse);
         }
@@ -253,6 +260,7 @@ DBSDM.Control.Entity = (function(){
 
     Entity.prototype.delete = function() {
         if (!ns.Diagram.allowEdit) { return; }
+        this._canvas.History.begin();
         this._canvas.removeEntity(this);
 
         for (var i=0; i<this._children.length; i++) {
@@ -263,6 +271,18 @@ DBSDM.Control.Entity = (function(){
         while(this._relationLegList.length > 0) {
             this._relationLegList[0].getRelation().clear();
         }
+
+        this._canvas.History.record(this, "delete", true, false, false);
+        this._canvas.History.commit();
+    };
+    Entity.prototype.undoDelete = function() {
+        if (!ns.Diagram.allowEdit) { return; }
+        this._canvas.addEntity(this);
+
+        this._view.createEmpty();
+        this._view.create(this);
+
+        this._attributeList.redraw();
     };
 
     Entity.prototype.getEdgePosition = function(edge) {
@@ -321,7 +341,15 @@ DBSDM.Control.Entity = (function(){
 
     //
     Entity.prototype._createAttribute = function() {
+        this._canvas.History.begin();
+        var tr = this._model.getTransform();
+        var initial = {width: tr.width, height:tr.height};
+
         this._attributeList.createAttribute();
+
+        var final = {width: tr.width, height:tr.height};
+        this._canvas.History.record(this, "resize", initial, final, false);
+        this._canvas.History.commit();
     };
 
     // Relations
@@ -333,6 +361,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.addRelationLeg = function(relationLegControl) {
+        if (this._relationLegList.indexOf(relationLegControl) !== -1) { return; }
         this._relationLegList.push(relationLegControl);
         this._model.addRelation(relationLegControl.getModel());
     };
@@ -392,8 +421,18 @@ DBSDM.Control.Entity = (function(){
         this._view.redraw();
     };
 
-    Entity.prototype._isa = function(parent) {
+    Entity.prototype._isa = function(parent, pos) {
         if (!ns.Diagram.allowEdit) { return; }
+        pos = pos || this._canvas.Mouse;
+
+        var tr = this._model.getTransform();
+
+        this._canvas.History.begin();
+        this._canvas.History.record(this, "isa",
+            {parent: this._parent, x: tr.x, y: tr.y},
+            {parent: parent, x: pos.x, y: pos.y},
+            false
+        );
 
         this._canvas.unsetMode("isa");
         this._view.defaultMark();
@@ -408,20 +447,18 @@ DBSDM.Control.Entity = (function(){
             this._model.setParent(null);
         }
 
-        var mouse = this._canvas.Mouse;
-
         this._parent = parent;
         if (parent == null) {
             this._view.setParent(this._canvas.svg);
             this._canvas.addEntity(this);
 
-            this._setPosition(mouse.x, mouse.y);
+            this._setPosition(pos.x, pos.y);
 
             newEdges = this._model.getEdges();
             this.notifyDrag(newEdges.left - oldEdges.left, newEdges.top - oldEdges.top);
         } else {
             var parentTransform = parent._model.getTransform();
-            this._setPosition(mouse.x - parentTransform.x, mouse.y - parentTransform.y);
+            this._setPosition(pos.x - parentTransform.x, pos.y - parentTransform.y);
 
             this._model.setParent(parent._model);
             this._view.setParent(parent.getDom());
@@ -440,6 +477,8 @@ DBSDM.Control.Entity = (function(){
             this._relationLegList[i].getRelation().straighten();
             this._relationLegList[i].getRelation().redraw();
         }
+
+        this._canvas.History.commit();
     };
 
     Entity.prototype._initIsa = function() {
@@ -478,6 +517,8 @@ DBSDM.Control.Entity = (function(){
         var childTransform = child._model.getTransform();
         var transform = this._model.getTransform();
 
+        var initial = {width: transform.width, height:transform.height};
+
         var neededWidth  = childTransform.width + 2*ns.Consts.EntityPadding;
         var neededHeight = childTransform.height + 2*ns.Consts.EntityPadding;
 
@@ -486,14 +527,22 @@ DBSDM.Control.Entity = (function(){
             (transform.height < neededHeight ? neededHeight : null)
         );
 
+        var final = {width: transform.width, height:transform.height};
+        this._canvas.History.record(this, "resize", initial, final, false);
+
         this._notifyResize();
         this._view.redraw();
         this.computeNeededSize();
     };
 
     Entity.prototype.fitToContents = function() {
+        var tr = this._model.getTransform();
+        var initial = {width: tr.width, height: tr.height};
+
         var size = this.getMinimalSize();
         this._model.setSize(size.width, size.height);
+
+        this._canvas.History.record(this, "fit", initial, {width: size.width, height:size.height});
 
         //
         if (this._children.length != 0) {
@@ -548,11 +597,17 @@ DBSDM.Control.Entity = (function(){
             this._model.createXor(legA.getModel(), legB.getModel());
         }
         this.redrawXor(index);
+
+        this._canvas.History.record(this, "xor", null, [legA, legB], false);
     };
 
     Entity.prototype.removeXorLeg = function(leg) {
         var xorIndex = this._findXor(leg);
         if (xorIndex == -1) { return; }
+
+        var other = this._xorLegList[xorIndex][0];
+        if (other == leg) { other = this._xorLegList[xorIndex][0]; }
+        this._canvas.History.record(this, "xor", [leg, other], null, false);
 
         if (this._xorLegList[xorIndex].length == 2) {
             this._xorLegList[xorIndex][0].getModel().setAnchorOffset(ns.Consts.DefaultAnchorOffset);
@@ -721,6 +776,44 @@ DBSDM.Control.Entity = (function(){
             case "i": this._initIsa(); break; // "i"
         }
         Super.prototype.onKeyPress.call(this, e);
+    };
+
+    // History
+
+    Entity.prototype.playback = function(action, from, to) {
+        switch(action) {
+            case "delete":
+            case "create":
+                if (to) {
+                    this.undoDelete();
+                } else {
+                    this.delete();
+                }
+                break;
+            case "xor":
+                if (!to) {
+                    this.removeXorLeg(from[0]);
+                } else {
+                    this.xorWith(to[0], to[1]);
+                }
+                break;
+            case "fit":
+            case "resize":
+                this._model.setSize(to.width, to.height);
+                this._view.redraw();
+                this._notifyResize();
+                break;
+            case "isa":
+                this._isa(to.parent, to);
+                if (to.width) {
+                    this._model.setSize(to.width, to.height);
+                    this._view.redraw();
+                    this._notifyResize();
+                }
+                break;
+            default:
+                Super.prototype.playback.call(this, action, from, to);
+        }
     };
 
     return Entity;

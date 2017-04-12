@@ -2,11 +2,17 @@
 
 Data Modeler is a Entity-Relationship web component for drawing diagrams in Barker notation. It was developed as a master's thesis project at Faculty of Information Technology at Czech Technical University in Prague. The main purpose of this modeler was to support education process of the Database Systems course. Since students will work in this modeler mostly during tests and exams, we have aimed for minimalism, simplicity and efficiency in user interface design.
 
+## Preview
+
+- Production: https://tfedor.github.io/datamodeler/example.html
+- Development: https://tfedor.github.io/datamodeler/dev.html
+
 ## Features
 
 - support for drawing logical models in the Barker notation, including XOR relationships, ISA hierarchy and notes
 - automatic diagram layout, which ensures that equivalent diagrams are displayed in the same way
 - save to local storage to preserve your work
+- undo/redo (experimental)
 - marking mode, used to mark incorrect parts of the diagram
 - import and export to JSON, which may also be used to compare models as strings 
 - import of Oracle SQL Developer Data Modeler Design, in form of a zip file

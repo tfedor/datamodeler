@@ -20,6 +20,8 @@ DBSDM.Control.AttributeList = (function(){
         var control = this._createAttributeControl(attrModel);
         this._entityControl.encompassContent();
         control.select();
+
+        this._canvas.History.record(this, "create", null, control, false);
     };
 
     AttributeList.prototype._createAttributeControl = function(attributeModel) {
@@ -37,6 +39,12 @@ DBSDM.Control.AttributeList = (function(){
         }
     };
 
+    AttributeList.prototype.redraw = function() {
+        for (var i=0; i<this._controls.length; i++) {
+            this._controls[i].draw();
+        }
+    };
+
     AttributeList.prototype.removeAttribute = function(attrModel, control) {
         this._model.remove(attrModel);
 
@@ -45,6 +53,8 @@ DBSDM.Control.AttributeList = (function(){
         });
         this._controls.splice(index, 1);
         this._updatePositions();
+
+        this._canvas.History.record(this, "delete", [attrModel, control, index], null, false);
     };
 
     AttributeList.prototype.getPosition = function(attrModel) {
@@ -93,6 +103,33 @@ DBSDM.Control.AttributeList = (function(){
             size.height += a.height;
         }
         return size;
+    };
+
+    // History
+
+    AttributeList.prototype.playback = function(action, from, to) {
+        switch(action) {
+            case "delete":
+                if (to) {
+                    var model=to[0], control=to[1], position=to[2];
+                    this._model.add(model);
+                    this._controls.push(control);
+                    this.setPosition(model, position);
+                    control.draw();
+                } else {
+                    from[1].delete();
+                }
+                break;
+            case "create":
+                if (to) {
+                    this._model.add(to._model);
+                    this._controls.push(to);
+                    to.draw();
+                } else {
+                    from.delete();
+                }
+                break;
+        }
     };
 
     return AttributeList;

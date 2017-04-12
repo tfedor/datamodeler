@@ -16,7 +16,7 @@ DBSDM.Diagram = (function() {
     self.confirmLeave = false;
 
     self._canvasList = [];
-    self._lastCanvas = null;
+    self.lastCanvas = null;
     self.cancelAction = null;
 
     /**
@@ -68,10 +68,20 @@ DBSDM.Diagram = (function() {
 
         window.addEventListener('keydown', function(e) {
             if (self.lastCanvas) {
-                if (e.keyCode == 112) { // F1
-                    self.lastCanvas.ui.toggleHelp();
-                    e.preventDefault();
-                    return;
+                switch (e.keyCode) {
+                    case 112:  // F1
+                        self.lastCanvas.ui.toggleHelp();
+                        e.preventDefault();
+                        return;
+                    case 90: // z
+                        if (e.ctrlKey) {
+                            if (e.shiftKey) {
+                                self.lastCanvas.History.redo();
+                            } else {
+                                self.lastCanvas.History.undo();
+                            }
+                        }
+                        return;
                 }
             }
             if (e.keyCode == 27 && self.cancelAction) { // ESC

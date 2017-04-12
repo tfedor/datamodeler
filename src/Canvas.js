@@ -292,6 +292,7 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.addRelation = function(relation) {
+        if (this._relations.indexOf(relation) !== -1) { return; }
         this._relations.push(relation);
     };
     Canvas.prototype.removeRelation = function(relation) {
@@ -425,7 +426,10 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.import = function(data, forceSort) {
+        this.History.begin();
         this.clear();
+
+        this.History.pause();
 
         if (forceSort) {
             this._sortData(data);
@@ -517,6 +521,11 @@ DBSDM.Canvas = (function() {
         if (ns.Diagram.confirmLeave) {
             this._dataRef = this._generateRef();
         }
+
+        this.History.resume();
+
+        this.History.record(this, "import", null, [data, forceSort]);
+        this.History.commit();
     };
 
     Canvas.prototype._generateRef = function(){
@@ -524,8 +533,6 @@ DBSDM.Canvas = (function() {
     };
 
     Canvas.prototype.didDataChange = function() {
-        console.log(this._generateRef());
-        console.log(this._dataRef);
         return this._generateRef() !== this._dataRef;
     };
 
@@ -632,7 +639,23 @@ DBSDM.Canvas = (function() {
     Canvas.prototype.getMenuState = function() {
         return {
             "toggle-rel-names": this._namesShown,
-            "toggle-notes": this._notesShown
+            "toggle-notes": this._notesShown,
+            "undo": this.History.hasUndo(),
+            "redo": this.History.hasRedo()
+        }
+    };
+
+    // History
+
+    Canvas.prototype.playback = function(action, from, to) {
+        switch (action) {
+            case "import":
+                if (to) {
+                    this.import(to[0], to[1]);
+                } else {
+                    this.clear();
+                }
+                break;
         }
     };
 

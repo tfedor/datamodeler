@@ -39,6 +39,8 @@ DBSDM.Control.Relation = (function() {
             this._legs.source.getDom(),
             this._legs.target.getDom()
         );
+
+        this._canvas.History.record(this, "create", false, true);
     }
 
     /**
@@ -97,8 +99,22 @@ DBSDM.Control.Relation = (function() {
         this._sourceEntity.removeRelationLeg(this._legs.source);
         this._targetEntity.removeRelationLeg(this._legs.target);
         this._view.clear();
-
         this._canvas.removeRelation(this);
+
+        this._canvas.History.record(this, "clear", true, false);
+    };
+    Relation.prototype.undoClear = function() {
+        this._legs.source.draw();
+        this._legs.target.draw();
+
+        this._view.draw(
+            this._legs.source.getDom(),
+            this._legs.target.getDom()
+        );
+
+        this._setupEntities();
+        this.redraw();
+        this.redrawType();
     };
 
     Relation.prototype.straighten = function() {
@@ -118,15 +134,19 @@ DBSDM.Control.Relation = (function() {
 
     // middle point
 
-    Relation.prototype._moveMiddle = function(mouse) {
+    Relation.prototype._moveMiddle = function(pos) {
         var s = this._legs.source._model.getPoint(-2);
         var t = this._legs.target._model.getPoint(-2);
 
-        var x = ns.Geometry.snap(mouse.x, s.x, t.x, ns.Consts.SnappingLimit);
-        var y = ns.Geometry.snap(mouse.y, s.y, t.y, ns.Consts.SnappingLimit);
+        var x = ns.Geometry.snap(pos.x, s.x, t.x, ns.Consts.SnappingLimit);
+        var y = ns.Geometry.snap(pos.y, s.y, t.y, ns.Consts.SnappingLimit);
+
+        var initial = Object.assign({manual: this._model.middleManual}, this._model.getMiddlePoint());
 
         this._model.setMiddlePointPosition(x, y);
         this._model.middleManual = true;
+
+        this._canvas.History.record(this, "middle", initial, {x: x, y: y, manual: true});
     };
 
     Relation.prototype.centerMiddlePoint = function() {
@@ -250,35 +270,38 @@ DBSDM.Control.Relation = (function() {
     // swap
 
     Relation.prototype._swap = function() {
+        this._canvas.History.begin();
         this._swapCardinality();
         this._swapIdentifying();
         this._swapRequired();
+        this._canvas.History.commit();
     };
     Relation.prototype._swapCardinality = function() {
-        var s = this._legs.source.getModel();
-        var t = this._legs.target.getModel();
+        var s = this._legs.source.getModel().getCardinality();
+        var t = this._legs.target.getModel().getCardinality();
 
-        console.log(s, t);
-
-        var tmp = s.getCardinality();
-        s.setCardinality(t.getCardinality());
-        t.setCardinality(tmp);
+        this._canvas.History.begin();
+        this._legs.source.setCardinality(t);
+        this._legs.target.setCardinality(s);
+        this._canvas.History.commit();
     };
     Relation.prototype._swapIdentifying = function() {
-        var s = this._legs.source.getModel();
-        var t = this._legs.target.getModel();
+        var s = this._legs.source.getModel().isIdentifying();
+        var t = this._legs.target.getModel().isIdentifying();
 
-        var tmp = s.isIdentifying();
-        s.setIdentifying(t.isIdentifying());
-        t.setIdentifying(tmp);
+        this._canvas.History.begin();
+        this._legs.source.toggleIdentifying(t);
+        this._legs.target.toggleIdentifying(s);
+        this._canvas.History.commit();
     };
     Relation.prototype._swapRequired = function() {
-        var s = this._legs.source.getModel();
-        var t = this._legs.target.getModel();
+        var s = this._legs.source.getModel().isOptional();
+        var t = this._legs.target.getModel().isOptional();
 
-        var tmp = s.isOptional();
-        s.setOptional(t.isOptional());
-        t.setOptional(tmp);
+        this._canvas.History.begin();
+        this._legs.source.toggleOptional(t);
+        this._legs.target.toggleOptional(s);
+        this._canvas.History.commit();
     };
 
     // names
@@ -380,6 +403,26 @@ DBSDM.Control.Relation = (function() {
         }
         this.redraw();
 
+    };
+
+    // History
+
+    Relation.prototype.playback = function(action, from, to) {
+        switch(action) {
+            case "create":
+            case "clear":
+                if (to) {
+                    this.undoClear()
+                } else {
+                    this.clear();
+                }
+                break;
+            case "middle":
+                this._moveMiddle(to);
+                this._model.middleManual = to.manual;
+                this.redraw();
+                break;
+        }
     };
 
     return Relation;

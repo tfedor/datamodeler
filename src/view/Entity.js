@@ -48,7 +48,7 @@ DBSDM.View.Entity = (function(){
 
     /**
      * Finish creation of entity, create other elements and attach control
-     * */
+     */
     Entity.prototype.create = function(control) {
         var mouse = this._canvas.Mouse;
 

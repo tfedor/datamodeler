@@ -9,16 +9,22 @@ DBSDM.Control.Attribute = (function(){
 
         this._canvas = canvas;
         this._model = (model || new DBSDM.Model.Attribute());
+        this._entityControl = entityControl;
         this._view = new ns.View.Attribute(this._model, this, canvas);
-        this._view.create(this, entityControl.getAttrContainer());
+        this.draw();
 
         this._dragOffset = null;
         this._dragStartPosition = null;
         this._dragCurrentPosition = null;
     }
 
+    Attribute.prototype.draw = function() {
+        this._view.create(this, this._entityControl.getAttrContainer());
+    };
+
     Attribute.prototype.delete = function() {
         this._list.removeAttribute(this._model, this);
+        this._view.destroy();
     };
 
     Attribute.prototype.getPosition = function() {
@@ -51,24 +57,46 @@ DBSDM.Control.Attribute = (function(){
         }
     };
 
+    /** Parameter toggles */
+
+    Attribute.prototype.setName = function(name) {
+        var oldName = this._model.getName();
+        if (oldName != name) {
+            this._model.setName(name);
+            this._canvas.History.record(this, "name", oldName, name, false);
+        }
+    };
+
+    Attribute.prototype._togglePrimary = function() {
+        this._model.setPrimary(  !this._model.isPrimary()  );
+        this._view.redrawIndex();
+    };
+    Attribute.prototype._toggleUnique = function() {
+        this._model.setUnique(   !this._model.isUnique()   );
+        this._view.redrawIndex();
+    };
+    Attribute.prototype._toggleNullable = function() {
+        this._model.setNullable( !this._model.isNullable() );
+        this._view.redrawNullable();
+    };
+
     // Menu Handlers
     Attribute.prototype.handleMenu = function(action) {
         switch(action) {
             case "primary":
-                this._model.setPrimary(  !this._model.isPrimary()  );
-                this._view.redrawIndex();
+                this._togglePrimary();
+                this._canvas.History.record(this, "primary", null, null, false);
                 break;
             case "unique":
-                this._model.setUnique(   !this._model.isUnique()   );
-                this._view.redrawIndex();
+                this._toggleUnique();
+                this._canvas.History.record(this, "unique", null, null, false);
                 break;
             case "nullable":
-                this._model.setNullable( !this._model.isNullable() );
-                this._view.redrawNullable();
+                this._toggleNullable();
+                this._canvas.History.record(this, "nullable", null, null, false);
                 break;
             case "delete":
                 this.delete();
-                this._view.destroy();
                 break;
         }
     };
@@ -110,7 +138,26 @@ DBSDM.Control.Attribute = (function(){
             return;
         }
 
+        if (this._dragStartPosition != this._dragCurrentPosition) {
+            this._canvas.History.record(this, "position", this._dragStartPosition, this._dragCurrentPosition, false);
+        }
+
         this._view.dragEnded();
+    };
+
+    // History
+
+    Attribute.prototype.playback = function(action, from, to) {
+        switch(action) {
+            case "name":
+                this.setName(to);
+                this._view.redrawName();
+                break;
+            case "position": this._list.setPosition(this._model, to); break;
+            case "primary":  this._togglePrimary();  break;
+            case "unique":   this._toggleUnique();   break;
+            case "nullable": this._toggleNullable(); break;
+        }
     };
 
     return Attribute;
