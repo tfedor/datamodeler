@@ -326,7 +326,7 @@ DBSDM.Control.RelationLeg = (function() {
     };
 
     RelationLeg.prototype.toggleOptional = function(value) {
-        value = typeof(value) === "boolean" ? value : !this._model.isIdentifying();
+        value = typeof(value) === "boolean" ? value : !this._model.isOptional();
         this._model.setOptional(value);
         this._canvas.History.record(this, "optional", !value, value);
     };
