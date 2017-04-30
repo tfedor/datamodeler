@@ -499,7 +499,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.removeChild = function(child) {
-        this._model.removeChild(child);
+        this._model.removeChild(child._model);
 
         for (var i=0; i<this._children.length; i++) {
             if (child == this._children[i]) {
