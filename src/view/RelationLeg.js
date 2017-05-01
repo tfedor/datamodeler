@@ -239,11 +239,16 @@ DBSDM.View.RelationLeg = (function(){
     RelationLeg.prototype.showName = function() {
         if (this._name) { return; }
 
+        var that = this;
         var model = this._model;
         var name = new ns.View.EditableText(this._canvas, 0, 0, {},
             function()     { return model.getName() || "relation"; },
             function(name) { model.setName(name); }
         );
+        name.setEmptyHandler(function(){
+            model.setName(null);
+            that.hideName();
+        });
 
         this._name = name.getTextDom();
         this.updateNamePosition();

@@ -62,7 +62,7 @@ DBSDM.Model.RelationLeg = (function(){
     };
 
     RelationLeg.prototype.setName = function(name) {
-        this._name = name.trim().toLocaleLowerCase() || null;
+        this._name = (name ? name.trim().toLocaleLowerCase() : null);
         return this;
     };
 
