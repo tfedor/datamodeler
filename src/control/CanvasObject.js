@@ -190,6 +190,11 @@ DBSDM.Control.CanvasObject = (function(){
         this._view.defaultMark();
     };
 
+    CanvasObject.prototype.markIncorrect = function() {
+        this._model.incorrect = true;
+        this._view.defaultMark();
+    };
+
     /** Handlers */
 
     CanvasObject.prototype.handleMenu = function(action) {

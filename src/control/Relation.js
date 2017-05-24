@@ -425,5 +425,36 @@ DBSDM.Control.Relation = (function() {
         }
     };
 
+    // Automatic correction check
+
+    Relation.prototype.checkAgainst = function(referenceRelations) {
+        var s = this._legs.source;
+        var t = this._legs.target;
+
+        var sName = s.getEntityName();
+        var tName = t.getEntityName();
+
+        var i = referenceRelations.length;
+        while (--i >= 0) {
+            if (referenceRelations[i][0].entity === sName && referenceRelations[i][1].entity === tName) {
+                s.checkAgainst(referenceRelations[i][0]);
+                t.checkAgainst(referenceRelations[i][1]);
+
+                referenceRelations.splice(i, 1);
+                return;
+            } else if (referenceRelations[i][0].entity === tName && referenceRelations[i][1].entity === sName) {
+                t.checkAgainst(referenceRelations[i][0]);
+                s.checkAgainst(referenceRelations[i][1]);
+
+                referenceRelations.splice(i, 1);
+                return;
+            }
+        }
+
+        //this.markIncorrect();
+        s.markIncorrect();
+        t.markIncorrect();
+    };
+
     return Relation;
 })();

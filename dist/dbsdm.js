@@ -529,6 +529,12 @@ DBSDM.Canvas = (function() {
         this.History.commit();
     };
 
+    Canvas.prototype.compare = function(reference){
+        var refCopy = JSON.parse(JSON.stringify(reference));
+        this._entities.forEach(function(entity){ entity.checkAgainst(refCopy.entities); });
+        this._relations.forEach(function(relation){ relation.checkAgainst(refCopy.relations); });
+    };
+
     Canvas.prototype._generateRef = function(){
         return JSON.stringify(this.export(false, false, false, {saveNotes: true, saveRelationNames: true}));
     };
@@ -3076,8 +3082,14 @@ DBSDM.UI = (function() {
         this._help = this._ui.appendChild(div);
     };
 
+    UI.prototype.correctionMode = function() {
+        if (!ns.Diagram.allowCorrectMode) { return }
+        this._canvas.inCorrectionMode = false;
+        this._toggleCorrectionMode();
+    };
+
     UI.prototype._toggleCorrectionMode = function() {
-        if (!ns.Diagram.allowCorrectMode) { return };
+        if (!ns.Diagram.allowCorrectMode) { return }
         this._canvas.inCorrectionMode = !this._canvas.inCorrectionMode;
         if (this._canvas.inCorrectionMode) {
             this._cModeSwitch.classList.add("active");
@@ -3199,6 +3211,11 @@ DBSDM.Control.Attribute = (function(){
         this._view.showInput();
     };
 
+    Attribute.prototype._markIncorrect = function() {
+        this._model.incorrect = true;
+        this._view.markIncorrect();
+    };
+
     Attribute.prototype._toggleIncorrect = function() {
         this._model.incorrect = !this._model.incorrect;
         if (this._model.incorrect) {
@@ -3309,6 +3326,35 @@ DBSDM.Control.Attribute = (function(){
             case "unique":   this._toggleUnique();   break;
             case "nullable": this._toggleNullable(); break;
         }
+    };
+
+    // Automatic correction check
+
+    Attribute.prototype.checkAgainst = function(referenceAttributes) {
+        var name = this._model.getName();
+
+        // find attribute
+        var i = referenceAttributes.length;
+        while(--i>=0) {
+            if (referenceAttributes[i].name === name) {
+                var ref = referenceAttributes[i];
+
+                if (ref.primary != this._model.isPrimary()
+                 || ref.unique != this._model.isUnique()
+                 || ref.nullable != this._model.isNullable()
+                ) {
+                    this._markIncorrect();
+                }
+
+                referenceAttributes.splice(i, 1);
+                return;
+            }
+        }
+
+        /**
+         * Mark not found attributes as incorrect
+         */
+        this._markIncorrect();
     };
 
     return Attribute;
@@ -3445,6 +3491,14 @@ DBSDM.Control.AttributeList = (function(){
                 }
                 break;
         }
+    };
+
+    // Automatic correction check
+
+    AttributeList.prototype.checkAgainst = function(referenceAttributes) {
+        this._controls.forEach(function(attrControl){
+            attrControl.checkAgainst(referenceAttributes);
+        });
     };
 
     return AttributeList;
@@ -3638,6 +3692,11 @@ DBSDM.Control.CanvasObject = (function(){
 
     CanvasObject.prototype._toggleIncorrect = function() {
         this._model.incorrect = !this._model.incorrect;
+        this._view.defaultMark();
+    };
+
+    CanvasObject.prototype.markIncorrect = function() {
+        this._model.incorrect = true;
         this._view.defaultMark();
     };
 
@@ -4510,6 +4569,40 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
+    // Automatic correction check
+
+    Entity.prototype.checkAgainst = function(referenceEntities) {
+        var name = this._model.getName();
+
+        var i = referenceEntities.length;
+        while (--i >= 0) {
+            if (name === referenceEntities[i].name) {
+                var ref = referenceEntities[i];
+
+                // check attributes
+                this._attributeList.checkAgainst(ref.attr);
+
+                // check parent
+                var parent = (this._model._parent ? this._model._parent.getName() : null);
+                if (ref.parent != parent) {
+                    this.markIncorrect();
+                }
+
+                referenceEntities.splice(i, 1);
+
+                // check children
+                if (this._children) {
+                    this._children.forEach(function(child){
+                        child.checkAgainst(referenceEntities);
+                    });
+                }
+                return;
+            }
+        }
+
+        this.markIncorrect();
+    };
+
     return Entity;
 })();
 /** src/control/Note.js */
@@ -5116,6 +5209,37 @@ DBSDM.Control.Relation = (function() {
         }
     };
 
+    // Automatic correction check
+
+    Relation.prototype.checkAgainst = function(referenceRelations) {
+        var s = this._legs.source;
+        var t = this._legs.target;
+
+        var sName = s.getEntityName();
+        var tName = t.getEntityName();
+
+        var i = referenceRelations.length;
+        while (--i >= 0) {
+            if (referenceRelations[i][0].entity === sName && referenceRelations[i][1].entity === tName) {
+                s.checkAgainst(referenceRelations[i][0]);
+                t.checkAgainst(referenceRelations[i][1]);
+
+                referenceRelations.splice(i, 1);
+                return;
+            } else if (referenceRelations[i][0].entity === tName && referenceRelations[i][1].entity === sName) {
+                t.checkAgainst(referenceRelations[i][0]);
+                s.checkAgainst(referenceRelations[i][1]);
+
+                referenceRelations.splice(i, 1);
+                return;
+            }
+        }
+
+        //this.markIncorrect();
+        s.markIncorrect();
+        t.markIncorrect();
+    };
+
     return Relation;
 })();
 /** src/control/RelationLeg.js */
@@ -5150,6 +5274,10 @@ DBSDM.Control.RelationLeg = (function() {
     RelationLeg.prototype.setEntityControl = function(entityControl) {
         this._entity = entityControl;
         this._view.onEntityAttached();
+    };
+
+    RelationLeg.prototype.getEntityName = function() {
+        return this._entity.getModel().getName();
     };
 
     RelationLeg.prototype.getRelation = function() {
@@ -5333,6 +5461,11 @@ DBSDM.Control.RelationLeg = (function() {
 
     RelationLeg.prototype.clearMarks = function() {
         this._view.clearSelectionClasses();
+    };
+
+    RelationLeg.prototype.markIncorrect = function() {
+        this._model.incorrect = true;
+        this._view.markIncorrect();
     };
 
     RelationLeg.prototype._toggleIncorrect = function() {
@@ -5523,6 +5656,18 @@ DBSDM.Control.RelationLeg = (function() {
                 break;
         }
     };
+
+
+    // Automatic correction check
+
+    RelationLeg.prototype.checkAgainst = function(referenceLeg) {
+        if (referenceLeg.identifying != this._model.isIdentifying()
+         || referenceLeg.optional    != this._model.isOptional()
+         || referenceLeg.cardinality != this._model.getCardinality()) {
+            this.markIncorrect();
+        }
+    };
+
 
     return RelationLeg;
 })();

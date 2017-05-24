@@ -290,8 +290,14 @@ DBSDM.UI = (function() {
         this._help = this._ui.appendChild(div);
     };
 
+    UI.prototype.correctionMode = function() {
+        if (!ns.Diagram.allowCorrectMode) { return }
+        this._canvas.inCorrectionMode = false;
+        this._toggleCorrectionMode();
+    };
+
     UI.prototype._toggleCorrectionMode = function() {
-        if (!ns.Diagram.allowCorrectMode) { return };
+        if (!ns.Diagram.allowCorrectMode) { return }
         this._canvas.inCorrectionMode = !this._canvas.inCorrectionMode;
         if (this._canvas.inCorrectionMode) {
             this._cModeSwitch.classList.add("active");

@@ -132,5 +132,13 @@ DBSDM.Control.AttributeList = (function(){
         }
     };
 
+    // Automatic correction check
+
+    AttributeList.prototype.checkAgainst = function(referenceAttributes) {
+        this._controls.forEach(function(attrControl){
+            attrControl.checkAgainst(referenceAttributes);
+        });
+    };
+
     return AttributeList;
 })();

@@ -48,6 +48,11 @@ DBSDM.Control.Attribute = (function(){
         this._view.showInput();
     };
 
+    Attribute.prototype._markIncorrect = function() {
+        this._model.incorrect = true;
+        this._view.markIncorrect();
+    };
+
     Attribute.prototype._toggleIncorrect = function() {
         this._model.incorrect = !this._model.incorrect;
         if (this._model.incorrect) {
@@ -158,6 +163,35 @@ DBSDM.Control.Attribute = (function(){
             case "unique":   this._toggleUnique();   break;
             case "nullable": this._toggleNullable(); break;
         }
+    };
+
+    // Automatic correction check
+
+    Attribute.prototype.checkAgainst = function(referenceAttributes) {
+        var name = this._model.getName();
+
+        // find attribute
+        var i = referenceAttributes.length;
+        while(--i>=0) {
+            if (referenceAttributes[i].name === name) {
+                var ref = referenceAttributes[i];
+
+                if (ref.primary != this._model.isPrimary()
+                 || ref.unique != this._model.isUnique()
+                 || ref.nullable != this._model.isNullable()
+                ) {
+                    this._markIncorrect();
+                }
+
+                referenceAttributes.splice(i, 1);
+                return;
+            }
+        }
+
+        /**
+         * Mark not found attributes as incorrect
+         */
+        this._markIncorrect();
     };
 
     return Attribute;

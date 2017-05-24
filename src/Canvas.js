@@ -528,6 +528,12 @@ DBSDM.Canvas = (function() {
         this.History.commit();
     };
 
+    Canvas.prototype.compare = function(reference){
+        var refCopy = JSON.parse(JSON.stringify(reference));
+        this._entities.forEach(function(entity){ entity.checkAgainst(refCopy.entities); });
+        this._relations.forEach(function(relation){ relation.checkAgainst(refCopy.relations); });
+    };
+
     Canvas.prototype._generateRef = function(){
         return JSON.stringify(this.export(false, false, false, {saveNotes: true, saveRelationNames: true}));
     };

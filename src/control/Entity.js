@@ -816,5 +816,39 @@ DBSDM.Control.Entity = (function(){
         }
     };
 
+    // Automatic correction check
+
+    Entity.prototype.checkAgainst = function(referenceEntities) {
+        var name = this._model.getName();
+
+        var i = referenceEntities.length;
+        while (--i >= 0) {
+            if (name === referenceEntities[i].name) {
+                var ref = referenceEntities[i];
+
+                // check attributes
+                this._attributeList.checkAgainst(ref.attr);
+
+                // check parent
+                var parent = (this._model._parent ? this._model._parent.getName() : null);
+                if (ref.parent != parent) {
+                    this.markIncorrect();
+                }
+
+                referenceEntities.splice(i, 1);
+
+                // check children
+                if (this._children) {
+                    this._children.forEach(function(child){
+                        child.checkAgainst(referenceEntities);
+                    });
+                }
+                return;
+            }
+        }
+
+        this.markIncorrect();
+    };
+
     return Entity;
 })();

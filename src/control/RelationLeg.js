@@ -32,6 +32,10 @@ DBSDM.Control.RelationLeg = (function() {
         this._view.onEntityAttached();
     };
 
+    RelationLeg.prototype.getEntityName = function() {
+        return this._entity.getModel().getName();
+    };
+
     RelationLeg.prototype.getRelation = function() {
         return this._relation;
     };
@@ -213,6 +217,11 @@ DBSDM.Control.RelationLeg = (function() {
 
     RelationLeg.prototype.clearMarks = function() {
         this._view.clearSelectionClasses();
+    };
+
+    RelationLeg.prototype.markIncorrect = function() {
+        this._model.incorrect = true;
+        this._view.markIncorrect();
     };
 
     RelationLeg.prototype._toggleIncorrect = function() {
@@ -403,6 +412,18 @@ DBSDM.Control.RelationLeg = (function() {
                 break;
         }
     };
+
+
+    // Automatic correction check
+
+    RelationLeg.prototype.checkAgainst = function(referenceLeg) {
+        if (referenceLeg.identifying != this._model.isIdentifying()
+         || referenceLeg.optional    != this._model.isOptional()
+         || referenceLeg.cardinality != this._model.getCardinality()) {
+            this.markIncorrect();
+        }
+    };
+
 
     return RelationLeg;
 })();
