@@ -818,21 +818,24 @@ DBSDM.Control.Entity = (function(){
 
     // Automatic correction check
 
-    Entity.prototype.checkAgainst = function(referenceEntities) {
+    Entity.prototype.checkAgainst = function(referenceEntities, nameComparator) {
         var name = this._model.getName();
+
+        var markedCnt = 0;
 
         var i = referenceEntities.length;
         while (--i >= 0) {
-            if (name === referenceEntities[i].name) {
+            if (nameComparator(name, referenceEntities[i].name)) {
                 var ref = referenceEntities[i];
 
                 // check attributes
-                this._attributeList.checkAgainst(ref.attr);
+                markedCnt += this._attributeList.checkAgainst(ref.attr, nameComparator);
 
                 // check parent
                 var parent = (this._model._parent ? this._model._parent.getName() : null);
                 if (ref.parent != parent) {
                     this.markIncorrect();
+                    markedCnt++;
                 }
 
                 referenceEntities.splice(i, 1);
@@ -840,14 +843,15 @@ DBSDM.Control.Entity = (function(){
                 // check children
                 if (this._children) {
                     this._children.forEach(function(child){
-                        child.checkAgainst(referenceEntities);
+                        markedCnt += child.checkAgainst(referenceEntities, nameComparator);
                     });
                 }
-                return;
+                return markedCnt;
             }
         }
 
         this.markIncorrect();
+        return markedCnt + 1;
     };
 
     return Entity;

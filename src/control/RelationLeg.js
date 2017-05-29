@@ -421,7 +421,9 @@ DBSDM.Control.RelationLeg = (function() {
          || referenceLeg.optional    != this._model.isOptional()
          || referenceLeg.cardinality != this._model.getCardinality()) {
             this.markIncorrect();
+            return 1;
         }
+        return 0;
     };
 
 

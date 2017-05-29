@@ -528,10 +528,19 @@ DBSDM.Canvas = (function() {
         this.History.commit();
     };
 
-    Canvas.prototype.compare = function(reference){
+    Canvas.prototype.compare = function(reference, nameComparator){
         var refCopy = JSON.parse(JSON.stringify(reference));
-        this._entities.forEach(function(entity){ entity.checkAgainst(refCopy.entities); });
-        this._relations.forEach(function(relation){ relation.checkAgainst(refCopy.relations); });
+
+        var markedCnt = 0;
+        if (!nameComparator || typeof nameComparator !== "function") {
+            nameComparator = function(nameA, nameB) {
+                return nameA === nameB;
+            };
+        }
+
+        this._entities.forEach(function(entity){ markedCnt += entity.checkAgainst(refCopy.entities, nameComparator); });
+        this._relations.forEach(function(relation){ markedCnt += relation.checkAgainst(refCopy.relations, nameComparator); });
+        return markedCnt;
     };
 
     Canvas.prototype._generateRef = function(){

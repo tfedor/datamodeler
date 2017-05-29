@@ -134,10 +134,12 @@ DBSDM.Control.AttributeList = (function(){
 
     // Automatic correction check
 
-    AttributeList.prototype.checkAgainst = function(referenceAttributes) {
+    AttributeList.prototype.checkAgainst = function(referenceAttributes, nameComparator) {
+        var markedCnt = 0;
         this._controls.forEach(function(attrControl){
-            attrControl.checkAgainst(referenceAttributes);
+            markedCnt += attrControl.checkAgainst(referenceAttributes, nameComparator);
         });
+        return markedCnt;
     };
 
     return AttributeList;

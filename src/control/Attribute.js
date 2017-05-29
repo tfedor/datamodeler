@@ -167,24 +167,26 @@ DBSDM.Control.Attribute = (function(){
 
     // Automatic correction check
 
-    Attribute.prototype.checkAgainst = function(referenceAttributes) {
+    Attribute.prototype.checkAgainst = function(referenceAttributes, nameComparator) {
         var name = this._model.getName();
 
         // find attribute
         var i = referenceAttributes.length;
         while(--i>=0) {
-            if (referenceAttributes[i].name === name) {
+            if (nameComparator(referenceAttributes[i].name, name)) {
                 var ref = referenceAttributes[i];
 
-                if (ref.primary != this._model.isPrimary()
-                 || ref.unique != this._model.isUnique()
-                 || ref.nullable != this._model.isNullable()
-                ) {
-                    this._markIncorrect();
-                }
-
+                var correct = (ref.primary == this._model.isPrimary()
+                            && ref.unique == this._model.isUnique()
+                            && ref.nullable == this._model.isNullable());
                 referenceAttributes.splice(i, 1);
-                return;
+
+                if (!correct) {
+                    this._markIncorrect();
+                    return 1;
+                } else {
+                    return 0;
+                }
             }
         }
 
@@ -192,6 +194,7 @@ DBSDM.Control.Attribute = (function(){
          * Mark not found attributes as incorrect
          */
         this._markIncorrect();
+        return 1;
     };
 
     return Attribute;
