@@ -4188,8 +4188,23 @@ DBSDM.Control.Entity = (function(){
         this._view.redraw();
     };
 
+    Entity.prototype._isChildInIsaHierarchy = function(entity) {
+        for(var i=0; i<this._children.length; i++) {
+            if (this._children[i] === entity || this._children[i]._isChildInIsaHierarchy(entity)) {
+                return true;
+            }
+        }
+        return false;
+    };
+
     Entity.prototype._isa = function(parent, pos) {
         if (!ns.Diagram.allowEdit) { return; }
+
+        this._canvas.unsetMode("isa");
+        this._view.defaultMark();
+
+        if (this._isChildInIsaHierarchy(parent)) { return; }
+
         pos = pos || this._canvas.Mouse;
 
         var tr = this._model.getTransform();
@@ -4200,9 +4215,6 @@ DBSDM.Control.Entity = (function(){
             {parent: parent, x: pos.x, y: pos.y},
             false
         );
-
-        this._canvas.unsetMode("isa");
-        this._view.defaultMark();
 
         if (this._parent == parent) { return; }
 
