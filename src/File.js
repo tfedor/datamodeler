@@ -230,16 +230,8 @@ DBSDM.File = (function() {
             }
         }
 
-        function parseNote(node, bounds) {
-            var text = node.querySelector("comment").textContent;
+        function parseNote(text, transform) {
             text = text.replace(/<br\s*\/?>/i, "\n");
-
-            var transform = {
-                x: parseInt(bounds.getAttribute("x")),
-                y: parseInt(bounds.getAttribute("y")),
-                width: parseInt(bounds.getAttribute("width")) - 2*ns.Consts.NoteStrokeWidth,
-                height: parseInt(bounds.getAttribute("height") - 2*ns.Consts.NoteStrokeWidth)
-            };
 
             // split on new lines
             var div = document.createElement("div");
@@ -291,11 +283,11 @@ DBSDM.File = (function() {
 
         function parseTransforms(node, map) {
 
-            map.entities = {};
-            map.relations = {};
+            map.entities = map.entities || {};
+            map.relations = map.relations || {};
+            map.notes = map.notes || {};
 
             var vid = {};
-            var notes = [];
 
             // entities and notes
             var objects = node.querySelectorAll("OView");
@@ -304,7 +296,7 @@ DBSDM.File = (function() {
                 var bounds = objects[i].querySelector("bounds");
 
                 var type = objects[i].getAttribute("otype");
-                if (type == "Entity") {
+                if (type === "Entity") {
                     map.entities[id] = {
                         x: parseInt(bounds.getAttribute("x")),
                         y: parseInt(bounds.getAttribute("y")),
@@ -313,8 +305,13 @@ DBSDM.File = (function() {
                     };
 
                     vid[objects[i].getAttribute("vid")] = id;
-                } else if (type == "Note") {
-                    notes.push(parseNote(objects[i], bounds));
+                } else if (type === "Note") {
+                    map.notes[id] = {
+                        x: parseInt(bounds.getAttribute("x")),
+                        y: parseInt(bounds.getAttribute("y")),
+                        width: parseInt(bounds.getAttribute("width")),
+                        height: parseInt(bounds.getAttribute("height"))
+                    };
                 }
             }
 
@@ -400,15 +397,13 @@ DBSDM.File = (function() {
                 //
                 map.relations[id] = transform;
             }
-
-            return notes;
         }
 
         var zip = new JSZip();
         zip.loadAsync(zipfile)
             .then(function(contents) {
                 var toPromise = [];
-                var files = zip.file(/(\W|^)logical\/((entity|relation|arc)\/seg_0|subviews)\/.*?\.xml$/);
+                var files = zip.file(/(\W|^)logical\/((entity|relation|arc|note)\/seg_0|subviews)\/.*?\.xml$/);
                 for (var i=0; i<files.length; i++) {
                     toPromise.push(files[i].async("string"));
                 }
@@ -420,6 +415,7 @@ DBSDM.File = (function() {
                     var relationsRef = {}; // map of {relation ID} => {relationsMap index}
                     var arcMap = {};
                     var transformsMap = {};
+                    var notesMap = {};
                     var notes = [];
 
                     var parser = new DOMParser();
@@ -436,8 +432,13 @@ DBSDM.File = (function() {
                             case "Arc":
                                 parseArc(xml.documentElement, arcMap);
                                 break;
+                            case "Note":
+                                var text = xml.documentElement.querySelector("comment").textContent;
+                                var id = xml.documentElement.id;
+                                notesMap[id] = text;
+                                break;
                             case "Diagram":
-                                notes = parseTransforms(xml.documentElement, transformsMap);
+                                parseTransforms(xml.documentElement, transformsMap);
                                 break;
                         }
 
@@ -482,6 +483,15 @@ DBSDM.File = (function() {
                         var ref = relationsRef[relID];
                         relationsMap[ref][0].transform = transformsMap.relations[relID][0];
                         relationsMap[ref][1].transform = transformsMap.relations[relID][1];
+                    }
+
+                    for (var noteID in transformsMap.notes) {
+                        if (!transformsMap.notes.hasOwnProperty(noteID)) { continue; }
+                        if (!notesMap.hasOwnProperty(noteID)) { continue; }
+                        var note = parseNote(notesMap[noteID], transformsMap.notes[noteID]);
+                        if (note.transform.height !== 1) {
+                            notes.push(note);
+                        }
                     }
 
                     // convert relations' entity ids to names
