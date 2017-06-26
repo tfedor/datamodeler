@@ -261,6 +261,11 @@ DBSDM.Control.Entity = (function(){
     Entity.prototype.delete = function() {
         if (!ns.Diagram.allowEdit) { return; }
         this._canvas.History.begin();
+
+        if (this._parent) {
+            this._isa(null);
+        }
+        
         this._canvas.removeEntity(this);
 
         for (var i=0; i<this._children.length; i++) {
