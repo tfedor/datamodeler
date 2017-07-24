@@ -1286,17 +1286,19 @@ DBSDM.File = (function() {
      * blob     Blob        Blob or File to be imported, e.g. loaded via xmlHttpRequest
      */
     self.loadBlob = function(canvas, blob) {
-        if (blob.type == "application/x-zip-compressed" || blob.type == "application/zip") {
-            self._processZip(canvas, blob);
-        } else if (blob.type == "application/json") {
-            self._processJson(canvas, file);
-        } else {
-            console.log("File couldn't be imported: unsupported file type. Import either json with exported data or SQLDeveloper zip");
-            console.log(e);
-        }
+        return new Promise((resolve, reject) => {
+            if (blob.type == "application/x-zip-compressed" || blob.type == "application/zip") {
+                self._processZip(canvas, blob, resolve, reject);
+            } else if (blob.type == "application/json") {
+                self._processJson(canvas, blob, resolve, reject);
+            } else {
+                console.log("File couldn't be imported: unsupported file type. Import either json with exported data or SQLDeveloper zip");
+                console.log(e);
+            }
+        });
     };
 
-    self._processJson = function(canvas, jsonfile) {
+    self._processJson = function(canvas, jsonfile, resolve, reject) {
         var reader = new FileReader();
         reader.onload = function(e) {
             var result = e.target.result;
@@ -1304,19 +1306,26 @@ DBSDM.File = (function() {
                 var data = JSON.parse(result);
                 canvas.import(data);
                 canvas.ui.success("File was imported", ns.Consts.UIDefaultSuccessDuration);
+                console.log("done");
+
+                if (resolve) { resolve(); }
             } catch(e) {
                 canvas.ui.error("File couldn't be parsed properly - make sure it is valid JSON file");
                 console.log(e);
+
+                if (reject) { reject(e); }
             }
         };
         reader.onerror = function(e) {
             canvas.ui.error("File couldn't be uploaded, please try again");
             console.log(e);
+
+            if (reject) { reject(e); }
         };
         reader.readAsText(jsonfile);
     };
 
-    self._processZip = function(canvas, zipfile) {
+    self._processZip = function(canvas, zipfile, resolve, reject) {
 
         function toArray(obj) {
             return Object.keys(obj).map(function (key) { return obj[key]; })
@@ -1740,9 +1749,13 @@ DBSDM.File = (function() {
                     try {
                         canvas.import(data);
                         canvas.ui.success("File was imported", ns.Consts.UIDefaultSuccessDuration);
+
+                        if (resolve) { resolve(); }
                     } catch(e) {
                         canvas.ui.error("File couldn't be imported: check you are importing zip with exported SQL Developer model");
                         console.log(e);
+
+                        if (reject) { reject(e); }
                     }
                 });
             });
