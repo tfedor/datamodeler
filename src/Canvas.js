@@ -434,6 +434,12 @@ DBSDM.Canvas = (function() {
         return jsonData;
     };
 
+    Canvas.prototype.updateDataReference = function() {
+        if (ns.Diagram.confirmLeave) {
+            this._dataRef = this._generateRef();
+        }
+    };
+
     Canvas.prototype.import = function(data, forceSort) {
         this.History.begin();
         this.clear();
