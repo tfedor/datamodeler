@@ -46,6 +46,7 @@ DBSDM.Canvas = (function() {
          * Modes
          */
         this.inCorrectionMode = false;
+        this.inCorrectionCommentMode = false;
     }
 
     /**
@@ -105,6 +106,15 @@ DBSDM.Canvas = (function() {
 
         // tutorial
         this.ui.advanceTutorial();
+    };
+
+    Canvas.prototype.attachFileUploadInput = function(selector){
+        var node = document.querySelector(selector);
+        if (!node) { return; }
+        var that = this;
+        node.addEventListener("change", function(e){
+            ns.File.upload(e, that);
+        });
     };
 
     // shared elements for all canvas
@@ -426,6 +436,12 @@ DBSDM.Canvas = (function() {
         return jsonData;
     };
 
+    Canvas.prototype.updateDataReference = function() {
+        if (ns.Diagram.confirmLeave) {
+            this._dataRef = this._generateRef();
+        }
+    };
+
     Canvas.prototype.import = function(data, forceSort) {
         this.History.begin();
         this.clear();
@@ -519,7 +535,7 @@ DBSDM.Canvas = (function() {
             this.sort();
         }
 
-        if (ns.Diagram.confirmLeave) {
+        if (ns.Diagram.confirmLeave && !ns.Diagram.importIsChange) {
             this._dataRef = this._generateRef();
         }
 
@@ -728,6 +744,7 @@ DBSDM.Diagram = (function() {
     self.allowRecent = true;
     self.showTutorial = true;
     self.confirmLeave = false;
+    self.importIsChange = false;
 
     self._canvasList = [];
     self.lastCanvas = null;
@@ -742,7 +759,7 @@ DBSDM.Diagram = (function() {
      *                              allowRecent         Allow saving and loading recent models from local storage
      *                              showTutorial        Determines whether the tutorial will be shown or not
      *                              confirmLeave        Ask user to confirm leaving the page if there is a diagram with unsaved changes
-     *
+     *                              importIsChange      Determines whether import will be treated as a change (makes sense when used with confirmLeave on)
      */
     self.init = function(options){
         options = options || {};
@@ -752,6 +769,7 @@ DBSDM.Diagram = (function() {
         if (typeof options.allowRecent == "boolean") { self.allowRecent = options.allowRecent; }
         if (typeof options.showTutorial == "boolean") { self.showTutorial = options.showTutorial; }
         if (typeof options.confirmLeave == "boolean") { self.confirmLeave = options.confirmLeave; }
+        if (typeof options.importIsChange == "boolean") { self.importIsChange = options.importIsChange; }
 
         ns.Menu.build();
 
@@ -1168,6 +1186,12 @@ DBSDM.Element = (function() {
         return node;
     };
 
+    self.title = function(text) {
+        let node = create("title");
+        node.innerHTML = text;
+        return node;
+    };
+
     /**
      * Path builder
      */
@@ -1436,14 +1460,14 @@ DBSDM.File = (function() {
             relationsMap.push([
                 {
                     entity: sourceEntityIdNode.innerHTML,
-                    identifying: false,
+                    identifying: (identifyingNode ? identifyingNode.innerHTML == "true" : false),
                     optional: (optionalSourceNode ? optionalSourceNode.innerHTML == "true" : false),
                     cardinality: (sourceCardinalityNode && sourceCardinalityNode.innerHTML == "*" ? 0 : 1),
                     xor: null,
                     name: nameOnSource && nameOnSource.innerHTML != "" ? nameOnSource.innerHTML : null
                 }, {
                     entity: targetEntityIdNode.innerHTML,
-                    identifying: (identifyingNode ? identifyingNode.innerHTML == "true" : false),
+                    identifying: false,
                     optional: (optionalTargetNode ? optionalTargetNode.innerHTML == "true" : false),
                     cardinality: (targetCardinalityNode && targetCardinalityNode.innerHTML == "*" ? 0 : 1),
                     xor: null,
@@ -1668,13 +1692,21 @@ DBSDM.File = (function() {
                                 parseArc(xml.documentElement, arcMap);
                                 break;
                             case "Note":
-                                var text = xml.documentElement.querySelector("comment").textContent;
-                                var id = xml.documentElement.id;
+                                let text = xml.documentElement.querySelector("comment").textContent;
+                                let id = xml.documentElement.id;
                                 notesMap[id] = text;
                                 break;
                             case "Diagram":
+                                let commentNodes = xml.documentElement.querySelectorAll("comment");
+                                if (commentNodes.length !== 0) {
+                                    for (let i=0; i<commentNodes.length; ++i) {
+                                        let commentNode = commentNodes[i];
+                                        notesMap[commentNode.parentNode.getAttribute("oid")] = commentNode.textContent;
+                                    }
+                                }
                                 parseTransforms(xml.documentElement, transformsMap);
                                 break;
+
                         }
 
                     }
@@ -2853,6 +2885,7 @@ DBSDM.UI = (function() {
         ledge.className = "ledge";
 
         if (ns.Diagram.allowCorrectMode) {
+            this._cCommentSwitch = ledge.appendChild(this._createCorrectionCommentSwitch());
             this._cModeSwitch = ledge.appendChild(this._createCorrectionModeSwitch());
         }
 
@@ -2936,6 +2969,17 @@ DBSDM.UI = (function() {
 
         var that = this;
         a.addEventListener("click", function() { that._toggleCorrectionMode(); });
+
+        return a;
+    };
+
+    UI.prototype._createCorrectionCommentSwitch = function() {
+        var a = document.createElement("a");
+        a.className = "uiIcon";
+        a.innerHTML = "<i class='fa fa-comment-o'></i>";
+
+        var that = this;
+        a.addEventListener("click", function() { that._toggleCorrectionComment(); });
 
         return a;
     };
@@ -3136,6 +3180,20 @@ DBSDM.UI = (function() {
         }
     };
 
+    UI.prototype._toggleCorrectionComment = function() {
+        if (!ns.Diagram.allowCorrectMode) { return }
+        this._canvas.inCorrectionCommentMode = !this._canvas.inCorrectionCommentMode;
+        if (this._canvas.inCorrectionCommentMode) {
+            this._cCommentSwitch.classList.add("active");
+            this._cCommentSwitch.querySelector("i").classList.add("fa-comment");
+            this._cCommentSwitch.querySelector("i").classList.remove("fa-comment-o");
+        } else {
+            this._cCommentSwitch.classList.remove("active");
+            this._cCommentSwitch.querySelector("i").classList.remove("fa-comment");
+            this._cCommentSwitch.querySelector("i").classList.add("fa-comment-o");
+        }
+    };
+
     return UI;
 })();
 /** src/Vector.js */
@@ -3255,6 +3313,7 @@ DBSDM.Control.Attribute = (function(){
         } else {
             this._view.markCorrect();
         }
+        this._view.updateComment();
     };
 
     /** Parameter toggles */
@@ -3334,7 +3393,13 @@ DBSDM.Control.Attribute = (function(){
 
     Attribute.prototype.onMouseUp = function(e, mouse) {
         if (this._canvas.inCorrectionMode) {
-            this._toggleIncorrect();
+            if (this._canvas.inCorrectionCommentMode) {
+                this._markIncorrect();
+                this._model.setComment(window.prompt("Comment:", this._model.getComment()));
+                this._view.updateComment();
+            } else {
+                this._toggleIncorrect();
+            }
             return;
         }
 
@@ -3730,6 +3795,7 @@ DBSDM.Control.CanvasObject = (function(){
     CanvasObject.prototype._toggleIncorrect = function() {
         this._model.incorrect = !this._model.incorrect;
         this._view.defaultMark();
+        this._view.updateComment();
     };
 
     CanvasObject.prototype.markIncorrect = function() {
@@ -3748,6 +3814,19 @@ DBSDM.Control.CanvasObject = (function(){
         }
     };
 
+    CanvasObject.prototype.onMouseUp = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) {
+            if (this._canvas.inCorrectionCommentMode) {
+                this.markIncorrect();
+                this._model.setComment(window.prompt("Comment:", this._model.getComment()));
+                this._view.updateComment();
+            } else {
+                this._toggleIncorrect();
+            }
+            return true;
+        }
+        return false;
+    };
     CanvasObject.prototype.onMouseDown = function(e, mouse) {
         if (this._canvas.inCorrectionMode) { return; }
 
@@ -4527,8 +4606,7 @@ DBSDM.Control.Entity = (function(){
     };
 
     Entity.prototype.onMouseUp = function(e, mouse) {
-        if (this._canvas.inCorrectionMode) {
-            this._toggleIncorrect();
+        if (Super.prototype.onMouseUp.call(this, e, mouse)) {
             return;
         }
 
@@ -4779,8 +4857,7 @@ DBSDM.Control.Note = (function(){
     };
 
     Note.prototype.onMouseUp = function(e, mouse) {
-        if (this._canvas.inCorrectionMode) {
-            this._toggleIncorrect();
+        if (Super.prototype.onMouseUp.call(this, e, mouse)) {
             return;
         }
 
@@ -5536,6 +5613,7 @@ DBSDM.Control.RelationLeg = (function() {
         } else {
             this._view.markCorrect();
         }
+        this._view.updateComment();
     };
 
     // Names
@@ -5612,7 +5690,13 @@ DBSDM.Control.RelationLeg = (function() {
 
     RelationLeg.prototype.onMouseUp = function(e, mouse) {
         if (this._canvas.inCorrectionMode) {
-            this._toggleIncorrect();
+            if (this._canvas.inCorrectionCommentMode) {
+                this.markIncorrect();
+                this._model.setComment(window.prompt("Comment:", this._model.getComment()));
+                this._view.updateComment();
+            } else {
+                this._toggleIncorrect();
+            }
             return;
         }
 
@@ -5749,6 +5833,7 @@ DBSDM.Model.Attribute = (function(){
         this._nullable = false;
 
         this.incorrect = false;
+        this.comment = null;
     }
 
     Attribute.prototype.getName = function() {
@@ -5758,6 +5843,14 @@ DBSDM.Model.Attribute = (function(){
     Attribute.prototype.setName = function(name) {
         this._name = name.trim().toLocaleLowerCase();
         return this;
+    };
+
+    Attribute.prototype.setComment = function(comment) {
+        this.comment = comment;
+        return this;
+    };
+    Attribute.prototype.getComment = function(){
+        return this.incorrect && this.comment ? this.comment : "";
     };
 
     //
@@ -5835,6 +5928,7 @@ DBSDM.Model.Attribute = (function(){
         };
         if (this.incorrect) {
             data.incorrect = true;
+            if (this.comment) { data.comment = this.comment; }
         }
         return data;
     };
@@ -5912,7 +6006,11 @@ DBSDM.Model.AttributeList = (function(){
                 .setPrimary(a.primary)
                 .setUnique(a.unique)
                 .setNullable(a.nullable);
-            if (typeof a.incorrect == "boolean") { atr.incorrect = a.incorrect; }
+
+            if (typeof(a.incorrect) === "boolean" && a.incorrect) {
+                atr.incorrect = a.incorrect;
+                if (a.comment) { atr.setComment(a.comment); }
+            }
             this.add(atr);
         }
     };
@@ -5938,7 +6036,16 @@ DBSDM.Model.CanvasObject = (function(){
         };
 
         this.incorrect = false;
+        this.comment = null;
     }
+
+    CanvasObject.prototype.setComment = function(comment) {
+        this.comment = comment;
+        return this;
+    };
+    CanvasObject.prototype.getComment = function(){
+        return this.incorrect && this.comment ? this.comment : "";
+    };
 
     CanvasObject.prototype.setPosition = function(x, y) {
         this._transform.x = (x != null ? x : this._transform.x);
@@ -5982,6 +6089,7 @@ DBSDM.Model.CanvasObject = (function(){
         }
         if (this.incorrect) {
             data.incorrect = true;
+            if (this.comment) { data.comment = this.comment; }
         }
         return data;
     };
@@ -5991,8 +6099,9 @@ DBSDM.Model.CanvasObject = (function(){
             this.setPosition(data.transform.x, data.transform.y);
             this.setSize(data.transform.width, data.transform.height);
         }
-        if (typeof data.incorrect == "boolean") {
+        if (typeof(data.incorrect) === "boolean" && data.incorrect) {
             this.incorrect = data.incorrect;
+            if (data.comment) { this.setComment(data.comment); }
         }
     };
 
@@ -6253,13 +6362,7 @@ DBSDM.Model.Entity = (function(){
             data = data.concat(this._children[i].getExportData(properties));
         }
 
-        if (this.incorrect) {
-            data[0].incorrect = true;
-        }
-
-        if (properties['saveTransform']) {
-            data[0].transform = this._transform;
-        }
+        Object.assign(data[0], Super.prototype.getExportData.call(this, properties));
 
         return data;
     };
@@ -6534,7 +6637,16 @@ DBSDM.Model.RelationLeg = (function(){
         this.inXor = false;
 
         this.incorrect = false;
+        this.comment = null;
     }
+
+    RelationLeg.prototype.setComment = function(comment) {
+        this.comment = comment;
+        return this;
+    };
+    RelationLeg.prototype.getComment = function(){
+        return this.incorrect && this.comment ? this.comment : "";
+    };
 
     RelationLeg.prototype.setRelation = function(relation) {
         this._relation = relation;
@@ -6725,6 +6837,7 @@ DBSDM.Model.RelationLeg = (function(){
 
         if (this.incorrect) {
             data.incorrect = true;
+            if (this.comment) { data.comment = this.comment; };
         }
         return data;
     };
@@ -6752,8 +6865,9 @@ DBSDM.Model.RelationLeg = (function(){
             this.pointsManual = data.transform.manual;
         }
 
-        if (data.incorrect && typeof(data.incorrect) == "boolean") {
-            this.incorrect = data.incorrect
+        if (typeof(data.incorrect) === "boolean" && data.incorrect) {
+            this.incorrect = data.incorrect;
+            if (data.comment) { this.setComment(data.comment); }
         }
 
         return this;
@@ -6971,6 +7085,7 @@ DBSDM.View.Attribute = (function(){
         this._canvas = canvas;
 
         this._svg = null;
+        this._comment = null;
         this._text = null;
         this._index = null;
         this._nullable = null;
@@ -7018,6 +7133,9 @@ DBSDM.View.Attribute = (function(){
             this._svg.classList.add("draggable");
             this._svg.classList.add("editable");
         }
+
+        this._comment = this._svg.appendChild(ns.Element.title());
+        this.updateComment();
 
         // add background
         this._svg.appendChild(
@@ -7112,6 +7230,19 @@ DBSDM.View.Attribute = (function(){
         this._svg.classList.remove("incorrect");
     };
 
+    Attribute.prototype.updateComment = function() {
+        if (!this._comment) { return; }
+
+        let comment = this._model.getComment();
+        this._comment.innerHTML = comment;
+
+        if (comment) {
+            this._svg.classList.add("hasComment");
+        } else {
+            this._svg.classList.remove("hasComment");
+        }
+    };
+
     return Attribute;
 })();
 /** src/view/CanvasObject.js */
@@ -7126,6 +7257,7 @@ DBSDM.View.CanvasObject = (function(){
         this._control = control;
 
         this._dom = null;
+        this._comment = null;
         this._controls = null;
     }
 
@@ -7172,6 +7304,20 @@ DBSDM.View.CanvasObject = (function(){
         this._dom.parentNode.insertBefore(this._dom, null);
     };
 
+    // comment
+
+    CanvasObject.prototype.updateComment = function() {
+        if (!this._comment) { return; }
+
+        let comment = this._model.getComment();
+        this._comment.innerHTML = comment;
+
+        if (comment) {
+            this._dom.classList.add("hasComment");
+        } else {
+            this._dom.classList.remove("hasComment");
+        }
+    };
 
     return CanvasObject;
 })();
@@ -7694,6 +7840,9 @@ DBSDM.View.Entity = (function(){
 
         this.defaultMark();
 
+        this._comment = this._dom.appendChild(ns.Element.title());
+        this.updateComment();
+
         this._dom.addEventListener("mousedown", function(e) { mouse.down(e, control); });
         this._dom.addEventListener("mouseenter", function(e) { mouse.enter(e, control); });
         this._dom.addEventListener("mouseleave", function(e) { mouse.leave(e); });
@@ -7802,6 +7951,9 @@ DBSDM.View.Note = (function(){
 
         this.defaultMark();
 
+        this._comment = this._dom.appendChild(ns.Element.title());
+        this.updateComment();
+
         this._dom.addEventListener("mousedown", function(e) { that._canvas.Mouse.down(e, that._control); });
         this._dom.addEventListener("contextmenu", function() { ns.Menu.attach(that._control, "note"); });
     };
@@ -7906,6 +8058,7 @@ DBSDM.View.RelationLeg = (function(){
         this._line = null;
         this._lineControl = null;
         this._name = null;
+        this._comment = null;
 
         this._cp = [];
 
@@ -7916,10 +8069,13 @@ DBSDM.View.RelationLeg = (function(){
     RelationLeg.prototype.draw = function() {
         this._g = ns.Element.g();
 
+        this._comment = ns.Element.title();
+
         this._buildLine();
         this._buildAnchor();
 
         this._g = ns.Element.g(
+            this._comment,
             this._lineControl,
             this._line,
             this._anchor
@@ -7929,6 +8085,8 @@ DBSDM.View.RelationLeg = (function(){
         this.updateType();
 
         ns.Element.attr(this._g, {class: "leg"});
+
+        this.updateComment();
 
         if (this._model.incorrect) {
             this.markIncorrect();
@@ -8183,6 +8341,21 @@ DBSDM.View.RelationLeg = (function(){
             dominantBaseline: baseline,
             textAnchor: textAnchor
         });
+    };
+
+    // comment
+
+    RelationLeg.prototype.updateComment = function() {
+        if (!this._comment) { return; }
+
+        let comment = this._model.getComment();
+        this._comment.innerHTML = comment;
+
+        if (comment) {
+            this._g.classList.add("hasComment");
+        } else {
+            this._g.classList.remove("hasComment");
+        }
     };
 
     return RelationLeg;
