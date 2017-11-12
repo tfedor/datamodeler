@@ -14,6 +14,7 @@ DBSDM.Diagram = (function() {
     self.allowRecent = true;
     self.showTutorial = true;
     self.confirmLeave = false;
+    self.importIsChange = false;
 
     self._canvasList = [];
     self.lastCanvas = null;
@@ -28,7 +29,7 @@ DBSDM.Diagram = (function() {
      *                              allowRecent         Allow saving and loading recent models from local storage
      *                              showTutorial        Determines whether the tutorial will be shown or not
      *                              confirmLeave        Ask user to confirm leaving the page if there is a diagram with unsaved changes
-     *
+     *                              importIsChange      Determines whether import will be treated as a change (makes sense when used with confirmLeave on)
      */
     self.init = function(options){
         options = options || {};
@@ -38,6 +39,7 @@ DBSDM.Diagram = (function() {
         if (typeof options.allowRecent == "boolean") { self.allowRecent = options.allowRecent; }
         if (typeof options.showTutorial == "boolean") { self.showTutorial = options.showTutorial; }
         if (typeof options.confirmLeave == "boolean") { self.confirmLeave = options.confirmLeave; }
+        if (typeof options.importIsChange == "boolean") { self.importIsChange = options.importIsChange; }
 
         ns.Menu.build();
 

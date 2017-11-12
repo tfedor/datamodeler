@@ -46,6 +46,7 @@ allowCorrectMode | false   | Allow switching to marking mode |
 allowRecent      | true    | Allow saving and loading recent models from local storage |
 showTutorial     | true    | Determines whether the tutorial will be shown or not |
 confirmLeave     | false   | Ask user to confirm leaving the page if there is a diagram with unsaved changes |
+importIsChange   | false   | Determines whether import will be treated as a change (makes sense when used with confirmLeave on)
   
 More realistic example of canvas creation follows, full code can be found in `example.html`
 

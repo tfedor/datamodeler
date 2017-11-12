@@ -533,7 +533,7 @@ DBSDM.Canvas = (function() {
             this.sort();
         }
 
-        if (ns.Diagram.confirmLeave) {
+        if (ns.Diagram.confirmLeave && !ns.Diagram.importIsChange) {
             this._dataRef = this._generateRef();
         }
 
