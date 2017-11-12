@@ -210,14 +210,14 @@ DBSDM.File = (function() {
             relationsMap.push([
                 {
                     entity: sourceEntityIdNode.innerHTML,
-                    identifying: false,
+                    identifying: (identifyingNode ? identifyingNode.innerHTML == "true" : false),
                     optional: (optionalSourceNode ? optionalSourceNode.innerHTML == "true" : false),
                     cardinality: (sourceCardinalityNode && sourceCardinalityNode.innerHTML == "*" ? 0 : 1),
                     xor: null,
                     name: nameOnSource && nameOnSource.innerHTML != "" ? nameOnSource.innerHTML : null
                 }, {
                     entity: targetEntityIdNode.innerHTML,
-                    identifying: (identifyingNode ? identifyingNode.innerHTML == "true" : false),
+                    identifying: false,
                     optional: (optionalTargetNode ? optionalTargetNode.innerHTML == "true" : false),
                     cardinality: (targetCardinalityNode && targetCardinalityNode.innerHTML == "*" ? 0 : 1),
                     xor: null,
