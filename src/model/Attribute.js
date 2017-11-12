@@ -13,6 +13,7 @@ DBSDM.Model.Attribute = (function(){
         this._nullable = false;
 
         this.incorrect = false;
+        this.comment = null;
     }
 
     Attribute.prototype.getName = function() {
@@ -22,6 +23,14 @@ DBSDM.Model.Attribute = (function(){
     Attribute.prototype.setName = function(name) {
         this._name = name.trim().toLocaleLowerCase();
         return this;
+    };
+
+    Attribute.prototype.setComment = function(comment) {
+        this.comment = comment;
+        return this;
+    };
+    Attribute.prototype.getComment = function(){
+        return this.incorrect && this.comment ? this.comment : "";
     };
 
     //
@@ -99,6 +108,7 @@ DBSDM.Model.Attribute = (function(){
         };
         if (this.incorrect) {
             data.incorrect = true;
+            if (this.comment) { data.comment = this.comment; }
         }
         return data;
     };

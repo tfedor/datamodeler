@@ -188,6 +188,7 @@ DBSDM.Control.CanvasObject = (function(){
     CanvasObject.prototype._toggleIncorrect = function() {
         this._model.incorrect = !this._model.incorrect;
         this._view.defaultMark();
+        this._view.updateComment();
     };
 
     CanvasObject.prototype.markIncorrect = function() {
@@ -206,6 +207,19 @@ DBSDM.Control.CanvasObject = (function(){
         }
     };
 
+    CanvasObject.prototype.onMouseUp = function(e, mouse) {
+        if (this._canvas.inCorrectionMode) {
+            if (this._canvas.inCorrectionCommentMode) {
+                this.markIncorrect();
+                this._model.setComment(window.prompt("Comment:", this._model.getComment()));
+                this._view.updateComment();
+            } else {
+                this._toggleIncorrect();
+            }
+            return true;
+        }
+        return false;
+    };
     CanvasObject.prototype.onMouseDown = function(e, mouse) {
         if (this._canvas.inCorrectionMode) { return; }
 

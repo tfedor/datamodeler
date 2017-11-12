@@ -253,13 +253,7 @@ DBSDM.Model.Entity = (function(){
             data = data.concat(this._children[i].getExportData(properties));
         }
 
-        if (this.incorrect) {
-            data[0].incorrect = true;
-        }
-
-        if (properties['saveTransform']) {
-            data[0].transform = this._transform;
-        }
+        Object.assign(data[0], Super.prototype.getExportData.call(this, properties));
 
         return data;
     };

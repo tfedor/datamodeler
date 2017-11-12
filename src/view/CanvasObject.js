@@ -10,6 +10,7 @@ DBSDM.View.CanvasObject = (function(){
         this._control = control;
 
         this._dom = null;
+        this._comment = null;
         this._controls = null;
     }
 
@@ -56,6 +57,20 @@ DBSDM.View.CanvasObject = (function(){
         this._dom.parentNode.insertBefore(this._dom, null);
     };
 
+    // comment
+
+    CanvasObject.prototype.updateComment = function() {
+        if (!this._comment) { return; }
+
+        let comment = this._model.getComment();
+        this._comment.innerHTML = comment;
+
+        if (comment) {
+            this._dom.classList.add("hasComment");
+        } else {
+            this._dom.classList.remove("hasComment");
+        }
+    };
 
     return CanvasObject;
 })();

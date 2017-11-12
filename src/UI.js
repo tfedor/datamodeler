@@ -29,6 +29,7 @@ DBSDM.UI = (function() {
         ledge.className = "ledge";
 
         if (ns.Diagram.allowCorrectMode) {
+            this._cCommentSwitch = ledge.appendChild(this._createCorrectionCommentSwitch());
             this._cModeSwitch = ledge.appendChild(this._createCorrectionModeSwitch());
         }
 
@@ -112,6 +113,17 @@ DBSDM.UI = (function() {
 
         var that = this;
         a.addEventListener("click", function() { that._toggleCorrectionMode(); });
+
+        return a;
+    };
+
+    UI.prototype._createCorrectionCommentSwitch = function() {
+        var a = document.createElement("a");
+        a.className = "uiIcon";
+        a.innerHTML = "<i class='fa fa-comment-o'></i>";
+
+        var that = this;
+        a.addEventListener("click", function() { that._toggleCorrectionComment(); });
 
         return a;
     };
@@ -309,6 +321,20 @@ DBSDM.UI = (function() {
             this._cModeSwitch.classList.remove("active");
             this._canvas.unsetMode("correction");
             ns.Diagram.cancelAction = null;
+        }
+    };
+
+    UI.prototype._toggleCorrectionComment = function() {
+        if (!ns.Diagram.allowCorrectMode) { return }
+        this._canvas.inCorrectionCommentMode = !this._canvas.inCorrectionCommentMode;
+        if (this._canvas.inCorrectionCommentMode) {
+            this._cCommentSwitch.classList.add("active");
+            this._cCommentSwitch.querySelector("i").classList.add("fa-comment");
+            this._cCommentSwitch.querySelector("i").classList.remove("fa-comment-o");
+        } else {
+            this._cCommentSwitch.classList.remove("active");
+            this._cCommentSwitch.querySelector("i").classList.remove("fa-comment");
+            this._cCommentSwitch.querySelector("i").classList.add("fa-comment-o");
         }
     };
 

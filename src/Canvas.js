@@ -45,6 +45,7 @@ DBSDM.Canvas = (function() {
          * Modes
          */
         this.inCorrectionMode = false;
+        this.inCorrectionCommentMode = false;
     }
 
     /**

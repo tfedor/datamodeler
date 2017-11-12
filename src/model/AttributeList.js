@@ -69,7 +69,11 @@ DBSDM.Model.AttributeList = (function(){
                 .setPrimary(a.primary)
                 .setUnique(a.unique)
                 .setNullable(a.nullable);
-            if (typeof a.incorrect == "boolean") { atr.incorrect = a.incorrect; }
+
+            if (typeof(a.incorrect) === "boolean" && a.incorrect) {
+                atr.incorrect = a.incorrect;
+                if (a.comment) { atr.setComment(a.comment); }
+            }
             this.add(atr);
         }
     };

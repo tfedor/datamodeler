@@ -231,6 +231,7 @@ DBSDM.Control.RelationLeg = (function() {
         } else {
             this._view.markCorrect();
         }
+        this._view.updateComment();
     };
 
     // Names
@@ -307,7 +308,13 @@ DBSDM.Control.RelationLeg = (function() {
 
     RelationLeg.prototype.onMouseUp = function(e, mouse) {
         if (this._canvas.inCorrectionMode) {
-            this._toggleIncorrect();
+            if (this._canvas.inCorrectionCommentMode) {
+                this.markIncorrect();
+                this._model.setComment(window.prompt("Comment:", this._model.getComment()));
+                this._view.updateComment();
+            } else {
+                this._toggleIncorrect();
+            }
             return;
         }
 

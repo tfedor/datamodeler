@@ -66,6 +66,9 @@ DBSDM.View.Note = (function(){
 
         this.defaultMark();
 
+        this._comment = this._dom.appendChild(ns.Element.title());
+        this.updateComment();
+
         this._dom.addEventListener("mousedown", function(e) { that._canvas.Mouse.down(e, that._control); });
         this._dom.addEventListener("contextmenu", function() { ns.Menu.attach(that._control, "note"); });
     };

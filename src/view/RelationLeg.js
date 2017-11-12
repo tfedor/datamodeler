@@ -16,6 +16,7 @@ DBSDM.View.RelationLeg = (function(){
         this._line = null;
         this._lineControl = null;
         this._name = null;
+        this._comment = null;
 
         this._cp = [];
 
@@ -26,10 +27,13 @@ DBSDM.View.RelationLeg = (function(){
     RelationLeg.prototype.draw = function() {
         this._g = ns.Element.g();
 
+        this._comment = ns.Element.title();
+
         this._buildLine();
         this._buildAnchor();
 
         this._g = ns.Element.g(
+            this._comment,
             this._lineControl,
             this._line,
             this._anchor
@@ -39,6 +43,8 @@ DBSDM.View.RelationLeg = (function(){
         this.updateType();
 
         ns.Element.attr(this._g, {class: "leg"});
+
+        this.updateComment();
 
         if (this._model.incorrect) {
             this.markIncorrect();
@@ -293,6 +299,21 @@ DBSDM.View.RelationLeg = (function(){
             dominantBaseline: baseline,
             textAnchor: textAnchor
         });
+    };
+
+    // comment
+
+    RelationLeg.prototype.updateComment = function() {
+        if (!this._comment) { return; }
+
+        let comment = this._model.getComment();
+        this._comment.innerHTML = comment;
+
+        if (comment) {
+            this._g.classList.add("hasComment");
+        } else {
+            this._g.classList.remove("hasComment");
+        }
     };
 
     return RelationLeg;

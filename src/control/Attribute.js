@@ -60,6 +60,7 @@ DBSDM.Control.Attribute = (function(){
         } else {
             this._view.markCorrect();
         }
+        this._view.updateComment();
     };
 
     /** Parameter toggles */
@@ -139,7 +140,13 @@ DBSDM.Control.Attribute = (function(){
 
     Attribute.prototype.onMouseUp = function(e, mouse) {
         if (this._canvas.inCorrectionMode) {
-            this._toggleIncorrect();
+            if (this._canvas.inCorrectionCommentMode) {
+                this._markIncorrect();
+                this._model.setComment(window.prompt("Comment:", this._model.getComment()));
+                this._view.updateComment();
+            } else {
+                this._toggleIncorrect();
+            }
             return;
         }
 

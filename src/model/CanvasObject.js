@@ -17,7 +17,16 @@ DBSDM.Model.CanvasObject = (function(){
         };
 
         this.incorrect = false;
+        this.comment = null;
     }
+
+    CanvasObject.prototype.setComment = function(comment) {
+        this.comment = comment;
+        return this;
+    };
+    CanvasObject.prototype.getComment = function(){
+        return this.incorrect && this.comment ? this.comment : "";
+    };
 
     CanvasObject.prototype.setPosition = function(x, y) {
         this._transform.x = (x != null ? x : this._transform.x);
@@ -61,6 +70,7 @@ DBSDM.Model.CanvasObject = (function(){
         }
         if (this.incorrect) {
             data.incorrect = true;
+            if (this.comment) { data.comment = this.comment; }
         }
         return data;
     };
@@ -70,8 +80,9 @@ DBSDM.Model.CanvasObject = (function(){
             this.setPosition(data.transform.x, data.transform.y);
             this.setSize(data.transform.width, data.transform.height);
         }
-        if (typeof data.incorrect == "boolean") {
+        if (typeof(data.incorrect) === "boolean" && data.incorrect) {
             this.incorrect = data.incorrect;
+            if (data.comment) { this.setComment(data.comment); }
         }
     };
 

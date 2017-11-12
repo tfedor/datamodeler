@@ -40,7 +40,16 @@ DBSDM.Model.RelationLeg = (function(){
         this.inXor = false;
 
         this.incorrect = false;
+        this.comment = null;
     }
+
+    RelationLeg.prototype.setComment = function(comment) {
+        this.comment = comment;
+        return this;
+    };
+    RelationLeg.prototype.getComment = function(){
+        return this.incorrect && this.comment ? this.comment : "";
+    };
 
     RelationLeg.prototype.setRelation = function(relation) {
         this._relation = relation;
@@ -231,6 +240,7 @@ DBSDM.Model.RelationLeg = (function(){
 
         if (this.incorrect) {
             data.incorrect = true;
+            if (this.comment) { data.comment = this.comment; };
         }
         return data;
     };
@@ -258,8 +268,9 @@ DBSDM.Model.RelationLeg = (function(){
             this.pointsManual = data.transform.manual;
         }
 
-        if (data.incorrect && typeof(data.incorrect) == "boolean") {
-            this.incorrect = data.incorrect
+        if (typeof(data.incorrect) === "boolean" && data.incorrect) {
+            this.incorrect = data.incorrect;
+            if (data.comment) { this.setComment(data.comment); }
         }
 
         return this;

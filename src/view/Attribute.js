@@ -12,6 +12,7 @@ DBSDM.View.Attribute = (function(){
         this._canvas = canvas;
 
         this._svg = null;
+        this._comment = null;
         this._text = null;
         this._index = null;
         this._nullable = null;
@@ -59,6 +60,9 @@ DBSDM.View.Attribute = (function(){
             this._svg.classList.add("draggable");
             this._svg.classList.add("editable");
         }
+
+        this._comment = this._svg.appendChild(ns.Element.title());
+        this.updateComment();
 
         // add background
         this._svg.appendChild(
@@ -151,6 +155,19 @@ DBSDM.View.Attribute = (function(){
     };
     Attribute.prototype.markCorrect = function() {
         this._svg.classList.remove("incorrect");
+    };
+
+    Attribute.prototype.updateComment = function() {
+        if (!this._comment) { return; }
+
+        let comment = this._model.getComment();
+        this._comment.innerHTML = comment;
+
+        if (comment) {
+            this._svg.classList.add("hasComment");
+        } else {
+            this._svg.classList.remove("hasComment");
+        }
     };
 
     return Attribute;

@@ -28,7 +28,7 @@ div.dbsdmCanvas > svg.correctionMode {
     background-color:#fffafa;
 }
 div.dbsdmCanvas > svg.correctionMode * {
-    cursor:help;
+    cursor:pointer;
     background-color:#fffafa;
 }
 
@@ -351,3 +351,7 @@ g.leg.incorrect polyline:not(.line) {
 
 use.cp, use.anchor { cursor:move; }
 
+svg.hasComment,
+g.hasComment {
+    cursor:help !important;
+}

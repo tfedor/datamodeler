@@ -114,8 +114,7 @@ DBSDM.Control.Note = (function(){
     };
 
     Note.prototype.onMouseUp = function(e, mouse) {
-        if (this._canvas.inCorrectionMode) {
-            this._toggleIncorrect();
+        if (Super.prototype.onMouseUp.call(this, e, mouse)) {
             return;
         }
 

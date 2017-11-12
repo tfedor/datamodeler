@@ -69,6 +69,9 @@ DBSDM.View.Entity = (function(){
 
         this.defaultMark();
 
+        this._comment = this._dom.appendChild(ns.Element.title());
+        this.updateComment();
+
         this._dom.addEventListener("mousedown", function(e) { mouse.down(e, control); });
         this._dom.addEventListener("mouseenter", function(e) { mouse.enter(e, control); });
         this._dom.addEventListener("mouseleave", function(e) { mouse.leave(e); });

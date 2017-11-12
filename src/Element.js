@@ -123,6 +123,12 @@ DBSDM.Element = (function() {
         return node;
     };
 
+    self.title = function(text) {
+        let node = create("title");
+        node.innerHTML = text;
+        return node;
+    };
+
     /**
      * Path builder
      */
