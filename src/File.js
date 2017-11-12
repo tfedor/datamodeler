@@ -442,13 +442,21 @@ DBSDM.File = (function() {
                                 parseArc(xml.documentElement, arcMap);
                                 break;
                             case "Note":
-                                var text = xml.documentElement.querySelector("comment").textContent;
-                                var id = xml.documentElement.id;
+                                let text = xml.documentElement.querySelector("comment").textContent;
+                                let id = xml.documentElement.id;
                                 notesMap[id] = text;
                                 break;
                             case "Diagram":
+                                let commentNodes = xml.documentElement.querySelectorAll("comment");
+                                if (commentNodes.length !== 0) {
+                                    for (let i=0; i<commentNodes.length; ++i) {
+                                        let commentNode = commentNodes[i];
+                                        notesMap[commentNode.parentNode.getAttribute("oid")] = commentNode.textContent;
+                                    }
+                                }
                                 parseTransforms(xml.documentElement, transformsMap);
                                 break;
+
                         }
 
                     }
