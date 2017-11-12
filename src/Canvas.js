@@ -106,6 +106,15 @@ DBSDM.Canvas = (function() {
         this.ui.advanceTutorial();
     };
 
+    Canvas.prototype.attachFileUploadInput = function(selector){
+        var node = document.querySelector(selector);
+        if (!node) { return; }
+        var that = this;
+        node.addEventListener("change", function(e){
+            ns.File.upload(e, that);
+        });
+    };
+
     // shared elements for all canvas
 
     // svg elements

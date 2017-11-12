@@ -59,6 +59,7 @@
 </head>
 <body>
 
+    <input type="file" id="fileUpload" style="margin:50px 0 0 50px;">
     <div id="modelerContainer"></div>
 
     <script>
@@ -71,6 +72,7 @@
         var parent = document.getElementById("modelerContainer");
         var canvas = new DBSDM.Canvas();
         canvas.create(parent);
+        canvas.attachFileUploadInput("#fileUpload");
     </script>
 
 </body>
