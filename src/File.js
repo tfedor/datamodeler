@@ -217,7 +217,7 @@ DBSDM.File = (function() {
                     name: nameOnSource && nameOnSource.innerHTML != "" ? nameOnSource.innerHTML : null
                 }, {
                     entity: targetEntityIdNode.innerHTML,
-                    identifying: false,
+                    identifying: (identifyingNode ? identifyingNode.innerHTML == "true" : false),
                     optional: (optionalTargetNode ? optionalTargetNode.innerHTML == "true" : false),
                     cardinality: (targetCardinalityNode && targetCardinalityNode.innerHTML == "*" ? 0 : 1),
                     xor: null,
