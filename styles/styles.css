@@ -8,6 +8,7 @@ body,input,textarea {
 
 div.dbsdmCanvas {
     width:80%;height:800px;border:1px solid black;
+    resize: both;
     margin:50px;
     font-size: 1em;
     position:relative;
