@@ -417,6 +417,15 @@ DBSDM.File = (function() {
                     toPromise.push(files[i].async("string"));
                 }
 
+                if (files.length === 0) {
+                    files = zip.file(/(\W|^)logical\/.*?.model.local$/);
+                    if (files.length !== 0) {
+                        for (let i=0; i<files.length; i++) {
+                            toPromise.push(files[i].async("string"));
+                        }
+                    }
+                }
+
                 Promise.all(toPromise).then(function(result){
                     var entityMap = {};
                     var parentMap = [];
@@ -427,36 +436,55 @@ DBSDM.File = (function() {
                     var notesMap = {};
                     var notes = [];
 
+                    let parsers = {
+                        "Entity":   function(node) { parseEntity(node, entityMap, parentMap) },
+                        "Relation": function(node) { parseRelation(node, relationsMap, relationsRef); },
+                        "Arc":      function(node) { parseArc(node, arcMap); },
+                        "Note":     function(node) {
+                            let text = node.querySelector("comment").textContent;
+                            let id = node.id;
+                            notesMap[id] = text;
+                        },
+                        "Diagram":  function(node) {
+                            let commentNodes = node.querySelectorAll("comment");
+                            if (commentNodes.length !== 0) {
+                                for (let i=0; i<commentNodes.length; ++i) {
+                                    let commentNode = commentNodes[i];
+                                    notesMap[commentNode.parentNode.getAttribute("oid")] = commentNode.textContent;
+                                }
+                            }
+                            parseTransforms(node, transformsMap);
+                        }
+                    };
+
                     var parser = new DOMParser();
                     for (var i=0; i<result.length; i++) {
                         var xml = parser.parseFromString(result[i], "application/xml");
 
                         switch (xml.documentElement.nodeName) {
-                            case "Entity":
-                                parseEntity(xml.documentElement, entityMap, parentMap);
-                                break;
-                            case "Relation":
-                                parseRelation(xml.documentElement, relationsMap, relationsRef);
-                                break;
-                            case "Arc":
-                                parseArc(xml.documentElement, arcMap);
-                                break;
-                            case "Note":
-                                let text = xml.documentElement.querySelector("comment").textContent;
-                                let id = xml.documentElement.id;
-                                notesMap[id] = text;
-                                break;
-                            case "Diagram":
-                                let commentNodes = xml.documentElement.querySelectorAll("comment");
-                                if (commentNodes.length !== 0) {
-                                    for (let i=0; i<commentNodes.length; ++i) {
-                                        let commentNode = commentNodes[i];
-                                        notesMap[commentNode.parentNode.getAttribute("oid")] = commentNode.textContent;
-                                    }
-                                }
-                                parseTransforms(xml.documentElement, transformsMap);
+                            case "LogicalDesign": // single file format
+
+                                let selectors = {
+                                    "Entities > Entity":            "Entity",
+                                    "Relationships > Relationship": "Relation",
+                                    "Arcs > Arc":                   "Arc",
+                                    "NoteObjects > NoteObject":     "Note",
+                                    "mainView":                     "Diagram"
+                                };
+
+                                Object.entries(selectors).forEach(function(entry) {
+                                    let selector = entry[0];
+                                    let parser = parsers[entry[1]];
+
+                                    let nodes = xml.querySelectorAll(selector);
+                                    for (let i=0; i<nodes.length; i++) { parser(nodes[i]); }
+                                });
                                 break;
 
+                            default:
+                                if (parsers.hasOwnProperty(xml.documentElement.nodeName)) {
+                                    parsers[xml.documentElement.nodeName](xml.documentElement);
+                                }
                         }
 
                     }
