@@ -291,6 +291,7 @@ DBSDM.File = (function() {
         }
 
         function parseTransforms(node, map) {
+            if (/DPVLogicalSubView$/.test(node.getAttribute("class"))) { return; }
 
             map.entities = map.entities || {};
             map.relations = map.relations || {};
