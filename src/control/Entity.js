@@ -327,7 +327,7 @@ DBSDM.Control.Entity = (function(){
 
         // attributes
         var attributes = this._attributeList.getMinimalSize();
-        size.width += attributes.width;
+        size.width = Math.max(size.width, attributes.width);
         size.height += attributes.height;
 
         // children entities

@@ -53,6 +53,7 @@ DBSDM.Control.AttributeList = (function(){
         });
         this._controls.splice(index, 1);
         this._updatePositions();
+        this._entityControl.computeNeededSize();
 
         this._canvas.History.record(this, "delete", [attrModel, control, index], null, false);
     };
