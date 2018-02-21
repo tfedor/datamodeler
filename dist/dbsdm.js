@@ -1445,7 +1445,6 @@ DBSDM.File = (function() {
 
         function parseRelation(node, relationsMap, relationsRef) {
             var sourceEntityIdNode = node.querySelector("sourceEntity");
-            var identifyingNode = node.querySelector("identifying");
             var optionalSourceNode = node.querySelector("optionalSource");
             var sourceCardinalityNode = node.querySelector("sourceCardinality");
             var nameOnSource = node.querySelector("nameOnSource");
@@ -1455,19 +1454,44 @@ DBSDM.File = (function() {
             var targetCardinalityNode = node.querySelector("targetCardinalityString");
             var nameOnTarget = node.querySelector("nameOnTarget");
 
+            var sourceIdentifyingNode = false;
+            var targetIdentifyingNode = false;
+
+            if (node.querySelector("identifying").innerHTML == "true") {
+
+                // export does not says which end of the relation is identifying, so we'll try to determine it:
+
+                // identyfing relation cannot have a * cardinality
+                if (sourceCardinalityNode && sourceCardinalityNode.innerHTML == "*") {
+                    sourceIdentifyingNode = true;
+                } else if (targetCardinalityNode && targetCardinalityNode.innerHTML == "*") {
+                    targetIdentifyingNode = true;
+                } else {
+
+                    // both cardinalities are not *, determine based on optionality
+                    if (optionalSourceNode) {
+                        targetIdentifyingNode = true;
+                    } else {
+                        sourceIdentifyingNode = true;
+                    }
+                }
+                // CAUTON: If the export is in invalid state (ie. "cardinalities are * at the both ends"
+                // or "cardinalities are both not * while also both ends being optional") this code returns undefined behaviour!
+            }
+
             if (!sourceEntityIdNode || !targetEntityIdNode) { return; }
 
             relationsMap.push([
                 {
                     entity: sourceEntityIdNode.innerHTML,
-                    identifying: (identifyingNode ? identifyingNode.innerHTML == "true" : false),
+                    identifying: sourceIdentifyingNode,
                     optional: (optionalSourceNode ? optionalSourceNode.innerHTML == "true" : false),
                     cardinality: (sourceCardinalityNode && sourceCardinalityNode.innerHTML == "*" ? 0 : 1),
                     xor: null,
                     name: nameOnSource && nameOnSource.innerHTML != "" ? nameOnSource.innerHTML : null
                 }, {
                     entity: targetEntityIdNode.innerHTML,
-                    identifying: false,
+                    identifying: targetIdentifyingNode,
                     optional: (optionalTargetNode ? optionalTargetNode.innerHTML == "true" : false),
                     cardinality: (targetCardinalityNode && targetCardinalityNode.innerHTML == "*" ? 0 : 1),
                     xor: null,

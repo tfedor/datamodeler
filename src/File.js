@@ -220,6 +220,7 @@ DBSDM.File = (function() {
 
                     // both cardinalities are not *, determine based on optionality
                     if (optionalSourceNode) {
+                        targetIdentifyingNode = true;
                     } else {
                         sourceIdentifyingNode = true;
                     }
